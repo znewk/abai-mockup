@@ -56,7 +56,7 @@ function renderShell(active, crumbs) {
   const initials = r.user.split(' ').map((p) => p[0]).slice(0, 2).join('');
   const myCount = state.wells.filter((w) => !w.done && curStep(w).role === state.role).length;
   $('#shell').innerHTML = `
-    <div class="mock-banner">Мокап для обсуждения · демо-данные · процесс «Б4. Освоение — умеренный TO BE ОМГ»</div>
+    <div class="mock-banner">Мокап для обсуждения · демо-данные · процесс «Б4. Освоение» · вариант Dream TO BE</div>
     <header class="topbar">
       <div class="logo">
         <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#1c5cab"/><path d="M6 23 13 9l4 8 3-5 6 11z" fill="#fff"/><circle cx="23" cy="9" r="2.5" fill="#86b6ef"/></svg>
@@ -65,7 +65,7 @@ function renderShell(active, crumbs) {
       <nav class="nav">
         <a href="#/" class="${active === 'registry' ? 'active' : ''}">Реестр освоения</a>
         <a href="#/tasks" class="${active === 'tasks' ? 'active' : ''}">Мои задачи${myCount ? ` <span class="chip warn" style="margin-left:6px">${myCount}</span>` : ''}</a>
-        <a href="#/process" class="${active === 'process' ? 'active' : ''}">Процесс AS IS → TO BE</a>
+        <a href="#/process" class="${active === 'process' ? 'active' : ''}">Процесс AS IS → Dream TO BE</a>
       </nav>
       <div class="spacer"></div>
       <div class="role-switch">
@@ -210,7 +210,7 @@ function stepItem(w, st, i, selIdx) {
   return `<li class="${status}${i === selIdx ? ' sel' : ''}${ret ? ' returned' : ''}">
     <button data-step="${i}">
       <span class="dot">${status === 'done' ? '✓' : ret ? '!' : i + 1}</span>
-      <span class="s-code">${st.code !== '—' ? st.code : 'доп. шаг TO BE'}</span>
+      <span class="s-code">${st.code !== '—' ? st.code : 'новый шаг Dream TO BE'}</span>
       <div class="s-title">${esc(st.title)}</div>
       <div class="s-role" style="color:${ROLES[st.role].color}">${ROLES[st.role].short}${status === 'cur' && st.role === state.role ? ' · ваш шаг' : ''}</div>
     </button>${sub}</li>`;
@@ -258,7 +258,7 @@ function renderPanel(w, st, idx) {
   p.innerHTML = `
     <div class="step-h">
       <div class="meta">
-        <span class="chip">${st.code !== '—' ? 'Шаг ' + st.code : 'Доп. шаг TO BE'}</span>${roleChip(st.role)}
+        <span class="chip">${st.code !== '—' ? 'Шаг ' + st.code : 'Новый шаг Dream TO BE'}</span>${roleChip(st.role)}
         ${status === 'done' ? '<span class="chip good">✓ Выполнено</span>' : status === 'cur' ? '<span class="chip warn">В работе</span>' : '<span class="chip sys" style="--x:0">Не начат</span>'}
         <span style="flex:1"></span><span class="muted small">Системы:</span>${st.sys.map(sysChip).join('')}
       </div>
@@ -630,7 +630,7 @@ function signNCA(docTitle, onSigned) {
   };
 }
 
-// ---------- Процесс AS IS → TO BE ----------
+// ---------- Процесс AS IS → Dream TO BE ----------
 function renderProcess() {
   renderShell('process', '<span>Процесс «Б4. Освоение»</span><span class="sep">·</span><span>из 04_4. Освоение.bpmn</span>');
   const lanes = ['contractor', 'geologist', 'dzo'];
@@ -645,7 +645,7 @@ function renderProcess() {
     </div>
 
     <div class="card mt">
-      <div class="card-h"><h2>Умеренный TO BE ОМГ — дорожки и шаги</h2><span class="muted small">Нажмите на шаг, чтобы открыть его в демо-скважине</span></div>
+      <div class="card-h"><h2>Dream TO BE — дорожки и шаги</h2><span class="muted small">Нажмите на шаг, чтобы открыть его в демо-скважине</span></div>
       <div class="swim"><div class="swim-grid">
         ${lanes.map((ln) => `<div class="swim-lane"><div class="ln" style="color:${ROLES[ln].color}">${ROLES[ln].name}</div>
           ${STEPS.map((st, i) => `<div class="cell">${st.role === ln ? `<a class="swim-task" href="#/well/u7412" data-jump="${i}" style="text-decoration:none;color:inherit"><b>${st.code !== '—' ? st.code : 'новый шаг'}</b>${esc(st.title)}<div class="s">${st.sys.map((k) => `<span>${SYSTEMS[k].name}</span>`).join('')}</div></a>` : ''}</div>`).join('')}
@@ -655,7 +655,7 @@ function renderProcess() {
 
     <div class="card mt">
       <div class="card-h"><h2>Системы по шагам: три варианта</h2></div>
-      <table class="t"><thead><tr><th>Шаг</th><th>AS IS</th><th style="color:var(--brand)">Умеренный TO BE ОМГ (ABAI)</th><th>TO BE Nedra</th></tr></thead>
+      <table class="t"><thead><tr><th>Шаг</th><th>AS IS</th><th style="color:var(--brand)">Dream TO BE (ABAI)</th><th>TO BE Nedra</th></tr></thead>
         <tbody>${PROCESS_MATRIX.map((r) => `<tr><td><b>${r.step}</b></td><td class="muted">${r.asis}</td><td>${r.tobe}</td><td class="muted">${r.nedra}</td></tr>`).join('')}</tbody></table>
     </div>
 
