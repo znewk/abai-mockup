@@ -101,17 +101,17 @@ function coverHTML() {
   const seq = new Map();
   steps.forEach((id) => SLIDES[id].actions.filter((a) => !a.alt && roles.includes(a.role)).forEach((a) => seq.set(`${id}:${a.n}`, seq.size + 1)));
   return `<div class="cover">
-    <div class="cover-lead">Быстрый сценарий освоения скважины после бурения — от акта приёмки до закрытия дела, <b>${seq.size} ${seq.size % 10 === 1 && seq.size % 100 !== 11 ? 'действие' : [2, 3, 4].includes(seq.size % 10) && ![12, 13, 14].includes(seq.size % 100) ? 'действия' : 'действий'} по порядку</b>${st.role === 'all' ? '' : ` для роли «${ROLES[st.role].name}»`}. На слайдах рядом экраны участников: номер на кнопке = действие справа, кто его выполняет и куда уходят данные. Ни одного письма в Outlook.</div>
+    <div class="cover-lead">От акта приёмки до закрытия дела — <b>${seq.size} ${seq.size % 10 === 1 && seq.size % 100 !== 11 ? 'действие' : [2, 3, 4].includes(seq.size % 10) && ![12, 13, 14].includes(seq.size % 100) ? 'действия' : 'действий'} по порядку</b>${st.role === 'all' ? '' : ` для роли «${ROLES[st.role].name}»`}. Кликните на шаг, чтобы открыть экраны участников.</div>
     <div>
-      <div class="map" style="grid-template-columns:190px repeat(${steps.length}, 1fr)">
+      <div class="map" style="grid-template-columns:128px repeat(${steps.length}, 1fr)">
         <div class="hd" style="cursor:default">Роль \\ шаг</div>
         ${steps.map((id) => `<div class="hd" data-jump="${id}"><b>${SLIDES[id].code}</b>${shortTitle(id)}</div>`).join('')}
         ${roles.map((r) => `<div class="ln" style="--rc:${ROLES[r].color}"><i></i>${ROLES[r].name}</div>` + steps.map((id) =>
           `<div class="cell" data-jump="${id}" style="--rc:${ROLES[r].color}">${SLIDES[id].actions.filter((a) => a.role === r).map((a) =>
-            `<div class="pill ${/ЭЦП/.test(a.t) ? 'sign' : ''} ${a.alt ? 'alt' : ''}" ${a.alt ? '' : `data-seq="${seq.get(`${id}:${a.n}`)}"`}>${a.alt ? '' : `<b class="sq">${seq.get(`${id}:${a.n}`)}</b>`}<span>${a.t}</span></div>`).join('')}</div>`).join('')).join('')}
+            `<div class="pill ${/ЭЦП/.test(a.t) ? 'sign' : ''} ${a.alt ? 'alt' : ''}" ${a.alt ? '' : `data-seq="${seq.get(`${id}:${a.n}`)}"`}>${a.alt ? '' : `<b class="sq">${seq.get(`${id}:${a.n}`)}</b>`}<span>${a.m || a.t}</span></div>`).join('')}</div>`).join('')).join('')}
         <svg class="map-links"></svg>
       </div>
-      <div class="cover-foot mt"><span class="legend-seq"><b class="sq">1</b>→<b class="sq">2</b> порядок действий</span><span class="legend-hand">⤷ передача другой роли</span>Управление: <span class="key">→</span> / <span class="key">пробел</span> — следующее действие, <span class="key">←</span> — назад, <span class="key">F</span> — полный экран. Клик по ячейке открывает шаг. Переключатель ролей вверху показывает сценарий глазами одной роли.</div>
+      <div class="cover-foot mt"><span class="legend-seq"><b class="sq">1</b>→<b class="sq">2</b> порядок действий</span><span class="legend-hand">⤷ передача другой роли</span><span class="keys"><span class="key">→</span> <span class="key">пробел</span> далее · <span class="key">←</span> назад · <span class="key">F</span> полный экран</span></div>
     </div>
   </div>`;
 }
@@ -277,11 +277,11 @@ function layoutMapLinks() {
     let d;
     if (a.cell === b.cell) {
       // Следующее действие той же роли в том же шаге — короткая стрелка вниз
-      const x = a.l + 18;
+      const x = a.l + 16;
       d = `M${x},${a.b} L${x},${b.t - 1}`;
     } else if (Math.abs(a.l - b.l) < 2) {
       // Тот же шаг, другая роль — скоба справа от ячейки
-      const x = Math.max(a.r, b.r) + 5;
+      const x = Math.max(a.r, b.r) + 11;
       const ya = (a.t + a.b) / 2, yb = (b.t + b.b) / 2;
       d = `M${a.r},${ya} L${x},${ya} L${x},${yb} L${b.r + 1},${yb}`;
     } else {
