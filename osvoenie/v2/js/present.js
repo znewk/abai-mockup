@@ -40,7 +40,7 @@ function render() {
         <div class="seg" id="scnSeg">${SCENARIOS.map((x) => `<button data-scn="${x.id}" class="${x.id === st.scn ? 'on' : ''}">${x.name}</button>`).join('')}</div>
         <div class="seg" id="roleSeg"><button data-role="all" class="${st.role === 'all' ? 'on' : ''}">Все роли</button>${Object.entries(ROLES).map(([k, r]) => `<button data-role="${k}" class="${st.role === k ? 'on' : ''}"><i style="background:${r.color}"></i>${r.short}</button>`).join('')}</div>
         <button class="tool-btn ${st.stepMode ? 'on' : ''}" id="stepToggle" title="Раскрывать действия по одному">Пошагово</button>
-        <a class="tool-btn" href="../index.html" title="Интерактивный прототип v1">Прототип v1</a>
+        ${abaiModuleSwitch('osvoenie', 'v2')}
       </div></div>
       <h1>${title}</h1>
     </header>`;

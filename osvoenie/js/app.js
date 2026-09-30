@@ -62,6 +62,7 @@ function renderShell(active, crumbs) {
         <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#1c5cab"/><path d="M6 23 13 9l4 8 3-5 6 11z" fill="#fff"/><circle cx="23" cy="9" r="2.5" fill="#86b6ef"/></svg>
         <div>ABAI<small>Освоение скважин</small></div>
       </div>
+      ${abaiModuleSwitch('osvoenie', 'v1')}
       <nav class="nav">
         <a href="#/" class="${active === 'registry' ? 'active' : ''}">Реестр освоения</a>
         <a href="#/tasks" class="${active === 'tasks' ? 'active' : ''}">Мои задачи${myCount ? ` <span class="chip warn" style="margin-left:6px">${myCount}</span>` : ''}</a>

@@ -3,14 +3,77 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ABAI · Освоение скважин — мокап</title>
+  <title>ABAI · Мокапы процессов Upstream</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231c5cab'/%3E%3Cpath d='M6 23 13 9l4 8 3-5 6 11z' fill='%23fff'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="css/app.css">
+  <style>
+    :root { --brand: #1c5cab; --ink: #16191f; --ink-2: #4d5563; --ink-3: #7a8291; --line: #e1e5ec; font-family: "Segoe UI", "PT Sans", Roboto, Arial, sans-serif; color: var(--ink); }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: #f4f6fa radial-gradient(#dfe4ec 1px, transparent 1px) 0 0 / 22px 22px; }
+    a { color: var(--brand); text-decoration: none; }
+    .mock-banner { background: #fff5de; color: #8a5a00; font-size: 12px; text-align: center; padding: 4px 12px; border-bottom: 1px solid #f0dca8; }
+    header { background: #0f1a2e; color: #fff; padding: 44px 0 64px; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+    .logo { display: flex; align-items: center; gap: 12px; font-weight: 700; letter-spacing: .5px; font-size: 18px; }
+    .logo svg { width: 34px; height: 34px; }
+    h1 { font-size: 36px; margin: 26px 0 10px; letter-spacing: -.3px; }
+    .lead { font-size: 17px; opacity: .8; max-width: 760px; line-height: 1.5; margin: 0; }
+    .variants { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+    .variants span { font-size: 13px; padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,.25); }
+    .variants span b { color: #9ec5f4; }
+    main { margin-top: -36px; padding-bottom: 60px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 20px; }
+    .mod { background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(16,24,40,.08); display: flex; flex-direction: column; }
+    .mod .top { height: 6px; background: var(--c); }
+    .mod .b { padding: 22px 24px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+    .mod .blk { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--c); font-weight: 700; }
+    .mod h2 { margin: 0; font-size: 24px; }
+    .mod p { margin: 0; color: var(--ink-2); line-height: 1.5; font-size: 14.5px; }
+    .mod .meta { font-size: 13px; color: var(--ink-3); }
+    .mod .acts { display: flex; gap: 10px; margin-top: auto; padding-top: 10px; }
+    .btn { flex: 1; text-align: center; padding: 11px 14px; border-radius: 9px; font-weight: 600; font-size: 14px; border: 1px solid var(--line); color: var(--ink); }
+    .btn:hover { border-color: var(--brand); color: var(--brand); }
+    .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .btn small { display: block; font-weight: 400; font-size: 12px; opacity: .75; margin-top: 2px; }
+    .mod.soon { box-shadow: none; background: rgba(255,255,255,.6); border-style: dashed; }
+    .mod.soon h2 { color: var(--ink-3); }
+    .soon-tag { font-size: 12px; color: var(--ink-3); margin-top: auto; }
+    footer { color: var(--ink-3); font-size: 13px; margin-top: 32px; line-height: 1.6; }
+  </style>
 </head>
 <body>
-  <div id="shell"></div>
-  <script src="js/data.js"></script>
-  <script src="js/charts.js"></script>
-  <script src="js/app.js"></script>
+  <div class="mock-banner">Мокапы для обсуждения · демо-данные</div>
+  <header>
+    <div class="wrap">
+      <div class="logo"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#1c5cab"/><path d="M6 23 13 9l4 8 3-5 6 11z" fill="#fff"/><circle cx="23" cy="9" r="2.5" fill="#86b6ef"/></svg>ABAI</div>
+      <h1>Процессы Upstream в ABAI</h1>
+      <p class="lead">Кликабельные прототипы и пошаговые презентации целевых процессов. Для каждого процесса — три варианта из BPMN и экраны, которые видит каждая роль.</p>
+      <div class="variants"><span>AS IS — как сейчас</span><span>TO BE Nedra — с продуктами Nedra</span><span><b>Dream TO BE</b> — наш вариант на ABAI</span></div>
+    </div>
+  </header>
+  <main class="wrap">
+    <div class="grid" id="mods"></div>
+    <footer>
+      <b>Прототип</b> — полный интерфейс: рабочие места ролей, шаги процесса, сравнение вариантов.<br>
+      <b>Презентация</b> — сценарий по слайдам: экраны ролей рядом, действия раскрываются по одному.
+    </footer>
+  </main>
+  <script src="shared/modules.js" data-root="./"></script>
+  <script>
+    const soon = [
+      { name: 'Разработка', blk: 'Геология и разработка' },
+      { name: 'ТКРС', blk: 'Внутрискважинные работы' },
+      { name: 'КС и обустройство', blk: 'Капстроительство' },
+    ];
+    const plural = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'процесс' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'процесса' : 'процессов');
+    document.getElementById('mods').innerHTML = ABAI_MODULES.map((m) => `
+      <div class="mod" style="--c:${m.color}"><div class="top"></div><div class="b">
+        <div class="blk">${m.block}</div><h2>${m.name}</h2><p>${m.desc}</p>
+        <div class="meta">${m.processes} ${plural(m.processes)} · AS IS / TO BE Nedra / Dream TO BE</div>
+        <div class="acts"><a class="btn primary" href="${m.v1}">Прототип<small>полный интерфейс</small></a><a class="btn" href="${m.v2}">Презентация<small>сценарий по ролям</small></a></div>
+      </div></div>`).join('') + soon.map((s) => `
+      <div class="mod soon" style="--c:#9aa1ad"><div class="top"></div><div class="b">
+        <div class="blk">${s.blk}</div><h2>${s.name}</h2><div class="soon-tag">Модуль в планах</div>
+      </div></div>`).join('');
+  </script>
 </body>
 </html>
