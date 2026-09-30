@@ -1,10 +1,10 @@
-# ABAI · мокапы процессов Upstream
+# ABAI Mockup · мокапы процессов Upstream
 
 Кликабельные прототипы и пошаговые презентации целевых процессов на продуктах ABAI.
 Для каждого процесса — три варианта из BPMN: **AS IS**, **TO BE Nedra** и **Dream TO BE** (наш вариант на ABAI).
 Чистый HTML/CSS/JS без сборки: открывается из файла и публикуется на GitHub Pages как есть.
 
-Сайт: https://znewk.github.io/abai-osvoenie/
+Сайт: https://znewk.github.io/abai-mockup/
 
 ## Модули
 
@@ -35,7 +35,7 @@
 Шаги, дорожки, системы и аннотации генерируются из BPMN (`tools/` лежит рядом с репозиторием, в папке с BPMN):
 
 ```bash
-python tools/extract_bpmn.py abai-osvoenie/dobycha/js/bpmn-data.js
+python tools/extract_bpmn.py abai-mockup/dobycha/js/bpmn-data.js
 ```
 
 После обновления BPMN достаточно перезапустить генератор — схемы, шаги и сравнение пересоберутся.
