@@ -66,6 +66,7 @@ function renderShell(active, crumbs) {
         <a href="#/" class="${active === 'registry' ? 'active' : ''}">Реестр освоения</a>
         <a href="#/tasks" class="${active === 'tasks' ? 'active' : ''}">Мои задачи${myCount ? ` <span class="chip warn" style="margin-left:6px">${myCount}</span>` : ''}</a>
         <a href="#/process" class="${active === 'process' ? 'active' : ''}">Процесс AS IS → Dream TO BE</a>
+        <a href="v2/">Презентация v2</a>
       </nav>
       <div class="spacer"></div>
       <div class="role-switch">
