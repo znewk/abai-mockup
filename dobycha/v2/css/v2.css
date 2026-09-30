@@ -230,7 +230,8 @@ em.crit { background: #fdecec; color: var(--crit); font-weight: 600; }
 .mt { margin-top: 14px; }
 
 /* Порядок действий на карте */
-.map .cell { gap: 10px; }
+.map .cell { gap: 16px; padding: 10px 40px 10px 14px; }
+.map .pill { min-height: 24px; padding: 3px 7px; }
 .sq { flex: none; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 9px; background: var(--rc, var(--brand)); color: #fff; font-size: 10px; font-weight: 700; display: inline-grid; place-items: center; line-height: 1; }
 .map-links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; overflow: visible; }
 .map-links > path { fill: none; stroke-width: 1.4; opacity: .55; }

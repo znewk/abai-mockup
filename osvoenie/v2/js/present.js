@@ -103,7 +103,7 @@ function coverHTML() {
   return `<div class="cover">
     <div class="cover-lead">От акта приёмки до закрытия дела — <b>${seq.size} ${seq.size % 10 === 1 && seq.size % 100 !== 11 ? 'действие' : [2, 3, 4].includes(seq.size % 10) && ![12, 13, 14].includes(seq.size % 100) ? 'действия' : 'действий'} по порядку</b>${st.role === 'all' ? '' : ` для роли «${ROLES[st.role].name}»`}. Кликните на шаг, чтобы открыть экраны участников.</div>
     <div>
-      <div class="map" style="grid-template-columns:128px repeat(${steps.length}, 1fr)">
+      <div class="map" style="grid-template-columns:116px repeat(${steps.length}, 1fr)">
         <div class="hd" style="cursor:default">Роль \\ шаг</div>
         ${steps.map((id) => `<div class="hd" data-jump="${id}"><b>${SLIDES[id].code}</b>${shortTitle(id)}</div>`).join('')}
         ${roles.map((r) => `<div class="ln" style="--rc:${ROLES[r].color}"><i></i>${ROLES[r].name}</div>` + steps.map((id) =>
@@ -269,29 +269,53 @@ function layoutMapLinks() {
   const pills = [...map.querySelectorAll('.pill[data-seq]')].sort((a, b) => a.dataset.seq - b.dataset.seq);
   svg.setAttribute('viewBox', `0 0 ${map.offsetWidth} ${map.offsetHeight}`);
   const colorOf = (el) => getComputedStyle(el.parentElement).getPropertyValue('--rc').trim();
-  let out = '';
+  // Сначала тип каждой связи, затем точки входа/выхода: если у карточки справа и входит скоба,
+  // и выходит стрелка, разводим их по высоте, чтобы линии не слипались
+  const links = [];
   for (let i = 0; i < pills.length - 1; i++) {
     const a = box(pills[i]), b = box(pills[i + 1]);
-    const col = colorOf(pills[i + 1]);
-    const handoff = a.cell.style.getPropertyValue('--rc') !== b.cell.style.getPropertyValue('--rc');
+    const kind = a.cell === b.cell ? 'down' : Math.abs(a.l - b.l) < 2 ? 'bracket' : 'curve';
+    links.push({ a, b, kind, col: colorOf(pills[i + 1]), handoff: a.cell.style.getPropertyValue('--rc') !== b.cell.style.getPropertyValue('--rc') });
+  }
+  const mid = (p) => (p.t + p.b) / 2;
+  const SH = 6;
+  links.forEach((L, i) => { L.ya = mid(L.a); L.yb = mid(L.b); });
+  links.forEach((L, i) => {
+    const next = links[i + 1];
+    if (L.kind !== 'bracket' || !next || next.kind === 'down') return;
+    // Скоба приходит сверху — вход выше центра, выход ниже; снизу — наоборот
+    const s = L.a.t < L.b.t ? -1 : 1;
+    L.yb = mid(L.b) + s * SH;
+    next.ya = mid(L.b) - s * SH;
+  });
+  // Скобки в одной колонке с пересекающимися по высоте участками — на разных дорожках
+  const lanes = [];
+  links.filter((L) => L.kind === 'bracket').forEach((L) => {
+    const r = Math.max(L.a.r, L.b.r), y1 = Math.min(L.ya, L.yb) - 4, y2 = Math.max(L.ya, L.yb) + 4;
+    let k = 0;
+    while (lanes.some((o) => Math.abs(o.r - r) < 2 && o.k === k && o.y1 < y2 && y1 < o.y2)) k++;
+    lanes.push({ r, y1, y2, k });
+    L.x = r + 10 + k * 8;
+  });
+  let out = '';
+  links.forEach((L, i) => {
+    const { a, b, ya, yb } = L;
     let d;
-    if (a.cell === b.cell) {
+    if (L.kind === 'down') {
       // Следующее действие той же роли в том же шаге — короткая стрелка вниз
       const x = a.l + 16;
-      d = `M${x},${a.b} L${x},${b.t - 1}`;
-    } else if (Math.abs(a.l - b.l) < 2) {
+      d = `M${x},${a.b} L${x},${b.t}`;
+    } else if (L.kind === 'bracket') {
       // Тот же шаг, другая роль — скоба справа от ячейки
-      const x = Math.max(a.r, b.r) + 11;
-      const ya = (a.t + a.b) / 2, yb = (b.t + b.b) / 2;
-      d = `M${a.r},${ya} L${x},${ya} L${x},${yb} L${b.r + 1},${yb}`;
+      d = `M${a.r},${ya} L${L.x},${ya} L${L.x},${yb} L${b.r},${yb}`;
     } else {
       // Переход к следующему шагу — кривая слева направо
-      const ya = (a.t + a.b) / 2, yb = (b.t + b.b) / 2, mx = (a.r + b.l) / 2;
-      d = `M${a.r},${ya} C${mx},${ya} ${mx},${yb} ${b.l - 1},${yb}`;
+      const mx = (a.r + b.l) / 2;
+      d = `M${a.r},${ya} C${mx},${ya} ${mx},${yb} ${b.l},${yb}`;
     }
-    out += `<path d="${d}" stroke="${col}" class="${handoff ? 'hand' : ''}" marker-end="url(#ar-${i})"/>` +
-      `<marker id="ar-${i}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="${col}"/></marker>`;
-  }
+    out += `<path d="${d}" stroke="${L.col}" class="${L.handoff ? 'hand' : ''}" marker-end="url(#ar-${i})"/>` +
+      `<marker id="ar-${i}" viewBox="0 0 8 8" refX="8" refY="4" markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0.5 L8,4 L0,7.5 z" fill="${L.col}"/></marker>`;
+  });
   svg.innerHTML = out;
 }
 window.addEventListener('resize', fit);
