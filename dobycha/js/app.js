@@ -104,7 +104,7 @@ function renderHub() {
 
 function relationMap() {
   const pos = { 1: [120, 70], 2: [120, 250], 9: [440, 160], 3: [760, 70], 6: [440, 330], 4: [1080, 70], 5: [1080, 250], 7: [760, 330], 8: [1080, 400] };
-  const W = 1240, H = 460, nw = 230, nh = 64;
+  const W = 1330, H = 484, nw = 230, nh = 64;
   const num = (s) => +((s.match(/Д(\d)/) || [])[1]);
   const pairs = new Map();
   BPMN.forEach((p) => p.adjacent.out.forEach((o) => { const t = num(o); if (!t || t === p.num) return; const k = [p.num, t].sort().join('-'); const e = pairs.get(k) || { a: p.num, b: t, ab: false, ba: false }; if (p.num === e.a) e.ab = true; else e.ba = true; pairs.set(k, e); }));
