@@ -154,10 +154,7 @@ em.crit { background: #fdecec; color: var(--crit); font-weight: 600; }
 .nca-ok { color: var(--good); font-weight: 600; }
 
 /* Подсветка элемента текущего действия */
-[data-c] { position: relative; transition: box-shadow .2s, transform .1s; border-radius: 7px; }
-.frame [data-c] { cursor: pointer; }
-.frame [data-c]:hover { box-shadow: 0 0 0 2px rgba(28,92,171,.35); }
-.frame .u-btn[data-c]:active { transform: translateY(1px); }
+[data-c] { position: relative; transition: box-shadow .2s; border-radius: 7px; }
 [data-c].focus { box-shadow: 0 0 0 3px var(--fc), 0 0 0 7px color-mix(in srgb, var(--fc) 20%, transparent); z-index: 2; }
 
 /* ---------- Действия справа ---------- */

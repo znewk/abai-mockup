@@ -229,20 +229,6 @@ function bind() {
   $('#stepToggle').onclick = () => { st.stepMode = !st.stepMode; render(); };
   document.querySelectorAll('[data-jump]').forEach((c) => (c.onclick = () => { const i = slideList().indexOf(c.dataset.jump); if (i >= 0) go(i); }));
   document.querySelectorAll('.act').forEach((el) => (el.onclick = () => { st.reveal = +el.dataset.i + 1; applyReveal(); }));
-  // Кнопки и поля на экранах кликабельны: клик раскрывает своё действие, повторный клик по текущему — дальше
-  const s = SLIDES[curId()];
-  if (s) {
-    document.querySelectorAll('.frame [data-c]').forEach((el) => (el.onclick = () => {
-      const acts = visibleActions(s);
-      const role = el.closest('.frame').dataset.role;
-      let i = acts.findIndex((a) => a.n === +el.dataset.c && a.role === role);
-      if (i < 0) i = acts.findIndex((a) => a.n === +el.dataset.c);
-      if (i < 0) return;
-      const shown = st.stepMode ? st.reveal : acts.length;
-      if (st.stepMode && i === shown - 1) next();
-      else { st.stepMode = true; st.reveal = i + 1; applyReveal(); $('#stepToggle').classList.add('on'); }
-    }));
-  }
 }
 
 window.addEventListener('keydown', (e) => {
