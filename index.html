@@ -35,7 +35,11 @@
     .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
     .btn small { display: block; font-weight: 400; font-size: 12px; opacity: .75; margin-top: 2px; }
     footer { color: var(--ink-3); font-size: 13px; margin-top: 32px; line-height: 1.6; }
+    .arch { max-width: 1560px; margin: 8px auto 70px; padding: 0 28px; }
+    .arch h2 { font-size: 28px; margin: 0 0 6px; letter-spacing: -.2px; }
+    .arch .sub { color: var(--ink-2); font-size: 15px; margin: 0 0 18px; line-height: 1.5; max-width: 1100px; }
   </style>
+  <link rel="stylesheet" href="shared/landscape.css">
 </head>
 <body>
   <div class="mock-banner">Мокапы для обсуждения · демо-данные</div>
@@ -54,7 +58,15 @@
       <b>Презентация</b> — сценарий по слайдам: экраны ролей рядом, действия раскрываются по одному.
     </footer>
   </main>
+  <section class="arch" id="arch">
+    <h2>Модули, продукты и потоки данных в цифровом двойнике</h2>
+    <p class="sub">Как данные идут от датчиков и промысловых систем через слой данных в цифровой двойник актива и к пользователям — сейчас, в целевом видении с продуктами Nedra и в нашем варианте на ABAI.
+      Архитектура — по стратсессии (слайд 54, соответствие продуктов — слайд 34), системы процессов — по BPMN модулей. Наведите на систему, чтобы увидеть, где она используется.</p>
+    <div class="ls" id="landscape"></div>
+  </section>
   <script src="shared/modules.js" data-root="./"></script>
+  <script src="shared/landscape-data.js"></script>
+  <script src="shared/landscape.js"></script>
   <script>
     const plural = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'процесс' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'процесса' : 'процессов');
     document.getElementById('mods').innerHTML = ABAI_MODULES.map((m) => `
@@ -63,6 +75,8 @@
         <div class="meta">${m.processes} ${plural(m.processes)} · AS IS / TO BE Nedra / Dream TO BE</div>
         <div class="acts"><a class="btn primary" href="${m.v1}">Прототип<small>полный интерфейс</small></a><a class="btn" href="${m.v2}">Презентация<small>сценарий по ролям</small></a></div>
       </div></div>`).join('');
+    const lsView = location.hash.slice(1);
+    abaiLandscape(document.getElementById('landscape'), LS_VIEWS[lsView] ? lsView : 'asis');
   </script>
 </body>
 </html>
