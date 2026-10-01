@@ -1,6 +1,6 @@
 // ABAI · Добыча — прототип v1: 9 процессов, рабочие места, шаги Dream TO BE, схемы BPMN, сравнение вариантов.
 
-const STORE_KEY = 'abai-dobycha-v1';
+const STORE_KEY = 'abai-dobycha-omg';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -22,7 +22,7 @@ function toast(msg) {
   setTimeout(() => t.remove(), 3400);
 }
 
-// Роль по умолчанию — владелец рабочего места (с учётом уточнённых имён вида «ДДНГ · ЭМГ (ДЗО)»)
+// Роль по умолчанию — владелец рабочего места (с учётом уточнённых имён вида «Департаменты · КМГ»)
 function roleOf(num) {
   if (state.role[num]) return state.role[num];
   const roles = rolesOf(num), owner = PROC_META[num].owner;
@@ -66,7 +66,7 @@ function route() {
     shell(n, t, `<a href="#/">Добыча</a><span class="sep">›</span><span>Д${n}. ${esc(P.title)}</span><span class="sep">›</span><span>${TABS.find((x) => x.id === t).name}</span>`);
     ({ work: renderWork, flow: renderFlow, bpmn: renderBpmn, compare: renderCompare })[t](n, extra);
   } else {
-    shell(0, '', '<span>Модуль «Добыча»</span><span class="sep">·</span><span>АО «Эмбамунайгаз»</span>');
+    shell(0, '', '<span>Модуль «Добыча»</span><span class="sep">·</span><span>АО «Озенмунайгаз»</span>');
     renderHub();
   }
 }
@@ -75,15 +75,17 @@ window.addEventListener('hashchange', () => { route(); window.scrollTo(0, 0); })
 // ---------- Главная модуля ----------
 function renderHub() {
   const all = BPMN.map((p) => ({ p, a: variantStats(p.num, 'asis'), d: variantStats(p.num, 'dream') }));
+  const sum = (f) => all.reduce((s, x) => s + f(x), 0);
   const newSteps = BPMN.reduce((s, p) => s + tasksOf(pool(p.num, 'dream')).filter((t) => /а$/.test(t.code)).length, 0);
   $('#view').innerHTML = `
     <div class="hero">
-      <div><h1>Добыча в ABAI: 9 процессов, три варианта</h1>
-      <p>Для каждого процесса — рабочее место ключевой роли, пошаговый процесс Dream TO BE по BPMN, схемы AS IS / TO BE Nedra / Dream TO BE и сравнение систем по шагам.</p></div>
+      <div><h1>Добыча в ABAI: 9 процессов ОМГ, четыре варианта</h1>
+      <p>По итоговым BPMN АО «Озенмунайгаз»: AS IS в описании Nedra, AS IS ABAI (как сейчас, с текущими модулями ABAI), TO BE Nedra и Dream TO BE. Для каждого процесса — рабочее место ключевой роли, пошаговый процесс Dream TO BE, схемы всех вариантов и сравнение систем по шагам.</p></div>
       <div class="stats hero-stats">
-        <div class="stat"><div class="v">${all.reduce((s, x) => s + x.d.steps, 0)}</div><div class="l">шагов в Dream TO BE</div></div>
+        <div class="stat"><div class="v">${sum((x) => x.d.steps)}</div><div class="l">шагов в Dream TO BE</div></div>
         <div class="stat"><div class="v">${newSteps}</div><div class="l">новых шагов (с буквой «а»)</div></div>
-        <div class="stat"><div class="v">${all.reduce((s, x) => s + x.a.manual, 0)} → ${all.reduce((s, x) => s + x.d.manual, 0)}</div><div class="l">привязок к Excel / Outlook / MS Office</div></div>
+        <div class="stat"><div class="v">${sum((x) => x.a.abaiSteps)} → ${sum((x) => x.d.abaiSteps)}</div><div class="l">шагов, выполняемых в ABAI (AS IS ABAI → Dream)</div></div>
+        <div class="stat"><div class="v">${sum((x) => x.a.manual)} → ${sum((x) => x.d.manual)}</div><div class="l">привязок шагов к MS Office</div></div>
       </div>
     </div>
     <div class="proc-grid mt">${all.map(({ p, a, d }) => {
@@ -94,7 +96,7 @@ function renderHub() {
         <div class="pc-b">
           <p>${m.idea}</p>
           <div class="pc-sys">${abai.map((s) => `<span class="chip sys abai">${s}</span>`).join(' ')}</div>
-          <div class="pc-meta"><span>${d.steps} шагов · ${rolesOf(p.num).length} ролей</span><span class="pc-man" title="Привязок шагов к Excel / Outlook / MS Office">ручных инструментов: <b class="crit-t">${a.manual}</b> → <b class="good-t">${d.manual}</b></span></div>
+          <div class="pc-meta"><span>${d.steps} шагов · ${rolesOf(p.num).length} ролей</span><span class="pc-man" title="Шагов в ABAI: AS IS ABAI → Dream TO BE">в ABAI: <b>${a.abaiSteps}</b> → <b class="good-t">${d.abaiSteps}</b></span><span class="pc-man" title="Привязок шагов к MS Office">MS Office: <b class="crit-t">${a.manual}</b> → <b class="good-t">${d.manual}</b></span></div>
         </div>
         <div class="pc-f"><a href="#/p/${p.num}/work">Рабочее место</a><a href="#/p/${p.num}/flow">Процесс</a><a href="#/p/${p.num}/bpmn/dream">Схема</a><a href="#/p/${p.num}/compare">Сравнение</a></div>
       </div>`;
@@ -103,11 +105,13 @@ function renderHub() {
 }
 
 function relationMap() {
-  const pos = { 1: [120, 70], 2: [120, 250], 9: [440, 160], 3: [760, 70], 6: [440, 330], 4: [1080, 70], 5: [1080, 250], 7: [760, 330], 8: [1080, 400] };
-  const W = 1330, H = 484, nw = 230, nh = 64;
+  const pos = { 7: [40, 60], 1: [370, 60], 3: [700, 60], 4: [1030, 60], 6: [40, 250], 9: [370, 250], 2: [700, 250], 5: [1030, 250], 8: [1030, 400] };
+  const W = 1330, H = 484, nw = 240, nh = 64;
   const num = (s) => +((s.match(/Д(\d)/) || [])[1]);
   const pairs = new Map();
-  BPMN.forEach((p) => p.adjacent.out.forEach((o) => { const t = num(o); if (!t || t === p.num) return; const k = [p.num, t].sort().join('-'); const e = pairs.get(k) || { a: p.num, b: t, ab: false, ba: false }; if (p.num === e.a) e.ab = true; else e.ba = true; pairs.set(k, e); }));
+  const add = (from, to) => { if (!from || !to || from === to) return; const k = [from, to].sort().join('-'); const e = pairs.get(k) || { a: from, b: to, ab: false, ba: false }; if (from === e.a) e.ab = true; else e.ba = true; pairs.set(k, e); };
+  // Связь берём и из исходящих, и из входящих: в BPMN она бывает указана только с одной стороны (Д1 → Д7)
+  BPMN.forEach((p) => { p.adjacent.out.forEach((o) => add(p.num, num(o))); p.adjacent.in.forEach((o) => add(num(o), p.num)); });
   const edges = [...pairs.values()].map((e) => {
     const [x1, y1] = pos[e.a], [x2, y2] = pos[e.b];
     const cx1 = x1 + nw / 2, cy1 = y1 + nh / 2, cx2 = x2 + nw / 2, cy2 = y2 + nh / 2;
@@ -121,7 +125,7 @@ function relationMap() {
   return `<svg viewBox="0 0 ${W} ${H}" class="relmap"><defs>
     <marker id="rm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a93a6"/></marker>
     <marker id="rs" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#8a93a6"/></marker></defs>${edges}${nodes}
-    <text x="760" y="440" class="rs">Д7 и Д8 — самостоятельные контуры, связей в BPMN нет</text></svg>`;
+    <text x="1010" y="437" text-anchor="end" class="rs">Д8 — самостоятельный контур, связей в BPMN нет</text></svg>`;
 }
 
 // ---------- Рабочее место ----------
@@ -194,10 +198,8 @@ function renderFlow(num, selId) {
             <h3 class="mt">Как выглядит в ABAI</h3>
             <div class="mt-s">${sysWidget(sel, num)}</div>
             ${cmp ? `<h3 class="mt">Этот шаг в других вариантах</h3>
-              <table class="t mt-s"><tbody>
-                <tr><td class="muted" style="width:130px">AS IS</td><td>${sysList(cmp.asis)}</td></tr>
-                <tr><td class="muted">TO BE Nedra</td><td>${sysList(cmp.nedra)}</td></tr>
-                <tr><td><b>Dream TO BE</b></td><td>${sysList(cmp.dream)}</td></tr></tbody></table>` : /а$/.test(sel.code) ? '<div class="callout info mt">Этого шага нет в AS IS и TO BE Nedra — он появляется только в Dream TO BE.</div>' : ''}
+              <table class="t mt-s"><tbody>${Object.keys(VARIANTS).map((k) => `
+                <tr><td class="${k === 'dream' ? '' : 'muted'}" style="width:130px">${k === 'dream' ? '<b>Dream TO BE</b>' : VARIANTS[k].name}</td><td>${cmp[k] ? sysList(cmp[k]) : '<span class="muted small">нет шага</span>'}</td></tr>`).join('')}</tbody></table>` : /а$/.test(sel.code) ? '<div class="callout info mt">Этого шага нет в AS IS и TO BE Nedra — он появляется только в Dream TO BE.</div>' : ''}
             ${canAct ? `<div class="row mt"><button class="btn primary" id="doStep">✓ Выполнить шаг</button>${sel.branch ? '<button class="btn" id="skipStep">Ветка не нужна — пропустить</button>' : ''}</div>` : ''}
           </div>
         </div>
@@ -227,14 +229,14 @@ const sysList = (v) => (v && v.sys.length ? v.sys.map((s) => `<span class="chip 
 function sysWidget(t, num) {
   const has = (s) => t.sys.includes(s);
   const win = (title, body) => `<div class="mini"><div class="mini-top"><i></i><b>ABAI</b><span>${title}</span></div><div class="mini-b">${body}</div></div>`;
-  if (has('КХД') && has('ABAI ПДИМ 2.0')) return win('КХД → ПДИМ 2.0 · качество данных', `<div class="mini-flow"><span>СДМО ✓</span><span>Green Data ✓</span><span>ИМ ✓</span><em>→ КХД →</em><span class="hl">ПДИМ 2.0: полнота 97,1 %</span></div><div class="alarm crit"><b>Аларм: нет замера по 14 скв.</b><span>передано в СОУП НГДУ на уточнение</span></div>`);
-  if (has('ABAI ПГНО')) return win('ПГНО · подбор ГНО', `<table class="t"><tr><td>Скв. 1284</td><td>УЭЦН</td><td>ЭЦН5А-80-1250</td><td class="num">КПД 56 %</td><td>${chip('рекомендовано', 'good')}</td></tr><tr><td></td><td></td><td>ЭЦН5-60-1300</td><td class="num">КПД 49 %</td><td></td></tr></table>`);
-  if (has('ABAI ПАЭГТМ')) return win('ПАЭГТМ · мероприятия', `<table class="t"><tr><td>ГРП · скв. 1284</td><td class="num">+14,2 т/сут</td><td class="num">NPV 312 млн ₸</td><td>${chip('приоритет 1', 'good')}</td></tr><tr><td>ОПЗ · скв. 0719</td><td class="num">+6,1 т/сут</td><td class="num">NPV 96 млн ₸</td><td>${chip('приоритет 2')}</td></tr></table>`);
-  if (has('ABAI ПДИМ 2.0')) return win('ПДИМ 2.0 · мониторинг', `<div class="mini-kpi"><div><b>24 318</b><span>факт, т/сут</span></div><div><b class="crit-t">−282</b><span>к плану</span></div><div><b>4</b><span>отклонения</span></div></div><div class="alarm warn"><b>Отклонение по скв. 1284: −18,4 т/сут</b><span>карточка отклонения создана</span></div>`);
-  if (has('ABAI ТР 2.0')) return win('ТР 2.0 · технологический режим', `<table class="t"><tr><th>Скв.</th><th class="num">Qж</th><th class="num">Обв.</th><th class="num">Нд</th><th></th></tr><tr><td>1284</td><td class="num">62</td><td class="num">72 %</td><td class="num">1 180</td><td>${chip('отклонение', 'crit')}</td></tr><tr><td>0931</td><td class="num">38</td><td class="num">55 %</td><td class="num">960</td><td>${chip('в режиме', 'good')}</td></tr></table>`);
-  if (has('Procu')) return win('Закупка · Procu', `<div class="doc"><div class="ic">DOC</div><div class="grow"><div class="name">Спецификация / ТЗ передана в Procu</div><div class="sub">из ABAI БД 2.0 без ручного переноса</div></div>${chip('в закупке', 'warn')}</div>`);
-  if (has('АВР+')) return win('АВР+ · акт работ', `<div class="doc"><div class="ic pdf">PDF</div><div class="grow"><div class="name">Акт выполненных работ подрядчика</div><div class="sub">связан с мероприятием в ABAI</div></div>${chip('подписан', 'good')}</div>`);
-  if (has('ABAI ЦРНС 2.0')) return win('ЦРНС 2.0 · проверка с учётом разработки', `<div class="mini-kpi"><div><b>3</b><span>варианта</span></div><div><b class="good-t">+340</b><span>т/сут, вариант B</span></div><div><b>✓</b><span>совместимо с разработкой</span></div></div>`);
+  if (has('КХД') && has('ABAI ПДИМ 2.0')) return win('КХД → ПДИМ 2.0 · качество данных', `<div class="mini-flow"><span>СДМС ✓</span><span>SCADA ✓</span><span>ИСУ ✓</span><span>БД 2.0 ✓</span><em>→ КХД →</em><span class="hl">ПДИМ 2.0: полнота 97,4 %</span></div><div class="alarm crit"><b>Аларм: нет замера по 11 скв.</b><span>уведомление ушло в ЦИТС НГДУ на уточнение</span></div>`);
+  if (has('ABAI УЗ')) return win('УЗ → КХД · показатели закачки', `<div class="mini-kpi"><div><b>48 260</b><span>закачка, м³/сут</span></div><div><b>14</b><span>КНС</span></div><div><b>✓</b><span>передано в КХД</span></div></div>`);
+  if (has('КХД')) return win('КХД · данные ДЗО', `<div class="mini-flow"><span>Сводка ДЗО ✓</span><em>→ КХД →</em><span class="hl">корпоративная отчётность КМГ</span></div>`);
+  if (has('ABAI ПГНО')) return win('ПГНО · подбор ГНО', `<table class="t"><tr><td>Скв. 7318</td><td>УЭЦН</td><td>ЭЦН5А-80-1250</td><td class="num">КПД 56 %</td><td>${chip('рекомендовано', 'good')}</td></tr><tr><td></td><td></td><td>ЭЦН5-60-1300</td><td class="num">КПД 49 %</td><td></td></tr></table>`);
+  if (has('ABAI ПАЭГТМ')) return win('ПАЭГТМ · мероприятия', `<table class="t"><tr><td>ГРП · скв. 7318</td><td class="num">+12,6 т/сут</td><td class="num">NPV 284 млн ₸</td><td>${chip('приоритет 1', 'good')}</td></tr><tr><td>ОПЗ · скв. 5642</td><td class="num">+6,1 т/сут</td><td class="num">NPV 96 млн ₸</td><td>${chip('приоритет 2')}</td></tr></table>`);
+  if (has('ABAI ПДИМ 2.0')) return win('ПДИМ 2.0 · мониторинг', `<div class="mini-kpi"><div><b>14 128</b><span>факт, т/сут</span></div><div><b class="crit-t">−172</b><span>к плану</span></div><div><b>4</b><span>отклонения</span></div></div><div class="alarm warn"><b>Отклонение по скв. 7318: −16,2 т/сут</b><span>карточка отклонения создана</span></div>`);
+  if (has('ABAI ТР 2.0')) return win('ТР 2.0 · технологический режим', `<table class="t"><tr><th>Скв.</th><th class="num">Qж</th><th class="num">Обв.</th><th class="num">Нд</th><th></th></tr><tr><td>7318</td><td class="num">58</td><td class="num">78 %</td><td class="num">1 040</td><td>${chip('отклонение', 'crit')}</td></tr><tr><td>4127</td><td class="num">38</td><td class="num">55 %</td><td class="num">960</td><td>${chip('в режиме', 'good')}</td></tr></table>`);
+  if (has('ABAI ЦРНС 2.0')) return win('ЦРНС 2.0 · рейтинг участков и скважин', `<div class="mini-kpi"><div><b>3</b><span>варианта</span></div><div><b class="good-t">+290</b><span>т/сут, вариант B</span></div><div><b>A</b><span>рейтинг участка</span></div></div>`);
   const docs = t.docs.length ? t.docs : ['Запись шага'];
   return win('БД 2.0 · карточка шага', docs.map((d) => `<div class="doc"><div class="ic">DOC</div><div class="grow"><div class="name">${esc(d)}</div><div class="sub">создаётся и хранится в ABAI БД 2.0</div></div></div>`).join(''));
 }
@@ -325,23 +327,26 @@ function keepScroll(fn) {
 // ---------- Сравнение вариантов ----------
 function renderCompare(num) {
   const rows = stepMatrix(num);
-  const st = { asis: variantStats(num, 'asis'), nedra: variantStats(num, 'nedra'), dream: variantStats(num, 'dream') };
+  const vs = Object.keys(VARIANTS);
+  const st = Object.fromEntries(vs.map((k) => [k, variantStats(num, k)]));
+  // Третий показатель карточки: для Nedra — продукты Nedra, для AS IS Nedra — системы, для AS IS ABAI и Dream — шаги в ABAI
+  const third = (k) => (k === 'nedra' ? [st[k].nedra, 'продуктов Nedra'] : k === 'asisn' ? [st[k].systems.filter((s) => sysKind(s) !== 'manual').length, 'систем'] : [st[k].abaiSteps, 'шагов в ABAI']);
   const m = PROC_META[num];
   $('#view').innerHTML = `
-    <div class="page-h"><div><div class="muted small">Сравнение вариантов по шагам</div><h1>AS IS → TO BE Nedra → Dream TO BE</h1></div></div>
+    <div class="page-h"><div><div class="muted small">Сравнение вариантов по шагам</div><h1>AS IS Nedra · AS IS ABAI → TO BE Nedra → Dream TO BE</h1></div></div>
     <div class="bpmn-note mb"><b>Dream TO BE</b><span>${m.idea}</span></div>
-    <div class="variants">${Object.entries(VARIANTS).map(([k, x]) => `<div class="card variant ${x.tone}"><div class="card-b">
+    <div class="variants v4">${Object.entries(VARIANTS).map(([k, x]) => `<div class="card variant ${x.tone}"><div class="card-b">
       <div class="tag">${x.sub}</div><h2>${x.name}</h2>
       <div class="stats mt-s" style="grid-template-columns:repeat(3,1fr)">
         <div class="stat"><div class="v">${st[k].steps}</div><div class="l">шагов</div></div>
         <div class="stat"><div class="v ${st[k].manual ? 'crit-t' : 'good-t'}">${st[k].manual}</div><div class="l">ручных инструментов</div></div>
-        <div class="stat"><div class="v">${k === 'nedra' ? st[k].nedra : k === 'dream' ? st[k].abai : st[k].systems.filter((s) => sysKind(s) !== 'manual').length}</div><div class="l">${k === 'nedra' ? 'продуктов Nedra' : k === 'dream' ? 'модулей ABAI' : 'систем'}</div></div>
+        <div class="stat"><div class="v">${third(k)[0]}</div><div class="l">${third(k)[1]}</div></div>
       </div>
       <a class="btn mt" href="#/p/${num}/bpmn/${k}">Открыть схему</a></div></div>`).join('')}</div>
     <div class="card mt"><div class="card-h"><h2>Системы по шагам</h2><span class="muted small">шаги сопоставлены по номеру из BPMN</span></div>
-      <div class="tbl-scroll"><table class="t cmp"><thead><tr><th>Шаг</th><th>Роль (Dream TO BE)</th><th>AS IS</th><th>TO BE Nedra</th><th class="dream-h">Dream TO BE</th></tr></thead><tbody>
+      <div class="tbl-scroll"><table class="t cmp"><thead><tr><th>Шаг</th><th>Роль (Dream TO BE)</th>${vs.map((k) => `<th class="${k === 'dream' ? 'dream-h' : ''}">${VARIANTS[k].name}</th>`).join('')}</tr></thead><tbody>
       ${rows.map((r) => `<tr class="${!r.asis ? 'newrow' : ''}"><td><b>${r.code || '—'}</b> ${esc(r.title)}${!r.asis ? ' <span class="chip new">новый шаг</span>' : ''}</td><td>${r.dream ? roleChip(r.lane) : '<span class="muted small">нет в Dream TO BE</span>'}</td>
-        <td>${r.asis ? sysList(r.asis) : '—'}</td><td>${r.nedra ? sysList(r.nedra) : '—'}</td><td>${r.dream ? sysList(r.dream) : '—'}</td></tr>`).join('')}
+        ${vs.map((k) => `<td>${r[k] ? sysList(r[k]) : '—'}</td>`).join('')}</tr>`).join('')}
       </tbody></table></div></div>`;
 }
 

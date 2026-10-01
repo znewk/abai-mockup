@@ -276,3 +276,5 @@ em.crit { background: #fdecec; color: var(--crit); font-weight: 600; }
 .u-risk i.md { background: #f7dca0; color: #8a5a00; }
 .u-risk i.hi { background: #e9a0a0; color: #8f1d1d; }
 .u-chart text.lbl { fill: var(--ink-2); font-size: 10.5px; }
+/* Три экрана на слайде — окна узкие, меню ролей скрываем */
+.st-frames:has(.frame ~ .frame ~ .frame) .scr-menu { display: none; }

@@ -14,7 +14,7 @@
 | Разработка (5 процессов) | `razrabotka/` | `razrabotka/v2/` | `TO BE/Разработка/*.bpmn` |
 | Бурение (5 процессов) | `burenie/` | `burenie/v2/` | `TO BE/Бурение/*.bpmn` |
 | Освоение скважин | `osvoenie/` | `osvoenie/v2/` | `TO BE/Бурение/Б4_Освоение_финал.bpmn` |
-| Добыча (9 процессов) | `dobycha/` | `dobycha/v2/` | `TO BE/Добыча/*.bpmn` |
+| Добыча (9 процессов, ОМГ) | `dobycha/` | `dobycha/v2/` | `TO BE/Добыча_омг_финал/*.bpmn` |
 
 Итоговые BPMN всех модулей — в архиве `TO BE` (рядом с репозиторием).
 
@@ -67,8 +67,12 @@
 
 ## Добыча
 
+- **Источник:** итоговые BPMN АО «Озенмунайгаз» (`TO BE/Добыча_омг_финал`). Прежняя версия по ЭМГ (`TO BE/Добыча`)
+  в модуле больше не используется.
+- **Четыре варианта в каждом BPMN:** AS IS Nedra, AS IS ABAI (как сейчас, с текущими модулями ABAI — с ним сравнивается
+  Dream TO BE), TO BE Nedra, Dream TO BE. Метрика — шаги в ABAI и привязки шагов к MS Office.
 - **Прототип:** главная с 9 процессами и картой связей между ними; для каждого процесса — рабочее место
-  ключевой роли, пошаговый процесс Dream TO BE с переключением ролей, схемы BPMN всех трёх вариантов
+  ключевой роли, пошаговый процесс Dream TO BE с переключением ролей, схемы BPMN всех четырёх вариантов
   (отрисованы по координатам из файлов) и сравнение систем по шагам.
 - **Презентация:** быстрый сценарий на каждый процесс — карта «роли × шаги» и слайды с экранами ролей.
   Процесс выбирается вверху, роль — переключателем.
@@ -76,7 +80,7 @@
 Шаги, дорожки, системы и аннотации генерируются из BPMN (`tools/` лежит рядом с репозиторием, в папке с BPMN):
 
 ```bash
-python tools/extract_bpmn.py abai-mockup/dobycha/js/bpmn-data.js "TO BE/Добыча"
+python tools/extract_bpmn.py abai-mockup/dobycha/js/bpmn-data.js "TO BE/Добыча_омг_финал"
 python tools/extract_bpmn.py abai-mockup/burenie/js/bpmn-data.js "TO BE/Бурение"
 python tools/extract_bpmn.py abai-mockup/geologiya/js/bpmn-data.js "TO BE/Геология"
 python tools/extract_bpmn.py abai-mockup/razrabotka/js/bpmn-data.js "TO BE/Разработка"
@@ -88,7 +92,7 @@ python tools/extract_bpmn.py abai-mockup/razrabotka/js/bpmn-data.js "TO BE/Ра�
 ## Управление презентациями
 
 `→` / пробел — следующее действие, `←` — назад, `F` — полный экран.
-Ссылка на конкретный слайд: `osvoenie/v2/#fast/3/contractor`, `dobycha/v2/#d6/3/ddng`, `burenie/v2/#b2/3/po`, `geologiya/v2/#g31/3/omg`, `razrabotka/v2/#r4/2/kaz`.
+Ссылка на конкретный слайд: `osvoenie/v2/#fast/3/contractor`, `dobycha/v2/#d6/3/sngdu`, `burenie/v2/#b2/3/po`, `geologiya/v2/#g31/3/omg`, `razrabotka/v2/#r4/2/kaz`.
 
 ## Запуск локально
 
