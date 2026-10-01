@@ -26,7 +26,7 @@ const hash = (s) => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7)
 const role = () => ROLES[state.role];
 const getWell = (id) => state.wells.find((w) => w.id === id);
 const curStep = (w) => (w.done ? null : STEPS[w.step]);
-const sysChip = (k) => `<span class="chip sys${k === 'scada' || k === 'nca' ? ' external' : ''}" title="${esc(SYSTEMS[k].desc)}">${SYSTEMS[k].name}</span>`;
+const sysChip = (k) => `<span class="chip sys${k === 'avr' || k === 'nca' ? ' external' : ''}" title="${esc(SYSTEMS[k].desc)}">${SYSTEMS[k].name}</span>`;
 const roleChip = (r) => `<span class="chip role" style="color:${ROLES[r].color};border-color:${ROLES[r].color}33">${ROLES[r].name}</span>`;
 const wellTitle = (w) => `Скв. ${w.name}`;
 
@@ -371,8 +371,7 @@ function stepBody(w, st, canAct, done) {
         <h3 class="mt">Куда уходят данные</h3>
         <table class="t mt-s"><thead><tr><th>Данные</th><th>Система</th><th>Статус</th></tr></thead><tbody>
           <tr><td>Акт выполненных работ подрядчика</td><td>${sysChip('avr')}</td><td>${done ? '<span class="chip good">✓ оформлен</span>' : '<span class="chip warn">к подписанию</span>'}</td></tr>
-          <tr><td>Паспорт скважины: конструкция, интервалы перфорации, оборудование, режим</td><td>${sysChip('kp')} ${sysChip('bd')}</td><td>${done ? '<span class="chip good">✓ обновлён</span>' : '<span class="chip warn">черновик готов</span>'}</td></tr>
-          <tr><td>Все данные дела</td><td>${sysChip('kxd')}</td><td>${done ? '<span class="chip good">✓ выгружено</span>' : '<span class="chip sys">после закрытия</span>'}</td></tr>
+          <tr><td>Паспорт скважины: конструкция, интервалы перфорации, оборудование, режим</td><td>${sysChip('bd')}</td><td>${done ? '<span class="chip good">✓ обновлён</span>' : '<span class="chip warn">черновик готов</span>'}</td></tr>
         </tbody></table>
         <h3 class="mt">Черновик паспорта скважины</h3>
         <table class="t mt-s"><tbody>
@@ -382,7 +381,7 @@ function stepBody(w, st, canAct, done) {
           <tr><td class="muted">Режим (ср. 7 сут)</td><td>Qж ${fmtN(avgLast(w, 'ql'))} т/сут · Qн ${fmtN(avgLast(w, 'qo'))} т/сут · обводнённость ${fmtN(avgLast(w, 'wc'))} %</td></tr>
           <tr><td class="muted">Заключение по сравнению</td><td>${esc(w.data.compareConcl || '—')}</td></tr>
         </tbody></table>
-        ${done ? `<div class="mt">${docList(docs)}</div><div class="callout good mt"><span class="grow"><b>АВР оформлен, паспорт скважины обновлён.</b> Цифровое дело закрыто, данные переданы в КХД.</span></div>` : canAct ? `<div class="mt"><button class="btn good" id="act">${ICON.sign} Подписать АВР ЭЦП и закрыть дело</button></div>` : ''}`;
+        ${done ? `<div class="mt">${docList(docs)}</div><div class="callout good mt"><span class="grow"><b>АВР оформлен, паспорт скважины обновлён.</b> Цифровое дело закрыто, скважина переведена в действующий фонд.</span></div>` : canAct ? `<div class="mt"><button class="btn good" id="act">${ICON.sign} Подписать АВР ЭЦП и закрыть дело</button></div>` : ''}`;
     }
   }
   return '';
@@ -410,7 +409,7 @@ function opsBody(w, canAct, done) {
     <h3 class="mt">${esc(op.doc)}</h3><div class="mt-s">${docList(opDocs)}</div>
     ${editable ? `<div class="mt">${uploader(op.doc, 'Загрузить: ' + op.doc, true)}</div>${pend.length ? `<div class="mt-s">${docList(pend)}</div>` : ''}
       <div class="mt row"><button class="btn primary" id="saveOp">${ICON.check} Сохранить операцию ${op.code}</button><button class="btn ghost" id="demoFill">Заполнить демо-данными</button></div>` : ''}
-    ${!done && w.ops >= OPS.length && canAct ? `<div class="callout info mt"><span class="grow">Все операции освоения зафиксированы. Данные ГИС и притока переданы в ABAI ТР.</span><button class="btn primary" id="act">${ICON.send} Завершить освоение, передать на наблюдение</button></div>` : ''}
+    ${!done && w.ops >= OPS.length && canAct ? `<div class="callout info mt"><span class="grow">Все операции освоения зафиксированы. Данные ГИС и притока сохранены в ABAI БД 2.0.</span><button class="btn primary" id="act">${ICON.send} Завершить освоение, передать на наблюдение</button></div>` : ''}
     ${opDone && !done && !editable && w.ops < OPS.length ? '' : ''}
     ${!opDone && !opCur ? '<div class="callout wait mt">Операция будет доступна после предыдущих.</div>' : ''}`;
 }
@@ -431,7 +430,7 @@ function observeBody(w, canAct, done) {
   const mean = last7.reduce((a, b) => a + b, 0) / 7;
   const cv = Math.sqrt(last7.reduce((a, b) => a + (b - mean) ** 2, 0) / 7) / mean * 100;
   const stable = cv < 5;
-  return `<div class="flow-strip">${sysChip('scada')}<span class="arrow">→ суточный отчёт по интеграции →</span>${sysChip('tr')}<span class="muted" style="margin-left:auto">Период: ${fmtDate(rows[0].date)} — ${fmtDate(rows[rows.length - 1].date)}</span></div>
+  return `<div class="flow-strip">${sysChip('pdim')}<span class="arrow">→ режим на контроле →</span>${sysChip('tr')}<span class="muted" style="margin-left:auto">Период: ${fmtDate(rows[0].date)} — ${fmtDate(rows[rows.length - 1].date)}</span></div>
     <div class="stats mt">
       <div class="stat"><div class="v">${fmtN(avgLast(w, 'ql'))}</div><div class="l">Qж, т/сут (ср. 7 сут)</div></div>
       <div class="stat"><div class="v">${fmtN(avgLast(w, 'qo'))}</div><div class="l">Qн, т/сут (ср. 7 сут)</div></div>
@@ -448,7 +447,7 @@ function observeBody(w, canAct, done) {
 // --- 4.4.6 Сравнение с соседями ---
 function compareBody(w, canAct, done) {
   const nb = genNeighbors(hash(w.id), w.name);
-  return `<div class="row" style="align-items:center"><div class="flow-strip" style="flex:1">${sysChip('tr2')}<span class="muted">Окружение: скважины в радиусе 1 км, горизонт ${w.horizon}</span></div>
+  return `<div class="row" style="align-items:center"><div class="flow-strip" style="flex:1">${sysChip('pdim')}<span class="muted">Окружение: скважины в радиусе 1 км, горизонт ${w.horizon}</span></div>
       <div class="seg"><button data-cmp="chart" class="${ui.cmpView === 'chart' ? 'sel' : ''}">График</button><button data-cmp="table" class="${ui.cmpView === 'table' ? 'sel' : ''}">Таблица</button></div></div>
     ${ui.cmpView === 'chart' ? `<h3 class="mt">Дебит нефти, т/сут — скв. ${w.name} и соседние скважины</h3><div class="legend mt-s"><span><i class="bar" style="background:var(--series-1)"></i>Скв. ${w.name} (ср. 7 сут)</span><span><i class="bar" style="background:var(--neutral-mark)"></i>Соседние скважины (текущий режим)</span></div><div id="cmpChart"></div><div class="small muted mt-s" id="cmpNote"></div>`
       : `<table class="t mt"><thead><tr><th>Скважина</th><th class="num">Расстояние, м</th><th class="num">Qж, т/сут</th><th class="num">Qн, т/сут</th><th class="num">Обводн., %</th><th class="num">Год ввода</th></tr></thead><tbody>
@@ -566,15 +565,15 @@ function bindStep(w, st, canAct) {
         const c = $('#concl').value.trim();
         if (!c) return alert('Добавьте заключение (или нажмите «Предложить формулировку»)');
         w.data.compareConcl = c;
-        addDoc(w, { name: 'Сравнительный анализ скважин', step: 'compare', by: me.user, at: new Date().toISOString(), sys: 'tr2' });
-        return advance(w, st, 'Сравнительный анализ сохранён в ABAI ТР 2.0');
+        addDoc(w, { name: 'Сравнительный анализ скважин', step: 'compare', by: me.user, at: new Date().toISOString(), sys: 'pdim' });
+        return advance(w, st, 'Сравнительный анализ сохранён (ABAI ПДИМ 2.0)');
       }
       case 'report': return signNCA('Акт выполненных работ по освоению скважины ' + w.name, () => {
         const now = new Date().toISOString();
         addDoc(w, { name: 'Акт выполненных работ', step: 'report', by: me.user, at: now, signed: true, sys: 'avr' });
-        addDoc(w, { name: 'Паспорт скважины (обновлён)', step: 'report', by: me.user, at: now, sys: 'kp' });
+        addDoc(w, { name: 'Паспорт скважины (обновлён)', step: 'report', by: me.user, at: now, sys: 'bd' });
         w.done = true;
-        advance(w, st, 'АВР оформлен, паспорт скважины обновлён. Данные переданы в КХД');
+        advance(w, st, 'АВР оформлен, паспорт скважины обновлён. Скважина переведена в действующий фонд');
       });
     }
   };
@@ -664,16 +663,16 @@ function renderProcess() {
     <div class="grid mt" style="grid-template-columns:1fr 1fr">
       <div class="card"><div class="card-h"><h2>Что меняется для пользователей</h2></div><div class="card-b">
         <div class="stats" style="grid-template-columns:repeat(3,1fr)">
-          <div class="stat"><div class="v">10 → 0</div><div class="l">передач документов через Outlook</div></div>
+          <div class="stat"><div class="v">10 → 0</div><div class="l">документов Word / PDF / Excel</div></div>
           <div class="stat"><div class="v">2</div><div class="l">новых шага: загрузка акта в ИС, отправка по ИС</div></div>
           <div class="stat"><div class="v">3</div><div class="l">подписи ЭЦП в ИС: акт, программа, АВР</div></div>
         </div>
         <ul class="small mt">
           <li>Геолог принимает скважину и подписывает акт в ABAI БД 2.0, а не по почте.</li>
           <li>Подрядчик ведёт цифровую отчётность по каждой операции (4.4.1–4.4.4).</li>
-          <li>Месяц наблюдения — автоматически: суточный отчёт SCADA → ABAI ТР.</li>
-          <li>Сравнение с соседями — в ABAI ТР 2.0, без Excel.</li>
-          <li>По закрытию дела все данные уходят в КХД.</li>
+          <li>Месяц наблюдения — автоматически: Qж, Qн и обводнённость из ABAI ПДИМ 2.0, режим на контроле в ТР 2.0.</li>
+          <li>Сравнение с соседями — в ABAI ПДИМ 2.0, без Excel.</li>
+          <li>Паспорт скважины обновляется в БД 2.0, АВР по освоению — в АВР+; скважина переходит в действующий фонд.</li>
         </ul></div></div>
       <div class="card"><div class="card-h"><h2>Системы в TO BE</h2></div>
         <table class="t"><tbody>${Object.values(SYSTEMS).map((s) => `<tr><td><b>${s.name}</b></td><td class="muted">${s.desc}</td></tr>`).join('')}</tbody></table></div>

@@ -1,4 +1,4 @@
-/* ================= Модуль «Бурение» (поверх app.css; основа — стили «Добычи») ================= */
+/* ================= Модули на BPMN (Бурение, Геология, Разработка) — поверх app.css; основа — стили «Добычи» ================= */
 .logo { text-decoration: none; }
 .logo:hover { text-decoration: none; }
 .proc-sel { border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 5px 8px; background: #fff; font-weight: 600; max-width: 260px; }
@@ -166,8 +166,9 @@ table.cmp tr.newrow td { background: #f3faf5; }
   .bpmn-wrap { grid-template-columns: 1fr; }
 }
 
-/* ---------- Бурение ---------- */
+/* ---------- Общие элементы модулей ---------- */
 .variants.v4 { grid-template-columns: repeat(4, 1fr); }
+.variants.v2 { grid-template-columns: repeat(2, 1fr); }
 .relmap .rel-l { font-size: 12px; color: var(--text-2); text-align: center; line-height: 1.25; height: 100%; display: flex; align-items: center; justify-content: center; }
 .relmap .rel-l.up { align-items: flex-end; padding-bottom: 20px; box-sizing: border-box; }
 .relmap .rel-l.arc span, .relmap .rel-l.arc { background: transparent; }
@@ -204,3 +205,42 @@ table.ckt td.ck.cur { color: var(--brand); }
 .lg-krs, .lg-prs, .lg-mv, .lg-idle { background: none !important; }
 .lg-krs { color: #6f9fdc; } .lg-prs { color: #5cc08a; } .lg-mv { color: #b9c0cc; } .lg-idle { color: #e58d85; }
 @media (max-width: 1200px) { .variants.v4 { grid-template-columns: 1fr 1fr; } }
+
+/* Связи с другими модулями под картой */
+.ext-links { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12.5px; }
+.ext-links > div { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.ext-links b { width: 100%; font-size: 12px; color: var(--text-2); margin-bottom: 2px; }
+.relmap .rel-l.mid { background: rgba(255,255,255,.9); border-radius: 5px; font-size: 11.5px; padding: 0 4px; height: auto; max-height: 100%; overflow: hidden; }
+.relmap .rel-l.down { align-items: flex-start; padding-top: 2px; }
+/* Ссылки на смежные процессы на схеме */
+.bn.task.link rect { fill: #f4f5f8; stroke: #b9c0cc; stroke-dasharray: 5 4; }
+.bn.task.link .bn-t { color: #6b7383; }
+table.cmp tr.onlyrow td { background: #fafbfc; color: var(--text-3); }
+
+/* Тепловая карта секторов (ИИ-ранжирование ЦРНС) */
+.heat { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; }
+.heat i { aspect-ratio: 1; border-radius: 3px; background: color-mix(in srgb, #0f7a55 calc(var(--v) * 100%), #eef2f6); }
+.heat i.top { outline: 2px solid #b45309; outline-offset: -1px; }
+/* Путь по этапам (контракт, согласования) */
+.path { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+.path > div { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 8px; background: #f4f6f9; color: var(--text-3); font-size: 12px; border-top: 3px solid #d5dbe5; }
+.path > div b { font-size: 11px; }
+.path > div.ok { background: #eaf7ef; color: #0a7a3d; border-top-color: #1f9d55; }
+.path > div.cur { background: var(--brand-50); color: var(--brand-600); border-top-color: var(--brand); font-weight: 600; }
+/* Длинные названия ролей и процессов не раздвигают шапку */
+.role-switch select { max-width: 210px; text-overflow: ellipsis; }
+.proc-sel { max-width: 240px; text-overflow: ellipsis; }
+/* Профиль добычи: столбики по компонентам */
+.stack { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 18px; align-items: end; height: 230px; }
+.stack > div { display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; font-size: 12px; }
+.stack .bar { width: 56%; height: 82%; display: flex; flex-direction: column-reverse; border-radius: 4px; overflow: hidden; }
+.stack .bar i { display: block; }
+.stack i.b, .lg-b { background: #9fc1ea; } .stack i.g, .lg-g { background: #5cc08a; } .stack i.v, .lg-v { background: #e2a35c; } .stack i.m, .lg-m { background: #b49ad8; }
+.stack span { color: var(--text-3); }
+.lg-b, .lg-g, .lg-v, .lg-m { background: none !important; }
+.lg-b { color: #9fc1ea; } .lg-g { color: #5cc08a; } .lg-v { color: #e2a35c; } .lg-m { color: #b49ad8; }
+
+/* Оптимизации — во всю ширину под карточками процессов, в две колонки */
+.proc-grid .hub-opt { grid-column: 1 / -1; }
+.hub-opt .opt-list { columns: 2; column-gap: 36px; display: block; }
+.hub-opt .opt-list li { break-inside: avoid; margin-bottom: 8px; }

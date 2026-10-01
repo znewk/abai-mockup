@@ -134,10 +134,10 @@ function summaryHTML() {
       </div>`;
     }).join('')}</div>
     <div class="sum-stats">
-      <div class="sum-stat"><b>10 → 0</b><span>передач документов через Outlook</span></div>
+      <div class="sum-stat"><b>10 → 0</b><span>документов Word / PDF / Excel</span></div>
       <div class="sum-stat"><b>3</b><span>подписи ЭЦП в системе: акт, программа, АВР</span></div>
-      <div class="sum-stat"><b>SCADA → ТР</b><span>месяц наблюдения без Excel-сводок</span></div>
-      <div class="sum-stat"><b>БД 2.0 → КХД</b><span>дело и паспорт собираются автоматически</span></div>
+      <div class="sum-stat"><b>ПДИМ 2.0</b><span>месяц наблюдения и соседи без Excel</span></div>
+      <div class="sum-stat"><b>БД 2.0</b><span>дело и паспорт собираются автоматически</span></div>
     </div>
   </div>`;
 }

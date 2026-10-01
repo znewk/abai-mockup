@@ -1,4 +1,5 @@
-// Движок презентации v2: слайды, пошаговое раскрытие действий, фильтр по роли.
+// Общий движок презентации v2 (Бурение, Геология, Разработка): слайды, пошаговое раскрытие действий, фильтр по роли.
+// Модуль в slides.js задаёт MODULE_V2 = { id, name }, ROLES, MENUS, SLIDES, SCENARIOS (хелперы экранов — в ui.js).
 
 const $ = (s, r = document) => r.querySelector(s);
 const W = 1600, H = 900;
@@ -39,13 +40,13 @@ function render() {
         <select id="scnSel" class="scn-sel" title="Процесс">${SCENARIOS.map((x) => `<option value="${x.id}" ${x.id === st.scn ? 'selected' : ''}>${x.code}. ${x.name}</option>`).join('')}</select>
         <div class="seg" id="roleSeg"><button data-role="all" class="${st.role === 'all' ? 'on' : ''}">Все роли</button>${scnRoles().map((k) => [k, ROLES[k]]).map(([k, r]) => `<button data-role="${k}" class="${st.role === k ? 'on' : ''}"><i style="background:${r.color}"></i>${r.short}</button>`).join('')}</div>
         <button class="tool-btn ${st.stepMode ? 'on' : ''}" id="stepToggle" title="Раскрывать действия по одному">Пошагово</button>
-        ${abaiModuleSwitch('burenie', 'v2')}
+        ${abaiModuleSwitch(MODULE_V2.id, 'v2')}
       </div></div>
       <h1>${title}</h1>
     </header>`;
 
   let body = '';
-  if (id === 'cover') body = header(`<span class="code">${scn.code}</span><span class="scn">Бурение</span><span>· ${scn.sub}</span>`, `${scn.name} — сценарий глазами ролей`) + coverHTML();
+  if (id === 'cover') body = header(`<span class="code">${scn.code}</span><span class="scn">${MODULE_V2.name}</span><span>· ${scn.sub}</span>`, `${scn.name} — сценарий глазами ролей`) + coverHTML();
   else if (id === 'summary') body = header(`<span class="code">${scn.code}</span><span class="scn">${scn.name}</span><span>· итог</span>`, st.role === 'all' ? 'Что увидел и сделал каждый участник' : `Что видит и делает ${ROLES[st.role].name}`) + summaryHTML();
   else {
     const frames = s.frames.filter((f) => st.role === 'all' || f.role === st.role);
