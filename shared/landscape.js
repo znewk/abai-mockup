@@ -236,12 +236,16 @@ function abaiLandscape(root, view = 'dream', flow) {
       if (!pop) { pop = document.createElement('div'); pop.className = 'ls ls-pop'; document.body.appendChild(pop); }
       const name = c.classList.contains('ls-cell') ? key : c.dataset.sys;
       pop.innerHTML = `<div class="ls-pop-h"><b>${name}</b> — потоки данных · ${V.name} · ${list.length}</div><div class="ls-focus"></div>`;
-      const w = Math.min(1100, innerWidth - 40);
-      pop.style.width = w + 'px'; pop.style.display = 'block';
+      pop.style.transform = ''; pop.style.width = 'auto'; pop.style.maxWidth = (innerWidth - 40) + 'px'; pop.style.display = 'block';
       lsFocus(pop.querySelector('.ls-focus'), grid, list, view);
-      const r = c.getBoundingClientRect(), ph = pop.offsetHeight;
-      pop.style.left = Math.max(20, Math.min(innerWidth - w - 20, r.left + r.width / 2 - w / 2)) + 'px';
-      pop.style.top = (r.bottom + 12 + ph < innerHeight ? r.bottom + 12 : Math.max(10, r.top - ph - 12)) + 'px';
+      // Схема вертикальная: ставим сбоку от системы, если не влезает по высоте — уменьшаем
+      const r = c.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
+      const sc = Math.min(1, (innerHeight - 24) / ph, (innerWidth - 24) / pw);
+      pop.style.transform = sc < 1 ? `scale(${sc})` : '';
+      const w = pw * sc, h = ph * sc;
+      const right = r.right + 16 + w < innerWidth - 12, left = r.left - 16 - w > 12;
+      pop.style.left = (right && (r.left + r.right) / 2 < innerWidth / 2 ? r.right + 16 : left ? r.left - 16 - w : right ? r.right + 16 : Math.max(12, (innerWidth - w) / 2)) + 'px';
+      pop.style.top = Math.max(12, Math.min(innerHeight - h - 12, (r.top + r.bottom) / 2 - h / 2)) + 'px';
     };
     c.onmouseleave = () => {
       root.classList.remove('hl'); root.querySelectorAll('.ls-chip.on').forEach((x) => x.classList.remove('on'));
@@ -259,7 +263,7 @@ function abaiLandscape(root, view = 'dream', flow) {
   root._ro.observe(grid);
 }
 
-// ---------- Компактная схема сценария: только участвующие системы, слева направо по направлению потока ----------
+// ---------- Компактная схема сценария: только участвующие системы, сверху вниз по направлению потока ----------
 // Группа системы на компактной схеме: в какой ЦД / слой она входит на большой схеме
 function lsGroup(el, view) {
   if (!el) return { key: 'other', title: 'Прочее', type: 'eng' };
@@ -289,7 +293,7 @@ function lsGroup(el, view) {
   return { key: 'other', title: 'Прочее', type: 'eng' };
 }
 
-// Колонки по направлению потока: порядок с минимумом обратных связей (эвристика Идса — Лина — Смита),
+// Ряды по направлению потока: порядок с минимумом обратных связей (эвристика Идса — Лина — Смита),
 // затем ранг = самый длинный путь без обратных связей. outOf может возвращать узел несколько раз (вес связи).
 function lsRanks(list, outOf) {
   const out = new Map(list.map((n) => [n, outOf(n).filter((m) => m !== n && list.includes(m))]));
@@ -326,7 +330,7 @@ function lsFocus(host, grid, edges, view, o = {}) {
   };
   const items = edges.map((e, i) => { const a = node(e.f), b = node(e.t); a.out.push(b); b.inn.push(a); return { e, i, a, b }; });
   // Пользователи, внешние системы, АСУ ТП: если в группе есть и чистые источники, и чистые получатели — две рамки
-  // («кто передаёт» слева, «кто получает» справа). Рамка ЦД всегда одна.
+  // («кто передаёт» сверху, «кто получает» снизу). Рамка ЦД всегда одна.
   const byKey = {};
   nodes.forEach((n) => (byKey[n.g.key] = byKey[n.g.key] || []).push(n));
   Object.values(byKey).forEach((list) => {
@@ -338,129 +342,123 @@ function lsFocus(host, grid, edges, view, o = {}) {
   nodes.forEach((n) => { if (!groups.has(n.g.key)) groups.set(n.g.key, { id: n.g.key, ...n.g, nodes: [], out: [] }); groups.get(n.g.key).nodes.push(n); n.G = groups.get(n.g.key); });
   items.forEach((it) => { if (it.a.G !== it.b.G) it.a.G.out.push(it.b.G); });
   const gRank = lsRanks([...groups.values()], (g) => g.out);
-  // Внутри группы — подколонки по направлению связей внутри неё
+  // Внутри группы — подряды по направлению связей внутри неё
   groups.forEach((g) => {
     const r = lsRanks(g.nodes, (n) => n.out.filter((m) => m.G === g));
     g.nodes.forEach((n) => { n.sub = r.get(n); });
     g.subs = Math.max(...g.nodes.map((n) => n.sub)) + 1;
+    g.rowsOf = Array.from({ length: g.subs }, (_, s) => g.nodes.filter((n) => n.sub === s));
   });
-  // ---- Размеры ----
-  const C = Math.max(...[...gRank.values()]) + 1;
-  const cols = Array.from({ length: C }, (_, c) => [...groups.values()].filter((g) => gRank.get(g) === c));
-  const avail = Math.max(600, host.clientWidth - 30);
-  const NH = 34, VG = 18, P = 12, HDR = 24;
-  let NW, IG, GMIN;
-  const size = (nw, ig) => {
-    groups.forEach((g) => {
-      g.cols = Array.from({ length: g.subs }, (_, s) => g.nodes.filter((n) => n.sub === s));
-      g.rows = Math.max(...g.cols.map((c) => c.length));
-      g.w = g.subs * nw + (g.subs - 1) * ig + 2 * P;
-      g.h = HDR + g.rows * (NH + VG) - VG + 2 * P;
-    });
-    return cols.reduce((s, list) => s + Math.max(...list.map((g) => g.w)), 0);
-  };
-  for (const [nw, ig, gm] of [[178, 150, 130], [160, 130, 110], [148, 120, 96], [136, 120, 84]]) {
-    NW = nw; IG = ig; GMIN = gm;
-    if (size(nw, ig) + (C - 1) * gm <= avail) break;
-  }
-  // Порядок групп и узлов по вертикали — по соседям (меньше пересечений)
-  const yOf = (n) => (n.G.cy || 0) + (n.y || 0);
-  cols.forEach((list) => list.forEach((g, i) => { g.cy = i * 100; g.nodes.forEach((n, j) => (n.y = j)); }));
+  // ---- Вертикальная раскладка: ряды сверху вниз по ходу данных, группы ряда — рядом ----
+  const NW = 172, NH = 34, HG = 22, IGV = 74, P = 12, HDR = 24, GG = 30, GAPV = 96;
+  groups.forEach((g) => {
+    g.cmax = Math.max(...g.rowsOf.map((r) => r.length));
+    g.w = Math.max(g.cmax * NW + (g.cmax - 1) * HG + 2 * P, Math.min(320, 40 + g.title.length * 6.6));
+    g.h = HDR + g.subs * NH + (g.subs - 1) * IGV + 2 * P;
+  });
+  const R = Math.max(...[...gRank.values()]) + 1;
+  const rows = Array.from({ length: R }, (_, r) => [...groups.values()].filter((g) => gRank.get(g) === r));
+  // Порядок групп в ряду и систем в группе — по соседям (меньше пересечений)
+  const xOf = (n) => (n.G.cx || 0) + (n.x1 || 0);
+  rows.forEach((list) => list.forEach((g, i) => { g.cx = i * 400; g.rowsOf.forEach((rw) => rw.forEach((n, j) => (n.x1 = j * 100))); }));
   for (let it = 0; it < 6; it++) {
-    cols.forEach((list) => {
-      list.forEach((g) => { const nb = items.filter((x) => (x.a.G === g) !== (x.b.G === g)).map((x) => (x.a.G === g ? x.b : x.a)); g.bc = nb.length ? nb.reduce((s, n) => s + yOf(n), 0) / nb.length : g.cy; });
-      list.sort((a, b) => a.bc - b.bc).forEach((g, i) => (g.cy = i * 100));
+    rows.forEach((list) => {
+      list.forEach((g) => { const nb = items.filter((x) => (x.a.G === g) !== (x.b.G === g)).map((x) => (x.a.G === g ? x.b : x.a)); g.bc = nb.length ? nb.reduce((s, n) => s + xOf(n), 0) / nb.length : g.cx; });
+      list.sort((a, b) => a.bc - b.bc).forEach((g, i) => (g.cx = i * 400));
     });
-    groups.forEach((g) => g.cols.forEach((c) => {
-      c.forEach((n) => { const nb = n.out.concat(n.inn); n.bc = nb.length ? nb.reduce((s, m) => s + yOf(m), 0) / nb.length : n.y; });
-      c.sort((a, b) => a.bc - b.bc).forEach((n, i) => (n.y = i));
+    groups.forEach((g) => g.rowsOf.forEach((rw) => {
+      rw.forEach((n) => { const nb = n.out.concat(n.inn); n.bc = nb.length ? nb.reduce((s, m) => s + xOf(m), 0) / nb.length : n.x1; });
+      rw.sort((a, b) => a.bc - b.bc).forEach((n, i) => (n.x1 = i * 100));
     }));
   }
-  const colW = cols.map((list) => Math.max(...list.map((g) => g.w)));
-  const GAP = C > 1 ? Math.max(GMIN, Math.min(250, (avail - colW.reduce((s, w) => s + w, 0)) / (C - 1))) : 0;
-  const colX = [];
-  const VGG = 22;
-  const colH = cols.map((list) => list.reduce((s, g) => s + g.h, 0) + (list.length - 1) * VGG);
-  const H0 = Math.max(...colH);
-  let x = 0;
-  cols.forEach((list, c) => {
-    colX[c] = x;
-    let y = (H0 - colH[c]) / 2;
+  const rowW = rows.map((list) => list.reduce((s, g) => s + g.w, 0) + (list.length - 1) * GG);
+  const rowH = rows.map((list) => Math.max(...list.map((g) => g.h)));
+  const W0 = Math.max(...rowW, 600);
+  let y = 0;
+  const rowY = [];
+  rows.forEach((list, r) => {
+    rowY[r] = y;
+    let x = (W0 - rowW[r]) / 2;
     list.forEach((g) => {
-      g.x = x + (colW[c] - g.w) / 2; g.y = y; y += g.h + VGG;
-      g.cols.forEach((col, s) => {
-        const off = ((g.rows - col.length) * (NH + VG)) / 2;
-        col.forEach((n, i) => { n.x = g.x + P + s * (NW + IG); n.y0 = g.y + HDR + P + off + i * (NH + VG); });
+      g.x = x; g.y = y + (rowH[r] - g.h) / 2; x += g.w + GG;
+      g.rowsOf.forEach((rw, s) => {
+        const span = rw.length * NW + (rw.length - 1) * HG, off = (g.w - span) / 2;
+        rw.forEach((n, i) => { n.x = g.x + off + i * (NW + HG); n.y0 = g.y + HDR + P + s * (NH + IGV); });
       });
     });
-    x += colW[c] + GAP;
+    y += rowH[r] + GAPV;
   });
-  // ---- Стрелки: вперёд — справа налево, назад — дугой снизу ----
+  const H0 = y - GAPV;
+  // ---- Стрелки: по ходу данных — вниз, обратные — вверх; мимо чужих блоков ----
   const ord = (n) => gRank.get(n.G) * 100 + n.sub;
-  items.forEach((it) => { it.back = ord(it.b) <= ord(it.a); it.sa = it.back ? 'b' : 'r'; it.sb = it.back ? 'b' : 'l'; });
+  items.forEach((it) => {
+    it.back = ord(it.b) <= ord(it.a);
+    const same = ord(it.b) === ord(it.a); // в одном ряду — дугой справа
+    it.sa = same ? 'r' : it.back ? 't' : 'b'; it.sb = same ? 'r' : it.back ? 'b' : 't'; it.same = same;
+  });
   const ports = new Map();
   const add = (n, side, it, other) => { const k = n.k + '|' + side; if (!ports.has(k)) ports.set(k, []); ports.get(k).push({ it, other, n, side }); };
-  items.forEach((it) => { add(it.a, it.sa, it, it.sa === 'b' ? it.b.x : it.b.y0); add(it.b, it.sb, it, it.sb === 'b' ? it.a.x : it.a.y0); });
+  items.forEach((it) => { add(it.a, it.sa, it, it.sa === 'r' ? it.b.y0 : it.b.x); add(it.b, it.sb, it, it.sb === 'r' ? it.a.y0 : it.a.x); });
   ports.forEach((list) => {
     list.sort((p, q) => p.other - q.other);
     list.forEach((p, j) => {
       const d = list.length > 1 ? j - (list.length - 1) / 2 : 0;
-      const pt = p.side === 'b' ? [p.n.x + NW / 2 + d * Math.min(24, (NW - 30) / list.length), p.n.y0 + NH] : [p.side === 'r' ? p.n.x + NW : p.n.x, p.n.y0 + NH / 2 + d * Math.min(8, (NH - 8) / list.length)];
+      const pt = p.side === 'r' ? [p.n.x + NW, p.n.y0 + NH / 2 + d * Math.min(8, (NH - 8) / list.length)] : [p.n.x + NW / 2 + d * Math.min(28, (NW - 30) / list.length), p.side === 'b' ? p.n.y0 + NH : p.n.y0];
       if (p.it.a === p.n && p.it.sa === p.side && !p.it.p0) p.it.p0 = pt; else p.it.p1 = pt;
     });
   });
   const obst = [...nodes.values()].map((n) => ({ l: n.x - 4, t: n.y0 - 4, r: n.x + NW + 4, b: n.y0 + NH + 4 }))
     .concat([...groups.values()].map((g) => ({ l: g.x, t: g.y, r: g.x + Math.min(g.w, 30 + g.title.length * 6.4), b: g.y + HDR })));
-  const placed = [];
-  let paths = '', labels = '', backN = 0;
   const bez = (a, c1, c2, b) => Array.from({ length: 21 }, (_, j) => { const t = j / 20, u = 1 - t; return [u * u * u * a[0] + 3 * u * u * t * c1[0] + 3 * u * t * t * c2[0] + t * t * t * b[0], u * u * u * a[1] + 3 * u * u * t * c1[1] + 3 * u * t * t * c2[1] + t * t * t * b[1]]; });
-  const lanes = {};
+  const maxR = Math.max(...[...groups.values()].map((g) => g.x + g.w));
+  const placed = [], lanes = {};
+  let paths = '', labels = '', backN = 0;
   items.forEach((it) => {
     const [x0, y0] = it.p0, [x1, y1] = it.p1;
-    const ca = gRank.get(it.a.G), cb = gRank.get(it.b.G);
-    let d, pts, span;
-    if (it.back) {
-      backN++; const low = H0 + 22 + backN * 20;
-      d = `M${x0},${y0} C${x0},${low} ${x1},${low} ${x1},${y1}`; pts = bez([x0, y0], [x0, low], [x1, low], [x1, y1]); span = 220;
+    let d, pts;
+    if (it.same) {
+      backN++; const rx = maxR + 26 + backN * 20;
+      d = `M${x0},${y0} C${rx},${y0} ${rx},${y1} ${x1},${y1}`; pts = bez([x0, y0], [rx, y0], [rx, y1], [x1, y1]);
     } else {
-      const dx = Math.max(40, (x1 - x0) * 0.45);
-      const straight = bez([x0, y0], [x0 + dx, y0], [x1 - dx, y1], [x1, y1]);
-      // Что задевает прямая: чужие блоки и чужие рамки (кроме рамок начала и конца)
+      const sg = it.back ? -1 : 1; // направление по вертикали
+      const dy = sg * Math.max(36, Math.abs(y1 - y0) * 0.45);
+      const straight = bez([x0, y0], [x0, y0 + dy], [x1, y1 - dy], [x1, y1]);
       const rects = [...nodes.values()].filter((n) => n !== it.a && n !== it.b).map((n) => ({ l: n.x - 6, t: n.y0 - 6, r: n.x + NW + 6, b: n.y0 + NH + 6 }))
         .concat([...groups.values()].filter((g) => g !== it.a.G && g !== it.b.G).map((g) => ({ l: g.x - 4, t: g.y - 4, r: g.x + g.w + 4, b: g.y + g.h + 4 })));
       const hits = rects.filter((q) => straight.some(([px, py]) => px > q.l && px < q.r && py > q.t && py < q.b));
-      let xa = hits.length ? Math.max(x0 + 24, Math.min(...hits.map((q) => q.l)) - 18) : 0, xb = hits.length ? Math.min(x1 - 24, Math.max(...hits.map((q) => q.r)) + 18) : 0;
-      if (hits.length && xb > xa) {
-        // Обход: сверху, снизу или в просвете между препятствиями на этом участке
-        const block = rects.filter((q) => q.r > xa && q.l < xb).map((q) => [q.t, q.b]).sort((p, q) => p[0] - q[0]);
+      // Участок обхода [ya → yb] по ходу стрелки
+      const ya = !hits.length ? 0 : sg > 0 ? Math.max(y0 + 22, Math.min(...hits.map((q) => q.t)) - 16) : Math.min(y0 - 22, Math.max(...hits.map((q) => q.b)) + 16);
+      const yb = !hits.length ? 0 : sg > 0 ? Math.min(y1 - 22, Math.max(...hits.map((q) => q.b)) + 16) : Math.max(y1 + 22, Math.min(...hits.map((q) => q.t)) - 16);
+      if (hits.length && (yb - ya) * sg > 0) {
+        // Обход: слева, справа или в просвете между препятствиями на этом участке
+        const block = rects.filter((q) => q.b > Math.min(ya, yb) && q.t < Math.max(ya, yb)).map((q) => [q.l, q.r]).sort((p, q) => p[0] - q[0]);
         const lo = Math.min(...block.map((q) => q[0])), hi = Math.max(...block.map((q) => q[1]));
-        const cand = [lo - 14, hi + 14];
+        const cand = [lo - 16, hi + 16];
         let cur = block[0][1];
-        block.slice(1).forEach(([t, bt]) => { if (t - cur >= 26) cand.push((t + cur) / 2); cur = Math.max(cur, bt); });
-        const want = (y0 + y1) / 2;
-        let wy = cand.sort((p, q) => Math.abs(p - want) - Math.abs(q - want))[0];
-        const key = Math.round(xa) + ':' + Math.round(wy);
-        lanes[key] = (lanes[key] || 0) + 1; wy += (lanes[key] - 1) * (wy <= lo ? -14 : 14);
-        const dxa = Math.max(24, (xa - x0) * 0.5), dxb = Math.max(24, (x1 - xb) * 0.5);
-        d = `M${x0},${y0} C${x0 + dxa},${y0} ${xa - dxa},${wy} ${xa},${wy} L${xb},${wy} C${xb + dxb},${wy} ${x1 - dxb},${y1} ${x1},${y1}`;
-        pts = Array.from({ length: 21 }, (_, j) => [xa + ((xb - xa) * j) / 20, wy]).concat(bez([x0, y0], [x0 + dxa, y0], [xa - dxa, wy], [xa, wy]), bez([xb, wy], [xb + dxb, wy], [x1 - dxb, y1], [x1, y1]));
-        span = Math.max(xb - xa, 140);
+        block.slice(1).forEach(([l, r]) => { if (l - cur >= 26) cand.push((l + cur) / 2); cur = Math.max(cur, r); });
+        const want = (x0 + x1) / 2;
+        let wx = cand.sort((p, q) => Math.abs(p - want) - Math.abs(q - want))[0];
+        const key = Math.round(ya) + ':' + Math.round(wx);
+        lanes[key] = (lanes[key] || 0) + 1; wx += (lanes[key] - 1) * (wx <= lo ? -14 : 14);
+        const dya = sg * Math.max(20, Math.abs(ya - y0) * 0.5), dyb = sg * Math.max(20, Math.abs(y1 - yb) * 0.5);
+        d = `M${x0},${y0} C${x0},${y0 + dya} ${wx},${ya - dya} ${wx},${ya} L${wx},${yb} C${wx},${yb + dyb} ${x1},${y1 - dyb} ${x1},${y1}`;
+        pts = Array.from({ length: 21 }, (_, j) => [wx, ya + ((yb - ya) * j) / 20]).concat(bez([x0, y0], [x0, y0 + dya], [wx, ya - dya], [wx, ya]), bez([wx, yb], [wx, yb + dyb], [x1, y1 - dyb], [x1, y1]));
       } else {
-        d = `M${x0},${y0} C${x0 + dx},${y0} ${x1 - dx},${y1} ${x1},${y1}`; pts = straight; span = Math.abs(x1 - x0);
+        d = `M${x0},${y0} C${x0},${y0 + dy} ${x1},${y1 - dy} ${x1},${y1}`; pts = straight;
       }
     }
     const cls = `k-${it.e.k}${o.hot === it.i ? ' hot' : ''}${o.hot !== undefined && o.hot !== it.i ? ' dim' : ''}`;
     paths += `<path d="${d}" class="${cls}" marker-end="url(#lsfArr-${it.e.k})"/>`;
-    const lw = Math.max(108, Math.min(span - 16, 200, 30 + it.e.w.length * 5.6));
+    // Подпись: на линии, при наложении — со сдвигом вбок
+    const lw = Math.min(210, Math.max(110, 30 + it.e.w.length * 5.6));
     const lines = Math.max(1, Math.ceil((it.e.w.length * 6.2) / (lw - 30))), lh = (o._h && o._h[it.i]) || 8 + lines * 14;
     const ov = (r, q) => Math.max(0, Math.min(r.r, q.r) - Math.max(r.l, q.l)) * Math.max(0, Math.min(r.b, q.b) - Math.max(r.t, q.t));
-    let pos = null, best = Infinity;
-    // Кандидаты — точки маршрута от середины к краям (для обхода — сначала горизонтальный участок)
     const order = pts.map((q, j) => [q, j]).sort((p, q) => Math.abs(p[1] - 10) - Math.abs(q[1] - 10)).slice(0, 15);
-    for (const dy of [0, -(lh / 2 + 10), lh / 2 + 10, -(lh + 16), lh + 16]) {
-      for (const [[px, py0], j] of order) {
-        const py = py0 + dy, r = { l: px - lw / 2, t: py - lh / 2, r: px + lw / 2, b: py + lh / 2 };
-        const score = obst.reduce((sum, q) => sum + 3 * ov(r, q), 0) + placed.reduce((sum, q) => sum + 2 * ov(r, q), 0) + Math.abs(dy) * 0.5 + Math.abs(j - 10) * 2;
+    let pos = null, best = Infinity;
+    for (const dx of [0, lw / 2 + 12, -(lw / 2 + 12), lw + 20, -(lw + 20)]) {
+      for (const [[px0, py], j] of order) {
+        const px = px0 + dx, r = { l: px - lw / 2, t: py - lh / 2, r: px + lw / 2, b: py + lh / 2 };
+        const score = obst.reduce((sum, q) => sum + 3 * ov(r, q), 0) + placed.reduce((sum, q) => sum + 2 * ov(r, q), 0) + Math.abs(dx) * 0.25 + Math.abs(j - 10) * 2;
         if (score < best) { best = score; pos = r; }
       }
       if (best < 60) break;
@@ -468,7 +466,7 @@ function lsFocus(host, grid, edges, view, o = {}) {
     placed.push({ l: pos.l - 3, t: pos.t - 3, r: pos.r + 3, b: pos.b + 3 });
     labels += `<div class="ls-fl ${cls}" style="left:${pos.l}px;top:${pos.t}px;width:${lw}px" title="${it.e.f} → ${it.e.t} · ${it.e.r}">${it.e.n ? `<b>${it.e.n}</b>` : ''}${it.e.w}</div>`;
   });
-  const all = [...groups.values()].map((g) => ({ l: g.x, t: g.y, r: g.x + g.w, b: g.y + g.h })).concat(placed, [{ l: 0, t: 0, r: 1, b: H0 + 22 + backN * 20 + 6 }]);
+  const all = [...groups.values()].map((g) => ({ l: g.x, t: g.y, r: g.x + g.w, b: g.y + g.h })).concat(placed, [{ l: 0, t: 0, r: maxR + 30 + backN * 20, b: H0 }]);
   const minX = Math.min(...all.map((q) => q.l)), minY = Math.min(...all.map((q) => q.t)), maxX = Math.max(...all.map((q) => q.r)), maxY = Math.max(...all.map((q) => q.b));
   const sh = -minX + 2, sv = -minY + 2, CW = maxX - minX + 4, CH = maxY - minY + 4;
   const mk = (k, c) => `<marker id="lsfArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`;
