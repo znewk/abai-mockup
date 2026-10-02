@@ -269,3 +269,26 @@
 .ls-fgrp.g-manual { border-color: #eab0aa; background: #fdf3f2; border-style: dashed; } .ls-fgrp.g-manual span { color: #a63a32; }
 .ls-fnode { justify-content: center; }
 .ls-fnode b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Производственные системы ДЗО (HSE, ТКРС, транспорт) — встреча по ЦД 01.10, публикации КМГ */
+.ls-box.prod { margin-top: 12px; border-color: #d9c7a4; background: #fffdf8; }
+.ls-prod { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+.ls-prod > b { flex: 1 0 100%; font-size: 13px; color: #16191f; }
+.ls-prod > span { flex: 1 0 100%; font-size: 11.5px; color: #8a5a00; margin: -4px 0 2px; }
+/* Уровни доступа пользователей в ЦД */
+.ls-acc { display: block; margin-top: 6px; font-style: normal; font-size: 11.5px; color: #4d5563; border-top: 1px dashed #d5d9e1; padding-top: 5px; }
+/* Что даёт ЦД */
+.ls-value { background: #fff; border: 1px solid #e1e5ec; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; }
+.ls-value-h { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 10px; }
+.ls-value-h b { font-size: 15px; }
+.ls-value-h span { font-size: 12px; color: #7a8291; }
+.ls-value-c { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.ls-value-c > div { border: 1px solid #e6eaf0; border-left: 3px solid #0f7a55; border-radius: 8px; padding: 8px 10px; background: #f8fbf9; }
+.ls-value-c b { display: block; font-size: 13px; color: #16191f; }
+.ls-value-c span { display: block; font-size: 11.5px; color: #7a8291; margin: 2px 0 6px; }
+.ls-value-c a { display: inline-block; margin: 0 4px 4px 0; font-size: 11.5px; color: #1c5cab; text-decoration: none; border: 1px solid #cfdcf0; border-radius: 6px; padding: 1px 6px; background: #fff; }
+.ls-value-c a:hover { border-color: #1c5cab; }
+.ls-value .ls-note { margin-top: 8px; }
+.ls-prod .ls-chip { white-space: normal; max-width: 100%; box-sizing: border-box; }
+.ls-prod .ls-chip em { white-space: normal; }
+.ls-kpis > .ls-kpi-sys { max-width: 400px; }
