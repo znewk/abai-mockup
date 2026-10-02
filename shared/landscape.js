@@ -185,8 +185,7 @@ function abaiLandscape(root, view = 'dream', flow) {
       <div class="ls-fbar-h"><b>Потоки данных</b><span>выберите сценарий — стрелки покажут, что и куда передаётся · наведите на систему — её входящие и исходящие потоки</span></div>
       <div class="ls-fbtns">${flows.map((f) => `<button data-fl="${f.id}" class="${fl && f.id === fl.id ? 'on' : ''}">${f.name}<span>${f.mods}</span></button>`).join('')}<button data-fl="" class="off ${fl ? '' : 'on'}">Без стрелок</button></div>
       ${fl ? `<div class="ls-fnote">${fl.note}</div>
-      <div class="ls-fbody"><div class="ls-focus"></div>
-        <ol class="ls-fsteps">${fl.e.map(([f, t, w, r, k], i) => `<li data-fi="${i}" class="k-${k}"><b>${i + 1}</b><div><span class="ft">${f} → ${t}</span>${w}<em>${r} · ${LS_KINDS[k]}</em></div></li>`).join('')}</ol></div>
+      <div class="ls-focus"></div>
       <div class="ls-fkinds">${[...new Set(fl.e.map((x) => x[4]))].map((k) => `<span class="k-${k}">${LS_KINDS[k]}</span>`).join('')}</div>` : ''}
     </div>
     <div class="ls-scroll"><div class="ls-grid ${view}">
@@ -212,8 +211,8 @@ function abaiLandscape(root, view = 'dream', flow) {
     base.forEach((e) => [e.f, e.t].forEach((k) => { const a = lsAnchor(grid, k); if (a) a.classList.add('ep'); }));
   };
   const draw = (edges, o) => (edges === base ? mark() : lsDraw(grid, edges, o));
-  const drawFocus = (o) => focus && lsFocus(focus, grid, base, view, o);
-  draw(base); drawFocus();
+  draw(base);
+  if (focus) lsSeq(focus, grid, base, view);
   // Наведение на систему: её потоки во всех сценариях вида
   root.querySelectorAll('.ls-chip, .ls-cell[data-sys]').forEach((c) => {
     c.onmouseenter = () => {
@@ -236,9 +235,9 @@ function abaiLandscape(root, view = 'dream', flow) {
       if (!pop) { pop = document.createElement('div'); pop.className = 'ls ls-pop'; document.body.appendChild(pop); }
       const name = c.classList.contains('ls-cell') ? key : c.dataset.sys;
       pop.innerHTML = `<div class="ls-pop-h"><b>${name}</b> — потоки данных · ${V.name} · ${list.length}</div><div class="ls-focus"></div>`;
-      pop.style.transform = ''; pop.style.width = 'auto'; pop.style.maxWidth = (innerWidth - 40) + 'px'; pop.style.display = 'block';
-      lsFocus(pop.querySelector('.ls-focus'), grid, list, view);
-      // Схема вертикальная: ставим сбоку от системы, если не влезает по высоте — уменьшаем
+      pop.style.transform = ''; pop.style.width = 'auto'; pop.style.maxWidth = 'none'; pop.style.display = 'block';
+      lsEgo(pop.querySelector('.ls-focus'), grid, key, list, view);
+      // Ставим сбоку от системы; если не влезает — уменьшаем
       const r = c.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
       const sc = Math.min(1, (innerHeight - 24) / ph, (innerWidth - 24) / pw);
       pop.style.transform = sc < 1 ? `scale(${sc})` : '';
@@ -253,18 +252,13 @@ function abaiLandscape(root, view = 'dream', flow) {
       draw(base);
     };
   });
-  // Наведение на пункт списка — выделить одну стрелку
-  root.querySelectorAll('[data-fi]').forEach((li) => {
-    li.onmouseenter = () => drawFocus({ hot: +li.dataset.fi });
-    li.onmouseleave = () => drawFocus();
-  });
   if (root._ro) root._ro.disconnect();
-  root._ro = new ResizeObserver(() => { draw(base); drawFocus(); });
+  root._ro = new ResizeObserver(() => draw(base));
   root._ro.observe(grid);
 }
 
-// ---------- Компактная схема сценария: только участвующие системы, снизу вверх по направлению потока (как на большой схеме) ----------
-// Группа системы на компактной схеме: в какой ЦД / слой она входит на большой схеме
+// ---------- Схемы потоков сценария и системы ----------
+// Группа системы на схеме потоков: в какой ЦД / слой она входит на большой схеме
 function lsGroup(el, view) {
   if (!el) return { key: 'other', title: 'Прочее', type: 'eng' };
   const box = el.closest('.ls-box'), boxT = box && box.querySelector('.ls-box-h') ? box.querySelector('.ls-box-h').textContent.trim() : '';
@@ -293,192 +287,91 @@ function lsGroup(el, view) {
   return { key: 'other', title: 'Прочее', type: 'eng' };
 }
 
-// Ряды по направлению потока: порядок с минимумом обратных связей (эвристика Идса — Лина — Смита),
-// затем ранг = самый длинный путь без обратных связей. outOf может возвращать узел несколько раз (вес связи).
-function lsRanks(list, outOf) {
-  const out = new Map(list.map((n) => [n, outOf(n).filter((m) => m !== n && list.includes(m))]));
-  const inn = new Map(list.map((n) => [n, []]));
-  list.forEach((n) => out.get(n).forEach((m) => inn.get(m).push(n)));
-  const left = [], right = [], rest = new Set(list);
-  const deg = (n, map) => map.get(n).filter((m) => rest.has(m)).length;
-  while (rest.size) {
-    let moved = true;
-    while (moved) {
-      moved = false;
-      [...rest].forEach((n) => { if (rest.has(n) && !deg(n, out)) { right.unshift(n); rest.delete(n); moved = true; } });
-      [...rest].forEach((n) => { if (rest.has(n) && !deg(n, inn)) { left.push(n); rest.delete(n); moved = true; } });
-    }
-    if (rest.size) { const u = [...rest].sort((p, q) => (deg(q, out) - deg(q, inn)) - (deg(p, out) - deg(p, inn)))[0]; left.push(u); rest.delete(u); }
-  }
-  const pos = new Map(left.concat(right).map((n, i) => [n, i]));
-  const rank = new Map();
-  left.concat(right).forEach((n) => rank.set(n, Math.max(0, ...inn.get(n).filter((m) => pos.get(m) < pos.get(n)).map((m) => rank.get(m) + 1))));
-  return rank;
+// ---------- Схемы потоков: у каждой связи своя строка, подпись — на стрелке ----------
+// Слой системы слева направо — как на большой схеме снизу вверх: зона ДЗО → слой данных → внешние → ЦД → процессы → ручной обмен → пользователи
+const lsLayer = (g) => (g.type === 'users' ? 7 : g.type === 'manual' ? 6 : /^Процесс:/.test(g.key) ? 5 : g.type === 'cd' ? 4 : g.type === 'ext' ? 3 : g.type === 'data' ? 2 : g.type === 'eng' ? 1 : 0);
+function lsNode(grid, k, view) {
+  const el = lsAnchor(grid, k);
+  const kind = el && el.classList.contains('ls-chip') ? (el.className.match(/k-(\w+)/) || [])[1] : 'user';
+  return { k, kind: kind || 'ext', g: lsGroup(el, view) };
 }
 
-function lsFocus(host, grid, edges, view, o = {}) {
+// Сценарий: системы — колонки в рамках ЦД / слоёв, шаги — строки сверху вниз, стрелка от колонки к колонке
+function lsSeq(host, grid, edges, view) {
   if (!edges.length) { host.innerHTML = ''; return; }
-  // ---- Узлы и группы ----
   const nodes = new Map();
-  const node = (k) => {
-    if (!nodes.has(k)) {
-      const el = lsAnchor(grid, k);
-      const kind = el && el.classList.contains('ls-chip') ? (el.className.match(/k-(\w+)/) || [])[1] : 'user';
-      nodes.set(k, { id: k, k, kind: kind || 'ext', g: lsGroup(el, view), out: [], inn: [] });
-    }
-    return nodes.get(k);
-  };
-  const items = edges.map((e, i) => { const a = node(e.f), b = node(e.t); a.out.push(b); b.inn.push(a); return { e, i, a, b }; });
-  // Пользователи, внешние системы, АСУ ТП: если в группе есть и чистые источники, и чистые получатели — две рамки
-  // («кто передаёт» снизу, «кто получает» сверху). Рамка ЦД всегда одна.
-  const byKey = {};
-  nodes.forEach((n) => (byKey[n.g.key] = byKey[n.g.key] || []).push(n));
-  Object.values(byKey).forEach((list) => {
-    const intra = list.some((n) => n.out.some((m) => list.includes(m)));
-    const src = list.filter((n) => !n.inn.length), snk = list.filter((n) => !n.out.length);
-    if (list[0].g.type !== 'cd' && !intra && src.length && snk.length && src.length + snk.length === list.length) snk.forEach((n) => { n.g = Object.assign({}, n.g, { key: n.g.key + '#out' }); });
-  });
+  edges.forEach((e) => [e.f, e.t].forEach((k) => { if (!nodes.has(k)) nodes.set(k, Object.assign(lsNode(grid, k, view), { first: nodes.size, bal: 0 })); }));
+  edges.forEach((e) => { nodes.get(e.f).bal--; nodes.get(e.t).bal++; });
   const groups = new Map();
-  nodes.forEach((n) => { if (!groups.has(n.g.key)) groups.set(n.g.key, { id: n.g.key, ...n.g, nodes: [], out: [] }); groups.get(n.g.key).nodes.push(n); n.G = groups.get(n.g.key); });
-  items.forEach((it) => { if (it.a.G !== it.b.G) it.a.G.out.push(it.b.G); });
-  const gRank = lsRanks([...groups.values()], (g) => g.out);
-  // Внутри группы — подряды по направлению связей внутри неё
-  groups.forEach((g) => {
-    const r = lsRanks(g.nodes, (n) => n.out.filter((m) => m.G === g));
-    g.nodes.forEach((n) => { n.sub = r.get(n); });
-    g.subs = Math.max(...g.nodes.map((n) => n.sub)) + 1;
-    g.rowsOf = Array.from({ length: g.subs }, (_, s) => g.nodes.filter((n) => n.sub === s));
+  nodes.forEach((n) => {
+    if (!groups.has(n.g.key)) groups.set(n.g.key, Object.assign({}, n.g, { nodes: [], first: n.first, bal: 0 }));
+    const g = groups.get(n.g.key); g.nodes.push(n); g.bal += n.bal;
   });
-  // ---- Вертикальная раскладка: ряды снизу вверх по ходу данных (источники внизу), группы ряда — рядом ----
-  const NW = 172, NH = 34, HG = 22, IGV = 74, P = 12, HDR = 24, GG = 30, GAPV = 96;
-  groups.forEach((g) => {
-    g.cmax = Math.max(...g.rowsOf.map((r) => r.length));
-    g.w = Math.max(g.cmax * NW + (g.cmax - 1) * HG + 2 * P, Math.min(320, 40 + g.title.length * 6.6));
-    g.h = HDR + g.subs * NH + (g.subs - 1) * IGV + 2 * P;
+  // В одном слое и в одной рамке: левее те, кто больше передаёт, правее — кто получает
+  const gl = [...groups.values()].sort((a, b) => lsLayer(a) - lsLayer(b) || a.bal - b.bal || a.first - b.first);
+  gl.forEach((g) => g.nodes.sort((a, b) => a.bal - b.bal || a.first - b.first));
+  // Колонки: номер, [промежуток, системы рамки]…, промежуток, шаг BPMN
+  const cols = ['26px'];
+  gl.forEach((g) => {
+    cols.push('10px'); g.c0 = cols.length + 1;
+    g.nodes.forEach((n) => { n.w = Math.round(Math.min(190, Math.max(132, 30 + n.k.length * 7.4))); n.c = cols.length + 1; cols.push(n.w + 'px'); });
+    g.c1 = cols.length + 1;
   });
-  const R = Math.max(...[...gRank.values()]) + 1;
-  const rows = Array.from({ length: R }, (_, r) => [...groups.values()].filter((g) => gRank.get(g) === r));
-  // Порядок групп в ряду и систем в группе — по соседям (меньше пересечений)
-  const xOf = (n) => (n.G.cx || 0) + (n.x1 || 0);
-  rows.forEach((list) => list.forEach((g, i) => { g.cx = i * 400; g.rowsOf.forEach((rw) => rw.forEach((n, j) => (n.x1 = j * 100))); }));
-  for (let it = 0; it < 6; it++) {
-    rows.forEach((list) => {
-      list.forEach((g) => { const nb = items.filter((x) => (x.a.G === g) !== (x.b.G === g)).map((x) => (x.a.G === g ? x.b : x.a)); g.bc = nb.length ? nb.reduce((s, n) => s + xOf(n), 0) / nb.length : g.cx; });
-      list.sort((a, b) => a.bc - b.bc).forEach((g, i) => (g.cx = i * 400));
-    });
-    groups.forEach((g) => g.rowsOf.forEach((rw) => {
-      rw.forEach((n) => { const nb = n.out.concat(n.inn); n.bc = nb.length ? nb.reduce((s, m) => s + xOf(m), 0) / nb.length : n.x1; });
-      rw.sort((a, b) => a.bc - b.bc).forEach((n, i) => (n.x1 = i * 100));
-    }));
-  }
-  const rowW = rows.map((list) => list.reduce((s, g) => s + g.w, 0) + (list.length - 1) * GG);
-  const rowH = rows.map((list) => Math.max(...list.map((g) => g.h)));
-  const W0 = Math.max(...rowW, 600);
-  let y = 0;
-  const rowY = [];
-  rows.slice().reverse().forEach((list) => {
-    const r = rows.indexOf(list);
-    rowY[r] = y;
-    let x = (W0 - rowW[r]) / 2;
-    list.forEach((g) => {
-      g.x = x; g.y = y + (rowH[r] - g.h) / 2; x += g.w + GG;
-      g.rowsOf.forEach((rw, s) => {
-        const span = rw.length * NW + (rw.length - 1) * HG, off = (g.w - span) / 2;
-        rw.forEach((n, i) => { n.x = g.x + off + i * (NW + HG); n.y0 = g.y + HDR + P + (g.subs - 1 - s) * (NH + IGV); });
-      });
-    });
-    y += rowH[r] + GAPV;
-  });
-  const H0 = y - GAPV;
-  // ---- Стрелки: по ходу данных — вверх, обратные — вниз; мимо чужих блоков ----
-  const ord = (n) => gRank.get(n.G) * 100 + n.sub;
-  items.forEach((it) => {
-    it.back = ord(it.b) <= ord(it.a);
-    const same = ord(it.b) === ord(it.a); // в одном ряду — дугой справа
-    it.sa = same ? 'r' : it.back ? 'b' : 't'; it.sb = same ? 'r' : it.back ? 't' : 'b'; it.same = same;
-  });
-  const ports = new Map();
-  const add = (n, side, it, other) => { const k = n.k + '|' + side; if (!ports.has(k)) ports.set(k, []); ports.get(k).push({ it, other, n, side }); };
-  items.forEach((it) => { add(it.a, it.sa, it, it.sa === 'r' ? it.b.y0 : it.b.x); add(it.b, it.sb, it, it.sb === 'r' ? it.a.y0 : it.a.x); });
-  ports.forEach((list) => {
-    list.sort((p, q) => p.other - q.other);
-    list.forEach((p, j) => {
-      const d = list.length > 1 ? j - (list.length - 1) / 2 : 0;
-      const pt = p.side === 'r' ? [p.n.x + NW, p.n.y0 + NH / 2 + d * Math.min(8, (NH - 8) / list.length)] : [p.n.x + NW / 2 + d * Math.min(28, (NW - 30) / list.length), p.side === 'b' ? p.n.y0 + NH : p.n.y0];
-      if (p.it.a === p.n && p.it.sa === p.side && !p.it.p0) p.it.p0 = pt; else p.it.p1 = pt;
-    });
-  });
-  const obst = [...nodes.values()].map((n) => ({ l: n.x - 4, t: n.y0 - 4, r: n.x + NW + 4, b: n.y0 + NH + 4 }))
-    .concat([...groups.values()].map((g) => ({ l: g.x, t: g.y, r: g.x + Math.min(g.w, 30 + g.title.length * 6.4), b: g.y + HDR })));
-  const bez = (a, c1, c2, b) => Array.from({ length: 21 }, (_, j) => { const t = j / 20, u = 1 - t; return [u * u * u * a[0] + 3 * u * u * t * c1[0] + 3 * u * t * t * c2[0] + t * t * t * b[0], u * u * u * a[1] + 3 * u * u * t * c1[1] + 3 * u * t * t * c2[1] + t * t * t * b[1]]; });
-  const maxR = Math.max(...[...groups.values()].map((g) => g.x + g.w));
-  const placed = [], lanes = {};
-  let paths = '', labels = '', backN = 0;
-  items.forEach((it) => {
-    const [x0, y0] = it.p0, [x1, y1] = it.p1;
-    let d, pts;
-    if (it.same) {
-      backN++; const rx = maxR + 26 + backN * 20;
-      d = `M${x0},${y0} C${rx},${y0} ${rx},${y1} ${x1},${y1}`; pts = bez([x0, y0], [rx, y0], [rx, y1], [x1, y1]);
-    } else {
-      const sg = it.back ? 1 : -1; // направление по вертикали: по ходу данных — вверх
-      const dy = sg * Math.max(36, Math.abs(y1 - y0) * 0.45);
-      const straight = bez([x0, y0], [x0, y0 + dy], [x1, y1 - dy], [x1, y1]);
-      const rects = [...nodes.values()].filter((n) => n !== it.a && n !== it.b).map((n) => ({ l: n.x - 6, t: n.y0 - 6, r: n.x + NW + 6, b: n.y0 + NH + 6 }))
-        .concat([...groups.values()].filter((g) => g !== it.a.G && g !== it.b.G).map((g) => ({ l: g.x - 4, t: g.y - 4, r: g.x + g.w + 4, b: g.y + g.h + 4 })));
-      const hits = rects.filter((q) => straight.some(([px, py]) => px > q.l && px < q.r && py > q.t && py < q.b));
-      // Участок обхода [ya → yb] по ходу стрелки
-      const ya = !hits.length ? 0 : sg > 0 ? Math.max(y0 + 22, Math.min(...hits.map((q) => q.t)) - 16) : Math.min(y0 - 22, Math.max(...hits.map((q) => q.b)) + 16);
-      const yb = !hits.length ? 0 : sg > 0 ? Math.min(y1 - 22, Math.max(...hits.map((q) => q.b)) + 16) : Math.max(y1 + 22, Math.min(...hits.map((q) => q.t)) - 16);
-      if (hits.length && (yb - ya) * sg > 0) {
-        // Обход: слева, справа или в просвете между препятствиями на этом участке
-        const block = rects.filter((q) => q.b > Math.min(ya, yb) && q.t < Math.max(ya, yb)).map((q) => [q.l, q.r]).sort((p, q) => p[0] - q[0]);
-        const lo = Math.min(...block.map((q) => q[0])), hi = Math.max(...block.map((q) => q[1]));
-        const cand = [lo - 16, hi + 16];
-        let cur = block[0][1];
-        block.slice(1).forEach(([l, r]) => { if (l - cur >= 26) cand.push((l + cur) / 2); cur = Math.max(cur, r); });
-        const want = (x0 + x1) / 2;
-        let wx = cand.sort((p, q) => Math.abs(p - want) - Math.abs(q - want))[0];
-        const key = Math.round(ya) + ':' + Math.round(wx);
-        lanes[key] = (lanes[key] || 0) + 1; wx += (lanes[key] - 1) * (wx <= lo ? -14 : 14);
-        const dya = sg * Math.max(20, Math.abs(ya - y0) * 0.5), dyb = sg * Math.max(20, Math.abs(y1 - yb) * 0.5);
-        d = `M${x0},${y0} C${x0},${y0 + dya} ${wx},${ya - dya} ${wx},${ya} L${wx},${yb} C${wx},${yb + dyb} ${x1},${y1 - dyb} ${x1},${y1}`;
-        pts = Array.from({ length: 21 }, (_, j) => [wx, ya + ((yb - ya) * j) / 20]).concat(bez([x0, y0], [x0, y0 + dya], [wx, ya - dya], [wx, ya]), bez([wx, yb], [wx, yb + dyb], [x1, y1 - dyb], [x1, y1]));
-      } else {
-        d = `M${x0},${y0} C${x0},${y0 + dy} ${x1},${y1 - dy} ${x1},${y1}`; pts = straight;
-      }
-    }
-    const cls = `k-${it.e.k}${o.hot === it.i ? ' hot' : ''}${o.hot !== undefined && o.hot !== it.i ? ' dim' : ''}`;
-    paths += `<path d="${d}" class="${cls}" marker-end="url(#lsfArr-${it.e.k})"/>`;
-    // Подпись: на линии, при наложении — со сдвигом вбок
-    const lw = Math.min(210, Math.max(110, 30 + it.e.w.length * 5.6));
-    const lines = Math.max(1, Math.ceil((it.e.w.length * 6.2) / (lw - 30))), lh = (o._h && o._h[it.i]) || 8 + lines * 14;
-    const ov = (r, q) => Math.max(0, Math.min(r.r, q.r) - Math.max(r.l, q.l)) * Math.max(0, Math.min(r.b, q.b) - Math.max(r.t, q.t));
-    const order = pts.map((q, j) => [q, j]).sort((p, q) => Math.abs(p[1] - 10) - Math.abs(q[1] - 10)).slice(0, 15);
-    let pos = null, best = Infinity;
-    for (const dx of [0, lw / 2 + 12, -(lw / 2 + 12), lw + 20, -(lw + 20)]) {
-      for (const [[px0, py], j] of order) {
-        const px = px0 + dx, r = { l: px - lw / 2, t: py - lh / 2, r: px + lw / 2, b: py + lh / 2 };
-        const score = obst.reduce((sum, q) => sum + 3 * ov(r, q), 0) + placed.reduce((sum, q) => sum + 2 * ov(r, q), 0) + Math.abs(dx) * 0.25 + Math.abs(j - 10) * 2;
-        if (score < best) { best = score; pos = r; }
-      }
-      if (best < 60) break;
-    }
-    placed.push({ l: pos.l - 3, t: pos.t - 3, r: pos.r + 3, b: pos.b + 3 });
-    labels += `<div class="ls-fl ${cls}" style="left:${pos.l}px;top:${pos.t}px;width:${lw}px" title="${it.e.f} → ${it.e.t} · ${it.e.r}">${it.e.n ? `<b>${it.e.n}</b>` : ''}${it.e.w}</div>`;
-  });
-  const all = [...groups.values()].map((g) => ({ l: g.x, t: g.y, r: g.x + g.w, b: g.y + g.h })).concat(placed, [{ l: 0, t: 0, r: maxR + 30 + backN * 20, b: H0 }]);
-  const minX = Math.min(...all.map((q) => q.l)), minY = Math.min(...all.map((q) => q.t)), maxX = Math.max(...all.map((q) => q.r)), maxY = Math.max(...all.map((q) => q.b));
-  const sh = -minX + 2, sv = -minY + 2, CW = maxX - minX + 4, CH = maxY - minY + 4;
-  const mk = (k, c) => `<marker id="lsfArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`;
-  host.innerHTML = `<div class="ls-fcanvas v-${view}" style="width:${CW}px;height:${CH}px">
-    ${[...groups.values()].map((g) => `<div class="ls-fgrp g-${g.type}" style="left:${g.x + sh}px;top:${g.y + sv}px;width:${g.w}px;height:${g.h}px"><span>${g.title}</span></div>`).join('')}
-    <svg width="${CW}" height="${CH}"><defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}</defs><g transform="translate(${sh},${sv})">${paths}</g></svg>
-    ${[...nodes.values()].map((n) => `<div class="ls-fnode k-${n.kind}" style="left:${n.x + sh}px;top:${n.y0 + sv}px;width:${NW}px;height:${NH}px"><b>${n.k}</b></div>`).join('')}
-    <div class="ls-flbls" style="transform:translate(${sh}px,${sv}px)">${labels}</div>
+  cols.push('10px', '210px');
+  const refC = cols.length;
+  host.innerHTML = `<div class="ls-sq v-${view}" style="grid-template-columns:${cols.join(' ')};grid-template-rows:auto auto repeat(${edges.length}, auto) 10px">
+    ${gl.map((g) => `<div class="ls-fgrp g-${g.type}" style="grid-column:${g.c0}/${g.c1};grid-row:1/-1"></div><div class="ls-fgt g-${g.type}" style="grid-column:${g.c0}/${g.c1};grid-row:1">${g.title}</div>`).join('')}
+    ${[...nodes.values()].map((n) => `<div class="ls-fnode k-${n.kind}" style="grid-column:${n.c};grid-row:2"><b>${n.k}</b></div><div class="ls-sq-life" style="grid-column:${n.c};grid-row:3/-1"></div>`).join('')}
+    ${edges.map((e, i) => {
+      const a = nodes.get(e.f), b = nodes.get(e.t), fw = a.c < b.c, lo = fw ? a : b, hi = fw ? b : a, r = 3 + i;
+      return `<b class="ls-sq-n k-${e.k}" style="grid-column:1;grid-row:${r}" data-r="${i}">${e.n || i + 1}</b>
+        <div class="ls-sq-e k-${e.k} ${fw ? 'fw' : 'bw'}" style="grid-column:${lo.c}/${hi.c + 1};grid-row:${r};margin:0 ${hi.w / 2}px 0 ${lo.w / 2}px" data-r="${i}" title="${e.f} → ${e.t}"><span>${e.w}</span><i></i></div>
+        <div class="ls-sq-r" style="grid-column:${refC};grid-row:${r}" data-r="${i}">${e.r}<em>${LS_KINDS_SHORT[e.k]}</em></div>`;
+    }).join('')}
   </div>`;
-  // Второй проход: раскладка подписей по их реальной высоте
-  if (!o._h) lsFocus(host, grid, edges, view, Object.assign({}, o, { _h: [...host.querySelectorAll('.ls-fl')].map((x) => x.offsetHeight) }));
+  // Наведение на строку — выделить связь
+  host.querySelectorAll('[data-r]').forEach((x) => {
+    const row = () => host.querySelectorAll(`[data-r="${x.dataset.r}"]`);
+    x.onmouseenter = () => row().forEach((y) => y.classList.add('hot'));
+    x.onmouseleave = () => row().forEach((y) => y.classList.remove('hot'));
+  });
+}
+
+// Связи одной системы: слева — кто передаёт ей данные, справа — кому передаёт она; рамки сверху вниз — как на большой схеме
+function lsEgo(host, grid, key, list, view) {
+  const me = lsNode(grid, key, view);
+  const side = (arr, peerOf) => {
+    const groups = new Map();
+    arr.forEach((e) => {
+      const n = lsNode(grid, peerOf(e), view);
+      if (!groups.has(n.g.key)) groups.set(n.g.key, Object.assign({}, n.g, { rows: [] }));
+      groups.get(n.g.key).rows.push({ n, e });
+    });
+    return [...groups.values()].sort((a, b) => lsLayer(b) - lsLayer(a));
+  };
+  const inn = list.filter((e) => e.t === key), out = list.filter((e) => e.f === key);
+  const html = (gs, left) => {
+    if (!gs.length) return '';
+    const nc = left ? 1 : 2, ac = left ? 2 : 1;
+    let r = 2, h = `<div class="ls-ego-cap" style="grid-column:1/3;grid-row:1">${left ? 'Откуда приходят данные' : 'Куда уходят данные'}</div>`;
+    gs.forEach((g, gi) => {
+      if (gi) { h += `<div class="ls-ego-gap" style="grid-row:${r}"></div>`; r++; }
+      const r0 = r;
+      h += `<div class="ls-fgt g-${g.type}" style="grid-column:${nc};grid-row:${r}">${g.title}</div>`; r++;
+      g.rows.forEach(({ n, e }) => {
+        h += `<div class="ls-fnode k-${n.kind}" style="grid-column:${nc};grid-row:${r}"><b>${n.k}</b></div>
+          <div class="ls-ego-e k-${e.k}" style="grid-column:${ac};grid-row:${r}"><i></i><span>${e.w}<em>${e.r}</em></span></div>`;
+        r++;
+      });
+      h += `<div class="ls-fgrp g-${g.type}" style="grid-column:${nc};grid-row:${r0}/${r}"></div>`;
+    });
+    return `<div class="ls-ego-side ${left ? 'l' : 'r'}">${h}</div>`;
+  };
+  host.innerHTML = `<div class="ls-ego v-${view}">
+    ${html(side(inn, (e) => e.f), true)}
+    <div class="ls-ego-me ls-fnode k-${me.kind}"><b>${key}</b><span>${inn.length ? `← входящих: ${inn.length}` : ''}${inn.length && out.length ? '<br>' : ''}${out.length ? `исходящих: ${out.length} →` : ''}</span></div>
+    ${html(side(out, (e) => e.t), false)}
+  </div>`;
 }
 
 // ---------- Стрелки потоков на большой схеме (при наведении на систему) ----------
