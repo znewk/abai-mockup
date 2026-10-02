@@ -169,3 +169,18 @@ const LS_KINDS = {
   manual: 'вручную: файлы, почта, чат',
   int: 'интеграция (стратсессия)',
 };
+
+// Шаги BPMN из ссылки потока: «Д2 2.9 · 2.11.2 · Д9 9.6», «Д1 1.1 – 1.2 (цеха)», «Р3 3.2.2 → 3.3», «стратсессия, слайд 54».
+// Части через « · »; процесс без префикса — тот же, что в предыдущей части; «→» — шаг-источник и шаг-получатель.
+function lsRefParts(ref) {
+  let proc = null;
+  return ref.split(' · ').map((seg) => {
+    const m = seg.match(/^([ДРБГ]\d+(?:\.\d+)?)\s+(.*)$/);
+    let rest = seg;
+    if (m) { proc = m[1]; rest = m[2]; } else if (!/^\d/.test(seg) || !proc) return { text: seg };
+    const codes = (rest.replace(/\(.*?\)|«.*?»/g, '').match(/\d+(?:\.\d+)*[аa]?/g) || []).map((c) => c.replace('a', 'а'));
+    if (!codes.length) return { text: seg };
+    const note = (rest.match(/\((.*?)\)|«(.*?)»/) || []).slice(1).find(Boolean);
+    return { text: seg, proc, codes, arrow: /→/.test(rest), note };
+  });
+}

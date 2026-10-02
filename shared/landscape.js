@@ -163,9 +163,40 @@ function lsExternal(view) {
 
 const lsExtRow = (view) => `<div class="ls-hlink ${view === 'asis' ? 'manual' : ''}"><i></i><span>${view === 'asis' ? 'вручную' : 'интеграции'}</span></div>${lsExternal(view)}`;
 
+// ---------- Режим просмотра потоков: простой (что передаётся) и подробный (шаги BPMN по каждой связи) ----------
+let LS_MODE = (() => { try { return localStorage.getItem('abai-ls-mode') === 'full' ? 'full' : 'simple'; } catch (e) { return 'simple'; } })();
+let LS_PIN = false;
+// Формат — из документов шагов и описания связи, как записано в BPMN («Суточная сводка (Excel)», «план работ (.xlsx)»)
+const LS_FMT = [[/xlsx|excel/i, 'Excel'], [/word|docx/i, 'Word'], [/pdf/i, 'PDF'], [/\bLAS\b/, 'LAS'], [/email|почт/i, 'почта'], [/физ\. носител/i, 'физ. носители'], [/чат/i, 'рабочий чат']];
+function lsSteps(view, ref) {
+  return lsRefParts(ref).map((p) => (p.codes ? Object.assign({}, p, { steps: p.codes.map((c) => ({ code: c, list: (LS_STEPS[view] || {})[p.proc + ' ' + c] || [] })) }) : p));
+}
+function lsDetail(e, view) {
+  const parts = (e.refs || [e.r]).flatMap((r) => lsSteps(view, r));
+  const docs = parts.flatMap((p) => (p.steps || []).flatMap((s) => s.list.flatMap((x) => x.d)));
+  const fmt = LS_FMT.filter(([re]) => re.test(e.w) || docs.some((d) => re.test(d))).map((x) => x[1]);
+  let proc = null;
+  const step = (x, tag) => `<div class="ls-d-st"><i>${tag}</i><div><b>${x.c}</b> ${x.t}
+    <span>исполнитель: ${x.r}${x.s.length ? ` · системы: ${x.s.join(', ')}` : ''}</span>
+    ${x.d.length ? `<span>документ: ${x.d.join('; ')}</span>` : ''}${x.n.map((n) => `<q>${n}</q>`).join('')}</div></div>`;
+  return `<div class="ls-d">
+    <div class="ls-d-row"><i>Как</i><span>${LS_KINDS[e.k]}</span></div>
+    <div class="ls-d-row"><i>Формат</i><span>${fmt.length ? fmt.join(', ') : '<em>в BPMN не указан</em>'}</span></div>
+    ${parts.map((p) => {
+      if (!p.steps) return `<div class="ls-d-src">${/слайд|стратсесс/.test(p.text) ? 'Источник' : 'Пометка в ссылке'}: ${p.text}</div>`;
+      const head = p.proc !== proc && LS_PROCS[p.proc] ? `<div class="ls-d-p">${p.proc} · ${LS_PROCS[p.proc]}</div>` : '';
+      proc = p.proc;
+      const tags = p.arrow && p.steps.length === 2 ? ['откуда', 'куда'] : p.steps.map(() => 'шаг');
+      return head + (p.note ? `<div class="ls-d-src">${p.note}</div>` : '') + p.steps.map((s, i) => (s.list.length ? s.list.map((x) => step(x, tags[i])).join('') : `<div class="ls-d-st"><i>${tags[i]}</i><div><b>${s.code}</b></div></div>`)).join('');
+    }).join('')}
+  </div>`;
+}
+
 function abaiLandscape(root, view = 'dream', flow) {
   LS_CUR = view;
+  lsUnpin();
   const V = LS_VIEWS[view];
+  const full = LS_MODE === 'full';
   const flows = LS_FLOWS[view] || [];
   const fl = flow === null ? null : flows.find((f) => f.id === flow) || flows[0];
   const tot = (k) => LS_MODS.reduce((s, m) => s + ((ABAI_LANDSCAPE_DATA[m.id][V.v] || {})[k] || 0), 0);
@@ -182,11 +213,12 @@ function abaiLandscape(root, view = 'dream', flow) {
       <div><b>${LS_MODS.length}</b><span>модуля мокапа: ${LS_MODS.map((m) => m.name).join(', ')}</span></div>
     </div>
     <div class="ls-fbar">
-      <div class="ls-fbar-h"><b>Потоки данных</b><span>выберите сценарий — стрелки покажут, что и куда передаётся · наведите на систему — её входящие и исходящие потоки</span></div>
+      <div class="ls-fbar-h"><b>Потоки данных</b><span>выберите сценарий — стрелки покажут, что и куда передаётся · наведите на систему — её входящие и исходящие потоки, клик — закрепить окно</span>
+        <div class="ls-mode" title="Подробно — по каждой связи шаги BPMN: действие, исполнитель, системы, документы и аннотации">${[['simple', 'Простой'], ['full', 'Подробный']].map(([k, t]) => `<button data-mode="${k}" class="${LS_MODE === k ? 'on' : ''}">${t}</button>`).join('')}</div></div>
       <div class="ls-fbtns">${flows.map((f) => `<button data-fl="${f.id}" class="${fl && f.id === fl.id ? 'on' : ''}">${f.name}<span>${f.mods}</span></button>`).join('')}<button data-fl="" class="off ${fl ? '' : 'on'}">Без стрелок</button></div>
       ${fl ? `<div class="ls-fnote">${fl.note}</div>
       <div class="ls-fbody"><div class="ls-focus"></div>
-        <ol class="ls-fsteps">${fl.e.map(([f, t, w, r, k], i) => `<li data-fi="${i}" class="k-${k}"><b>${i + 1}</b><div><span class="ft">${f} → ${t}</span>${w}<em>${r} · ${LS_KINDS[k]}</em></div></li>`).join('')}</ol></div>
+        <ol class="ls-fsteps ${full ? 'full' : ''}">${fl.e.map(([f, t, w, r, k], i) => `<li data-fi="${i}" class="k-${k}"><b>${i + 1}</b><div><span class="ft">${f} → ${t}</span>${w}<em>${r} · ${LS_KINDS[k]}</em>${full ? lsDetail({ f, t, w, r, k }, view) : ''}</div></li>`).join('')}</ol></div>
       <div class="ls-fkinds">${[...new Set(fl.e.map((x) => x[4]))].map((k) => `<span class="k-${k}">${LS_KINDS[k]}</span>`).join('')}</div>` : ''}
     </div>
     <div class="ls-scroll"><div class="ls-grid ${view}">
@@ -203,6 +235,11 @@ function abaiLandscape(root, view = 'dream', flow) {
     <ol class="ls-flow">${V.flow.map(([t, d], i) => `<li><b>${i + 1}. ${t}</b><span>${d}</span></li>`).join('')}</ol>`;
   root.querySelectorAll('[data-ls]').forEach((b) => (b.onclick = () => { abaiLandscape(root, b.dataset.ls); history.replaceState(null, '', '#' + b.dataset.ls); }));
   root.querySelectorAll('[data-fl]').forEach((b) => (b.onclick = () => abaiLandscape(root, view, b.dataset.fl || null)));
+  root.querySelectorAll('[data-mode]').forEach((b) => (b.onclick = () => {
+    LS_MODE = b.dataset.mode;
+    try { localStorage.setItem('abai-ls-mode', LS_MODE); } catch (e) { /* без localStorage — только на эту страницу */ }
+    abaiLandscape(root, view, fl ? fl.id : null);
+  }));
   const grid = root.querySelector('.ls-grid');
   const base = fl ? fl.e.map(([f, t, w, r, k], i) => ({ f, t, w, r, k, n: i + 1 })) : [];
   const focus = root.querySelector('.ls-focus');
@@ -214,44 +251,62 @@ function abaiLandscape(root, view = 'dream', flow) {
   const draw = (edges, o) => (edges === base ? mark() : lsDraw(grid, edges, o));
   const drawFocus = (o) => focus && lsFocus(focus, grid, base, view, o);
   draw(base); drawFocus();
-  // Наведение на систему: её потоки во всех сценариях вида
+  // Наведение на систему: её потоки во всех сценариях вида; клик — закрепить окно (его можно прокрутить и прочитать)
+  const linksOf = (key) => {
+    const seen = new Map();
+    flows.forEach((x) => x.e.forEach(([f, t, w, r, k]) => {
+      if (f !== key && t !== key) return;
+      const id = f + '|' + t;
+      if (seen.has(id)) { const e = seen.get(id); if (!e.w.includes(w)) { e.w += '; ' + w; e.r += ' · ' + r; e.refs.push(r); } } else seen.set(id, { f, t, w, r, k, refs: [r] });
+    }));
+    return [...seen.values()];
+  };
+  const show = (c, pin) => {
+    const key = c.dataset.sys, list = linksOf(key);
+    if (!list.length) return false;
+    root.classList.add('hl');
+    root.querySelectorAll(`.ls-chip[data-sys="${CSS.escape(key)}"]`).forEach((x) => x.classList.add('on'));
+    // Связи системы — всплывающей схемой рядом, на большой схеме только подсветка участников
+    grid.querySelectorAll('.ep').forEach((x) => x.classList.remove('ep'));
+    grid.classList.add('fl-on');
+    list.forEach((e) => [e.f, e.t].forEach((k) => { const a = lsAnchor(grid, k); if (a) a.classList.add('ep'); }));
+    let pop = document.querySelector('.ls-pop');
+    if (!pop) { pop = document.createElement('div'); pop.className = 'ls ls-pop'; document.body.appendChild(pop); }
+    pop.classList.toggle('pin', !!pin);
+    // Подробно — только в закреплённом окне (его можно прокрутить); при наведении — краткая схема
+    const det = full && pin;
+    pop.innerHTML = `<div class="ls-pop-h"><b>${key}</b> — потоки данных · ${V.name} · ${list.length}${det ? ' · подробно' : ''}${pin ? '<button class="ls-pop-x" title="Закрыть (Esc)">×</button>' : `<span>${full ? 'клик — подробно' : 'клик — закрепить окно'}</span>`}</div><div class="ls-focus"></div>`;
+    pop.style.transform = ''; pop.style.width = 'auto'; pop.style.maxWidth = 'none'; pop.style.display = 'block';
+    lsBus(pop.querySelector('.ls-focus'), grid, key, list, view, { full: det });
+    if (pin) {
+      LS_PIN = () => { root.classList.remove('hl'); root.querySelectorAll('.ls-chip.on').forEach((x) => x.classList.remove('on')); draw(base); };
+      pop.style.left = ''; pop.style.top = '';
+      let bg = document.querySelector('.ls-pop-bg');
+      if (!bg) { bg = document.createElement('div'); bg.className = 'ls-pop-bg'; document.body.appendChild(bg); }
+      bg.style.display = 'block'; bg.onclick = lsUnpin;
+      pop.querySelector('.ls-pop-x').onclick = lsUnpin;
+      return true;
+    }
+    // Схема вертикальная: ставим сбоку от системы, если не влезает — уменьшаем
+    const r = c.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
+    const sc = Math.min(1, (innerHeight - 24) / ph, (innerWidth - 24) / pw);
+    pop.style.transform = sc < 1 ? `scale(${sc})` : '';
+    const w = pw * sc, h = ph * sc;
+    const right = r.right + 16 + w < innerWidth - 12, left = r.left - 16 - w > 12;
+    pop.style.left = (right && (r.left + r.right) / 2 < innerWidth / 2 ? r.right + 16 : left ? r.left - 16 - w : right ? r.right + 16 : Math.max(12, (innerWidth - w) / 2)) + 'px';
+    pop.style.top = Math.max(12, Math.min(innerHeight - h - 12, (r.top + r.bottom) / 2 - h / 2)) + 'px';
+    return true;
+  };
   root.querySelectorAll('.ls-chip, .ls-cell[data-sys]').forEach((c) => {
-    c.onmouseenter = () => {
-      const key = c.dataset.sys;
-      root.classList.add('hl');
-      root.querySelectorAll(`.ls-chip[data-sys="${CSS.escape(key)}"]`).forEach((x) => x.classList.add('on'));
-      const seen = new Map();
-      flows.forEach((x) => x.e.forEach(([f, t, w, r, k]) => {
-        if (f !== key && t !== key) return;
-        const id = f + '|' + t;
-        if (seen.has(id)) { const e = seen.get(id); if (!e.w.includes(w)) { e.w += '; ' + w; e.r += ' · ' + r; } } else seen.set(id, { f, t, w, r, k });
-      }));
-      if (!seen.size) return;
-      // Связи системы — всплывающей компактной схемой рядом, на большой схеме только подсветка участников
-      const list = [...seen.values()];
-      grid.querySelectorAll('.ep').forEach((x) => x.classList.remove('ep'));
-      grid.classList.add('fl-on');
-      list.forEach((e) => [e.f, e.t].forEach((k) => { const a = lsAnchor(grid, k); if (a) a.classList.add('ep'); }));
-      let pop = document.querySelector('.ls-pop');
-      if (!pop) { pop = document.createElement('div'); pop.className = 'ls ls-pop'; document.body.appendChild(pop); }
-      const name = c.classList.contains('ls-cell') ? key : c.dataset.sys;
-      pop.innerHTML = `<div class="ls-pop-h"><b>${name}</b> — потоки данных · ${V.name} · ${list.length}</div><div class="ls-focus"></div>`;
-      pop.style.transform = ''; pop.style.width = 'auto'; pop.style.maxWidth = 'none'; pop.style.display = 'block';
-      lsBus(pop.querySelector('.ls-focus'), grid, key, list, view);
-      // Схема вертикальная: ставим сбоку от системы, если не влезает по высоте — уменьшаем
-      const r = c.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
-      const sc = Math.min(1, (innerHeight - 24) / ph, (innerWidth - 24) / pw);
-      pop.style.transform = sc < 1 ? `scale(${sc})` : '';
-      const w = pw * sc, h = ph * sc;
-      const right = r.right + 16 + w < innerWidth - 12, left = r.left - 16 - w > 12;
-      pop.style.left = (right && (r.left + r.right) / 2 < innerWidth / 2 ? r.right + 16 : left ? r.left - 16 - w : right ? r.right + 16 : Math.max(12, (innerWidth - w) / 2)) + 'px';
-      pop.style.top = Math.max(12, Math.min(innerHeight - h - 12, (r.top + r.bottom) / 2 - h / 2)) + 'px';
-    };
+    c.onmouseenter = () => { if (!LS_PIN) show(c); };
     c.onmouseleave = () => {
+      if (LS_PIN) return;
       root.classList.remove('hl'); root.querySelectorAll('.ls-chip.on').forEach((x) => x.classList.remove('on'));
       const pop = document.querySelector('.ls-pop'); if (pop) pop.style.display = 'none';
       draw(base);
     };
+    // Клик по системе с потоками — закрепить окно (иначе, как раньше, открывается модуль)
+    c.onclick = (ev) => { if (show(c, true)) { ev.preventDefault(); ev.stopPropagation(); } };
   });
   // Наведение на пункт списка — выделить одну стрелку
   root.querySelectorAll('[data-fi]').forEach((li) => {
@@ -262,6 +317,15 @@ function abaiLandscape(root, view = 'dream', flow) {
   root._ro = new ResizeObserver(() => { draw(base); drawFocus(); });
   root._ro.observe(grid);
 }
+
+function lsUnpin() {
+  const pop = document.querySelector('.ls-pop'), bg = document.querySelector('.ls-pop-bg');
+  if (pop) { pop.style.display = 'none'; pop.classList.remove('pin'); }
+  if (bg) bg.style.display = 'none';
+  if (typeof LS_PIN === 'function') LS_PIN();
+  LS_PIN = false;
+}
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && LS_PIN) lsUnpin(); });
 
 // ---------- Компактная схема сценария: только участвующие системы, снизу вверх по направлению потока (как на большой схеме) ----------
 // Группа системы на компактной схеме: в какой ЦД / слой она входит на большой схеме
@@ -514,7 +578,8 @@ function lsBus(host, grid, key, list, view, o = {}) {
   gl.forEach((g) => g.nodes.forEach((p) => (p.side = g.side)));
   const ordOf = (g) => { const i = LS_ROW_ORDER.indexOf(g.type); return i < 0 ? 9 : i; };
   // ---- Раскладка ----
-  const NW = 156, NH = 42, CG = 18, P = 10, HDR = 22, GG = 18, BH = 58, LW = NW + CG - 6, M = 20;
+  // В подробном режиме колонки шире: в подписи — шаги BPMN связи
+  const NW = o.full ? 300 : 156, NH = 42, CG = 18, P = 10, HDR = 22, GG = 18, BH = 58, LW = NW + CG - 6, M = 20;
   const FH = HDR + P + NH + P;
   const row = (side) => gl.filter((g) => g.side === side).sort((a, b) => ordOf(a) - ordOf(b));
   const place = (gs) => {
@@ -565,7 +630,7 @@ function lsBus(host, grid, key, list, view, o = {}) {
       const yNode = isUp ? p.y0 + NH : p.y0, yB = isUp ? yBus : yBus + BH;
       const [y0, y1] = (it.e === p.out) ? [yB, yNode] : [yNode, yB];
       paths += `<path d="M${x},${y0} L${x},${y1}" class="k-${it.e.k}" marker-end="url(#lsbArr-${it.e.k})"/>`;
-      labels += `<div class="ls-fl k-${it.e.k}" data-i="${it.i}" style="left:${cx - LW / 2}px;top:${ty}px;width:${LW}px"><b>${it.upArrow ? '↑' : '↓'}</b><span>${it.e.w}<em>${it.e.r}</em></span></div>`;
+      labels += `<div class="ls-fl k-${it.e.k}" data-i="${it.i}" style="left:${cx - LW / 2}px;top:${ty}px;width:${LW}px"><b>${it.upArrow ? '↑' : '↓'}</b><span>${o.full ? `<strong>${it.e.w}</strong><em>${it.e.f} → ${it.e.t}</em>${lsDetail(it.e, view)}` : `${it.e.w}<em>${it.e.r}</em>`}</span></div>`;
       ty += it.h + 6;
     });
   });
@@ -582,7 +647,7 @@ function lsBus(host, grid, key, list, view, o = {}) {
   if (!o._h) {
     const h = [];
     host.querySelectorAll('.ls-fl[data-i]').forEach((x) => (h[+x.dataset.i] = x.offsetHeight));
-    lsBus(host, grid, key, list, view, { _h: h });
+    lsBus(host, grid, key, list, view, Object.assign({}, o, { _h: h }));
   }
 }
 

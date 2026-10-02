@@ -170,11 +170,11 @@
 @keyframes lsDash { to { stroke-dashoffset: -26; } }
 .ls-lbls { position: absolute; left: 0; top: 0; z-index: 6; pointer-events: none; }
 .ls-fl { position: absolute; pointer-events: auto; display: flex; gap: 5px; align-items: center; background: #fff; border: 1.5px solid #2a78d6; border-radius: 7px; padding: 2px 6px; font-size: 11px; line-height: 1.25; color: #16191f; box-shadow: 0 2px 6px rgba(16,24,40,.12); box-sizing: border-box; }
-.ls-fl b { flex: none; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 10px; background: #2a78d6; }
-.ls-fl.k-input { border-color: #0f7a55; } .ls-fl.k-input b { background: #0f7a55; }
-.ls-fl.k-seq { border-color: #8a93a6; } .ls-fl.k-seq b { background: #6b7383; }
-.ls-fl.k-manual { border-color: #c2413a; color: #8f2a24; } .ls-fl.k-manual b { background: #c2413a; }
-.ls-fl.k-int { border-color: #d08a1e; } .ls-fl.k-int b { background: #d08a1e; }
+.ls-fl > b { flex: none; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 10px; background: #2a78d6; }
+.ls-fl.k-input { border-color: #0f7a55; } .ls-fl.k-input > b { background: #0f7a55; }
+.ls-fl.k-seq { border-color: #8a93a6; } .ls-fl.k-seq > b { background: #6b7383; }
+.ls-fl.k-manual { border-color: #c2413a; color: #8f2a24; } .ls-fl.k-manual > b { background: #c2413a; }
+.ls-fl.k-int { border-color: #d08a1e; } .ls-fl.k-int > b { background: #d08a1e; }
 .ls-fl.dim { opacity: .2; } .ls-fl.hot { box-shadow: 0 0 0 3px rgba(42,120,214,.25); z-index: 2; }
 .fl-on .ls-chip, .fl-on .ls-t, .fl-on .ls-cell { opacity: .38; transition: opacity .15s; }
 .fl-on .ls-chip.ep, .fl-on .ls-cell.ep { opacity: 1; box-shadow: 0 0 0 2px #2a78d6; position: relative; z-index: 7; }
@@ -216,7 +216,37 @@
 .ls-pop-h { font-size: 13px; color: #4d5563; margin: 0 0 8px 2px; }
 .ls-pop-h b { color: #16191f; font-size: 14px; }
 .ls-pop .ls-focus { overflow: hidden; }
-.ls-pop * { pointer-events: none !important; }
+.ls-pop:not(.pin) * { pointer-events: none !important; }
+.ls-pop-h span { margin-left: 10px; font-size: 11.5px; color: #7a8291; }
+/* Закреплённое окно: по центру, прокручивается, закрывается крестиком, Esc или кликом мимо */
+.ls-pop.pin { left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; max-width: 96vw !important; max-height: 92vh; overflow: auto; pointer-events: auto; }
+.ls-pop.pin .ls-focus { overflow: visible; }
+.ls-pop.pin .ls-pop-h { position: sticky; left: 0; display: flex; align-items: center; gap: 6px; }
+.ls-pop-x { margin-left: auto; font: inherit; font-size: 20px; line-height: 1; width: 30px; height: 30px; border: 1px solid #d5d9e1; border-radius: 8px; background: #fff; cursor: pointer; color: #4d5563; }
+.ls-pop-x:hover { border-color: #1c5cab; color: #1c5cab; }
+.ls-pop-bg { position: fixed; inset: 0; z-index: 999; background: rgba(16,24,40,.35); display: none; }
+
+/* Режим просмотра потоков */
+.ls-mode { margin-left: auto; display: inline-flex; border: 1px solid #d5d9e1; border-radius: 8px; overflow: hidden; }
+.ls-mode button { font: inherit; font-size: 12.5px; border: 0; background: #fff; padding: 5px 12px; cursor: pointer; color: #4d5563; }
+.ls-mode button + button { border-left: 1px solid #d5d9e1; }
+.ls-mode button.on { background: #1c5cab; color: #fff; }
+
+/* Подробности связи: как, формат, шаги BPMN (откуда / куда) */
+.ls-d { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; line-height: 1.35; color: #2e3440; text-align: left; }
+.ls-d-row { display: flex; gap: 8px; }
+.ls-d-row i, .ls-d-st > i { flex: none; width: 52px; font-style: normal; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #7a8291; padding-top: 1px; }
+.ls-d-row em { font-style: normal; color: #9aa1ad; }
+.ls-d-p { margin-top: 4px; padding-top: 5px; border-top: 1px dashed #dfe3ea; font-weight: 600; color: #16191f; }
+.ls-d-src { color: #7a8291; }
+.ls-d-st { display: flex; gap: 8px; }
+.ls-d-st > div > b { color: #1c5cab; }
+.ls-d-st span { display: block; color: #4d5563; font-size: 11px; }
+.ls-d-st q { display: block; font-size: 11px; color: #5b6472; font-style: italic; quotes: "«" "»"; }
+.ls-fsteps.full { grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); }
+.ls-fsteps.full li { border: 1px solid #e6eaf0; background: #fff; }
+.ls-fl strong { display: block; font-size: 12px; }
+.ls-fl .ls-d { margin-top: 5px; padding-top: 5px; border-top: 1px solid #eef1f5; }
 /* Система посередине — широкая полоса, к ней прямые стрелки; подпись — на стрелке, с направлением ↑ / ↓ */
 .ls-bus { align-items: center; text-align: center; border-width: 2px; }
 .ls-bus b { font-size: 14px; }
