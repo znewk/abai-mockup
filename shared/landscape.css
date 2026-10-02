@@ -214,3 +214,19 @@
 .ls-pop-h { font-size: 13px; color: #4d5563; margin: 0 0 8px 2px; }
 .ls-pop-h b { color: #16191f; font-size: 14px; }
 .ls-pop .ls-focus { overflow: hidden; }
+
+/* Группы на компактной схеме: в какой ЦД / слой входит система */
+.ls-fgrp { position: absolute; box-sizing: border-box; border: 1.5px solid #d5d9e1; border-radius: 12px; background: rgba(255,255,255,.7); z-index: 1; }
+.ls-fgrp span { position: absolute; left: 10px; top: 5px; right: 10px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #4d5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ls-fgrp.g-cd { border-color: #9cbde8; background: #f1f6fd; } .ls-fgrp.g-cd span { color: #164a8a; }
+.v-dream .ls-fgrp.g-cd { border-color: #9fd3b6; background: #eef8f2; } .v-dream .ls-fgrp.g-cd span { color: #0b6b3a; }
+.v-nedra .ls-fgrp.g-cd { border-color: #c9b6ea; background: #f6f2fc; } .v-nedra .ls-fgrp.g-cd span { color: #4b2f78; }
+.ls-fgrp.g-data { border-color: #a9d8ba; background: #f0f8f3; border-style: dashed; } .ls-fgrp.g-data span { color: #0b6b3a; }
+.ls-fgrp.g-asu { border-color: #ecd497; background: #fffaea; } .ls-fgrp.g-asu span { color: #8a5a00; }
+.ls-fgrp.g-mes { border-color: #f2cfcc; background: #fdf3f2; } .ls-fgrp.g-mes span { color: #a63a32; }
+.ls-fgrp.g-users { border-color: #c4c9d3; background: #f3f4f7; }
+.ls-fgrp.g-ext { border-color: #f0cf96; background: #fff8ec; } .ls-fgrp.g-ext span { color: #8a5a00; }
+.ls-fgrp.g-eng { border-color: #d5d9e1; background: #f8f9fb; }
+.ls-fgrp.g-manual { border-color: #eab0aa; background: #fdf3f2; border-style: dashed; } .ls-fgrp.g-manual span { color: #a63a32; }
+.ls-fnode { justify-content: center; }
+.ls-fnode b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

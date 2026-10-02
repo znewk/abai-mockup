@@ -260,48 +260,144 @@ function abaiLandscape(root, view = 'dream', flow) {
 }
 
 // ---------- Компактная схема сценария: только участвующие системы, слева направо по направлению потока ----------
+// Группа системы на компактной схеме: в какой ЦД / слой она входит на большой схеме
+function lsGroup(el, view) {
+  if (!el) return { key: 'other', title: 'Прочее', type: 'eng' };
+  const box = el.closest('.ls-box'), boxT = box && box.querySelector('.ls-box-h') ? box.querySelector('.ls-box-h').textContent.trim() : '';
+  if (el.closest('.ls-box.users')) return { key: 'users', title: 'Пользователи и уровни управления', type: 'users' };
+  if (el.closest('.ls-box.ext')) return { key: 'ext', title: 'Внешние системы', type: 'ext' };
+  if (el.closest('.ls-twin')) {
+    if (el.closest('.ls-note') && el.classList.contains('k-abai')) return { key: 'abai-bpmn', title: 'ИС ABAI (по BPMN TO BE Nedra)', type: 'cd' };
+    const t = el.closest('.ls-twin').querySelector('.ls-twin-h').textContent.trim();
+    return { key: t, title: t, type: 'cd' };
+  }
+  if (el.closest('.ls-box.plat')) return { key: 'plat', title: view === 'dream' ? 'ЦД актива — единая база' : boxT, type: 'cd' };
+  if (el.closest('.ls-zone.data')) {
+    if (view === 'asis') return { key: boxT, title: boxT, type: 'data' };
+    return { key: 'data', title: view === 'nedra' ? 'Слой данных — КХД + NDP' : 'Слой данных — КХД', type: 'data' };
+  }
+  if (el.closest('.ls-manual')) return { key: 'manual', title: 'Ручной обмен: файлы, почта, чат', type: 'manual' };
+  if (el.closest('.ls-zone.asis')) return { key: boxT, title: boxT, type: el.classList.contains('k-abai') ? 'cd' : 'eng' };
+  if (el.closest('.ls-box.asu')) return { key: 'asu', title: 'Данные с датчиков / АСУ ТП', type: 'asu' };
+  if (el.closest('.ls-box.mes') || el.closest('.ls-box.warn')) return { key: 'mes', title: boxT, type: 'mes' };
+  if (el.closest('.ls-zone.dzo')) {
+    const eng = /Инженерное/.test(boxT);
+    return { key: boxT, title: eng ? 'Инженерное ПО на рабочих местах' : boxT, type: eng ? 'eng' : 'asu' };
+  }
+  const mod = el.closest('.ls-mod');
+  if (mod) { const t = 'Процесс: ' + mod.querySelector('.ls-mod-h b').textContent; return { key: t, title: t, type: 'eng' }; }
+  return { key: 'other', title: 'Прочее', type: 'eng' };
+}
+
+// Колонки по направлению потока: порядок с минимумом обратных связей (эвристика Идса — Лина — Смита),
+// затем ранг = самый длинный путь без обратных связей. outOf может возвращать узел несколько раз (вес связи).
+function lsRanks(list, outOf) {
+  const out = new Map(list.map((n) => [n, outOf(n).filter((m) => m !== n && list.includes(m))]));
+  const inn = new Map(list.map((n) => [n, []]));
+  list.forEach((n) => out.get(n).forEach((m) => inn.get(m).push(n)));
+  const left = [], right = [], rest = new Set(list);
+  const deg = (n, map) => map.get(n).filter((m) => rest.has(m)).length;
+  while (rest.size) {
+    let moved = true;
+    while (moved) {
+      moved = false;
+      [...rest].forEach((n) => { if (rest.has(n) && !deg(n, out)) { right.unshift(n); rest.delete(n); moved = true; } });
+      [...rest].forEach((n) => { if (rest.has(n) && !deg(n, inn)) { left.push(n); rest.delete(n); moved = true; } });
+    }
+    if (rest.size) { const u = [...rest].sort((p, q) => (deg(q, out) - deg(q, inn)) - (deg(p, out) - deg(p, inn)))[0]; left.push(u); rest.delete(u); }
+  }
+  const pos = new Map(left.concat(right).map((n, i) => [n, i]));
+  const rank = new Map();
+  left.concat(right).forEach((n) => rank.set(n, Math.max(0, ...inn.get(n).filter((m) => pos.get(m) < pos.get(n)).map((m) => rank.get(m) + 1))));
+  return rank;
+}
+
 function lsFocus(host, grid, edges, view, o = {}) {
   if (!edges.length) { host.innerHTML = ''; return; }
-  // Узлы: система, её место в архитектуре (подпись) и вид
+  // ---- Узлы и группы ----
   const nodes = new Map();
   const node = (k) => {
     if (!nodes.has(k)) {
       const el = lsAnchor(grid, k);
       const kind = el && el.classList.contains('ls-chip') ? (el.className.match(/k-(\w+)/) || [])[1] : 'user';
-      const zone = el ? (el.closest('.ls-twin') ? el.closest('.ls-twin').querySelector('.ls-twin-h').textContent : el.closest('.ls-box') ? el.closest('.ls-box').querySelector('.ls-box-h').textContent : '') : '';
-      // Системы из примечания «в BPMN TO BE Nedra также» — подписываем по продукту, а не по блоку
-      const z = el && el.closest('.ls-note') && kind === 'abai' ? 'ИС ABAI · по BPMN' : zone;
-      nodes.set(k, { k, kind: kind || 'ext', zone: z.toLowerCase(), out: [], inn: [], nb: [] });
+      nodes.set(k, { id: k, k, kind: kind || 'ext', g: lsGroup(el, view), out: [], inn: [] });
     }
     return nodes.get(k);
   };
-  const items = edges.map((e, i) => { const a = node(e.f), b = node(e.t); a.out.push(b); b.inn.push(a); a.nb.push(b); b.nb.push(a); return { e, i, a, b }; });
-  // Колонки по направлению потока: источник слева, получатель справа (самый длинный путь, циклы разрываются)
-  const state = new Map(), back = new Set();
-  const dfs = (n) => { state.set(n, 1); n.out.forEach((m) => { if (state.get(m) === 1) back.add(n.k + '>' + m.k); else if (!state.get(m)) dfs(m); }); state.set(n, 2); };
-  const order = [...nodes.values()].sort((x, y) => (x.inn.length - y.inn.length) || (y.out.length - x.out.length));
-  order.forEach((n) => { if (!state.get(n)) dfs(n); });
-  const rank = new Map();
-  const rk = (n) => { if (rank.has(n)) return rank.get(n); rank.set(n, 0); const r = Math.max(0, ...n.inn.filter((m) => !back.has(m.k + '>' + n.k)).map((m) => rk(m) + 1)); rank.set(n, r); return r; };
-  nodes.forEach((n) => { n.r = rk(n); });
-  const R = Math.max(...[...nodes.values()].map((n) => n.r)) + 1;
-  const byR = Array.from({ length: R }, (_, r) => [...nodes.values()].filter((n) => n.r === r));
-  byR.forEach((list) => list.forEach((n, i) => (n.y = i)));
-  for (let it = 0; it < 6; it++) byR.forEach((list) => {
-    list.forEach((n) => { n.bc = n.nb.length ? n.nb.reduce((s, m) => s + m.y, 0) / n.nb.length : n.y; });
-    list.sort((p, q) => p.bc - q.bc).forEach((n, i) => (n.y = i));
+  const items = edges.map((e, i) => { const a = node(e.f), b = node(e.t); a.out.push(b); b.inn.push(a); return { e, i, a, b }; });
+  // Пользователи, внешние системы, АСУ ТП: если в группе есть и чистые источники, и чистые получатели — две рамки
+  // («кто передаёт» слева, «кто получает» справа). Рамка ЦД всегда одна.
+  const byKey = {};
+  nodes.forEach((n) => (byKey[n.g.key] = byKey[n.g.key] || []).push(n));
+  Object.values(byKey).forEach((list) => {
+    const intra = list.some((n) => n.out.some((m) => list.includes(m)));
+    const src = list.filter((n) => !n.inn.length), snk = list.filter((n) => !n.out.length);
+    if (list[0].g.type !== 'cd' && !intra && src.length && snk.length && src.length + snk.length === list.length) snk.forEach((n) => { n.g = Object.assign({}, n.g, { key: n.g.key + '#out' }); });
   });
+  const groups = new Map();
+  nodes.forEach((n) => { if (!groups.has(n.g.key)) groups.set(n.g.key, { id: n.g.key, ...n.g, nodes: [], out: [] }); groups.get(n.g.key).nodes.push(n); n.G = groups.get(n.g.key); });
+  items.forEach((it) => { if (it.a.G !== it.b.G) it.a.G.out.push(it.b.G); });
+  const gRank = lsRanks([...groups.values()], (g) => g.out);
+  // Внутри группы — подколонки по направлению связей внутри неё
+  groups.forEach((g) => {
+    const r = lsRanks(g.nodes, (n) => n.out.filter((m) => m.G === g));
+    g.nodes.forEach((n) => { n.sub = r.get(n); });
+    g.subs = Math.max(...g.nodes.map((n) => n.sub)) + 1;
+  });
+  // ---- Размеры ----
+  const C = Math.max(...[...gRank.values()]) + 1;
+  const cols = Array.from({ length: C }, (_, c) => [...groups.values()].filter((g) => gRank.get(g) === c));
   const avail = Math.max(600, host.clientWidth - 30);
-  const NW = R > 5 ? 150 : R > 4 ? 168 : 196, NH = 46, VG = 30;
-  const GAP = R > 1 ? Math.max(118, Math.min(260, (avail - R * NW) / (R - 1))) : 0;
-  const rows = Math.max(...byR.map((l) => l.length));
-  byR.forEach((list, r) => {
-    const off = ((rows - list.length) * (NH + VG)) / 2;
-    list.forEach((n, i) => { n.x = r * (NW + GAP); n.y0 = off + i * (NH + VG); });
+  const NH = 34, VG = 18, P = 12, HDR = 24;
+  let NW, IG, GMIN;
+  const size = (nw, ig) => {
+    groups.forEach((g) => {
+      g.cols = Array.from({ length: g.subs }, (_, s) => g.nodes.filter((n) => n.sub === s));
+      g.rows = Math.max(...g.cols.map((c) => c.length));
+      g.w = g.subs * nw + (g.subs - 1) * ig + 2 * P;
+      g.h = HDR + g.rows * (NH + VG) - VG + 2 * P;
+    });
+    return cols.reduce((s, list) => s + Math.max(...list.map((g) => g.w)), 0);
+  };
+  for (const [nw, ig, gm] of [[178, 150, 130], [160, 130, 110], [148, 120, 96], [136, 120, 84]]) {
+    NW = nw; IG = ig; GMIN = gm;
+    if (size(nw, ig) + (C - 1) * gm <= avail) break;
+  }
+  // Порядок групп и узлов по вертикали — по соседям (меньше пересечений)
+  const yOf = (n) => (n.G.cy || 0) + (n.y || 0);
+  cols.forEach((list) => list.forEach((g, i) => { g.cy = i * 100; g.nodes.forEach((n, j) => (n.y = j)); }));
+  for (let it = 0; it < 6; it++) {
+    cols.forEach((list) => {
+      list.forEach((g) => { const nb = items.filter((x) => (x.a.G === g) !== (x.b.G === g)).map((x) => (x.a.G === g ? x.b : x.a)); g.bc = nb.length ? nb.reduce((s, n) => s + yOf(n), 0) / nb.length : g.cy; });
+      list.sort((a, b) => a.bc - b.bc).forEach((g, i) => (g.cy = i * 100));
+    });
+    groups.forEach((g) => g.cols.forEach((c) => {
+      c.forEach((n) => { const nb = n.out.concat(n.inn); n.bc = nb.length ? nb.reduce((s, m) => s + yOf(m), 0) / nb.length : n.y; });
+      c.sort((a, b) => a.bc - b.bc).forEach((n, i) => (n.y = i));
+    }));
+  }
+  const colW = cols.map((list) => Math.max(...list.map((g) => g.w)));
+  const GAP = C > 1 ? Math.max(GMIN, Math.min(250, (avail - colW.reduce((s, w) => s + w, 0)) / (C - 1))) : 0;
+  const colX = [];
+  const VGG = 22;
+  const colH = cols.map((list) => list.reduce((s, g) => s + g.h, 0) + (list.length - 1) * VGG);
+  const H0 = Math.max(...colH);
+  let x = 0;
+  cols.forEach((list, c) => {
+    colX[c] = x;
+    let y = (H0 - colH[c]) / 2;
+    list.forEach((g) => {
+      g.x = x + (colW[c] - g.w) / 2; g.y = y; y += g.h + VGG;
+      g.cols.forEach((col, s) => {
+        const off = ((g.rows - col.length) * (NH + VG)) / 2;
+        col.forEach((n, i) => { n.x = g.x + P + s * (NW + IG); n.y0 = g.y + HDR + P + off + i * (NH + VG); });
+      });
+    });
+    x += colW[c] + GAP;
   });
-  const H0 = rows * (NH + VG) - VG;
-  // Точки крепления: вперёд — справа налево, обратные — снизу дугой; несколько стрелок у одной стороны разносим
-  items.forEach((it) => { it.back = it.b.r <= it.a.r; it.sa = it.back ? 'b' : 'r'; it.sb = it.back ? 'b' : 'l'; });
+  // ---- Стрелки: вперёд — справа налево, назад — дугой снизу ----
+  const ord = (n) => gRank.get(n.G) * 100 + n.sub;
+  items.forEach((it) => { it.back = ord(it.b) <= ord(it.a); it.sa = it.back ? 'b' : 'r'; it.sb = it.back ? 'b' : 'l'; });
   const ports = new Map();
   const add = (n, side, it, other) => { const k = n.k + '|' + side; if (!ports.has(k)) ports.set(k, []); ports.get(k).push({ it, other, n, side }); };
   items.forEach((it) => { add(it.a, it.sa, it, it.sa === 'b' ? it.b.x : it.b.y0); add(it.b, it.sb, it, it.sb === 'b' ? it.a.x : it.a.y0); });
@@ -309,28 +405,62 @@ function lsFocus(host, grid, edges, view, o = {}) {
     list.sort((p, q) => p.other - q.other);
     list.forEach((p, j) => {
       const d = list.length > 1 ? j - (list.length - 1) / 2 : 0;
-      const pt = p.side === 'b' ? [p.n.x + NW / 2 + d * Math.min(26, (NW - 30) / list.length), p.n.y0 + NH] : [p.side === 'r' ? p.n.x + NW : p.n.x, p.n.y0 + NH / 2 + d * Math.min(12, (NH - 10) / list.length)];
+      const pt = p.side === 'b' ? [p.n.x + NW / 2 + d * Math.min(24, (NW - 30) / list.length), p.n.y0 + NH] : [p.side === 'r' ? p.n.x + NW : p.n.x, p.n.y0 + NH / 2 + d * Math.min(8, (NH - 8) / list.length)];
       if (p.it.a === p.n && p.it.sa === p.side && !p.it.p0) p.it.p0 = pt; else p.it.p1 = pt;
     });
   });
-  const placed = [], nodeR = [...nodes.values()].map((n) => ({ l: n.x - 4, t: n.y0 - 4, r: n.x + NW + 4, b: n.y0 + NH + 4 }));
+  const obst = [...nodes.values()].map((n) => ({ l: n.x - 4, t: n.y0 - 4, r: n.x + NW + 4, b: n.y0 + NH + 4 }))
+    .concat([...groups.values()].map((g) => ({ l: g.x, t: g.y, r: g.x + Math.min(g.w, 30 + g.title.length * 6.4), b: g.y + HDR })));
+  const placed = [];
   let paths = '', labels = '', backN = 0;
+  const bez = (a, c1, c2, b) => Array.from({ length: 21 }, (_, j) => { const t = j / 20, u = 1 - t; return [u * u * u * a[0] + 3 * u * u * t * c1[0] + 3 * u * t * t * c2[0] + t * t * t * b[0], u * u * u * a[1] + 3 * u * u * t * c1[1] + 3 * u * t * t * c2[1] + t * t * t * b[1]]; });
+  const lanes = {};
   items.forEach((it) => {
     const [x0, y0] = it.p0, [x1, y1] = it.p1;
-    let c1, c2;
-    if (it.back) { backN++; const low = H0 + 24 + backN * 22; c1 = [x0, low]; c2 = [x1, low]; } else { const dx = Math.max(50, (x1 - x0) * 0.45); c1 = [x0 + dx, y0]; c2 = [x1 - dx, y1]; }
-    const pt = (t) => { const u = 1 - t; return [u * u * u * x0 + 3 * u * u * t * c1[0] + 3 * u * t * t * c2[0] + t * t * t * x1, u * u * u * y0 + 3 * u * u * t * c1[1] + 3 * u * t * t * c2[1] + t * t * t * y1]; };
+    const ca = gRank.get(it.a.G), cb = gRank.get(it.b.G);
+    let d, pts, span;
+    if (it.back) {
+      backN++; const low = H0 + 22 + backN * 20;
+      d = `M${x0},${y0} C${x0},${low} ${x1},${low} ${x1},${y1}`; pts = bez([x0, y0], [x0, low], [x1, low], [x1, y1]); span = 220;
+    } else {
+      const dx = Math.max(40, (x1 - x0) * 0.45);
+      const straight = bez([x0, y0], [x0 + dx, y0], [x1 - dx, y1], [x1, y1]);
+      // Что задевает прямая: чужие блоки и чужие рамки (кроме рамок начала и конца)
+      const rects = [...nodes.values()].filter((n) => n !== it.a && n !== it.b).map((n) => ({ l: n.x - 6, t: n.y0 - 6, r: n.x + NW + 6, b: n.y0 + NH + 6 }))
+        .concat([...groups.values()].filter((g) => g !== it.a.G && g !== it.b.G).map((g) => ({ l: g.x - 4, t: g.y - 4, r: g.x + g.w + 4, b: g.y + g.h + 4 })));
+      const hits = rects.filter((q) => straight.some(([px, py]) => px > q.l && px < q.r && py > q.t && py < q.b));
+      let xa = hits.length ? Math.max(x0 + 24, Math.min(...hits.map((q) => q.l)) - 18) : 0, xb = hits.length ? Math.min(x1 - 24, Math.max(...hits.map((q) => q.r)) + 18) : 0;
+      if (hits.length && xb > xa) {
+        // Обход: сверху, снизу или в просвете между препятствиями на этом участке
+        const block = rects.filter((q) => q.r > xa && q.l < xb).map((q) => [q.t, q.b]).sort((p, q) => p[0] - q[0]);
+        const lo = Math.min(...block.map((q) => q[0])), hi = Math.max(...block.map((q) => q[1]));
+        const cand = [lo - 14, hi + 14];
+        let cur = block[0][1];
+        block.slice(1).forEach(([t, bt]) => { if (t - cur >= 26) cand.push((t + cur) / 2); cur = Math.max(cur, bt); });
+        const want = (y0 + y1) / 2;
+        let wy = cand.sort((p, q) => Math.abs(p - want) - Math.abs(q - want))[0];
+        const key = Math.round(xa) + ':' + Math.round(wy);
+        lanes[key] = (lanes[key] || 0) + 1; wy += (lanes[key] - 1) * (wy <= lo ? -14 : 14);
+        const dxa = Math.max(24, (xa - x0) * 0.5), dxb = Math.max(24, (x1 - xb) * 0.5);
+        d = `M${x0},${y0} C${x0 + dxa},${y0} ${xa - dxa},${wy} ${xa},${wy} L${xb},${wy} C${xb + dxb},${wy} ${x1 - dxb},${y1} ${x1},${y1}`;
+        pts = Array.from({ length: 21 }, (_, j) => [xa + ((xb - xa) * j) / 20, wy]).concat(bez([x0, y0], [x0 + dxa, y0], [xa - dxa, wy], [xa, wy]), bez([xb, wy], [xb + dxb, wy], [x1 - dxb, y1], [x1, y1]));
+        span = Math.max(xb - xa, 140);
+      } else {
+        d = `M${x0},${y0} C${x0 + dx},${y0} ${x1 - dx},${y1} ${x1},${y1}`; pts = straight; span = Math.abs(x1 - x0);
+      }
+    }
     const cls = `k-${it.e.k}${o.hot === it.i ? ' hot' : ''}${o.hot !== undefined && o.hot !== it.i ? ' dim' : ''}`;
-    paths += `<path d="M${x0},${y0} C${c1[0]},${c1[1]} ${c2[0]},${c2[1]} ${x1},${y1}" class="${cls}" marker-end="url(#lsfArr-${it.e.k})"/>`;
-    const lw = Math.min(Math.max(GAP - 14, 112), 30 + it.e.w.length * 5.6);
+    paths += `<path d="${d}" class="${cls}" marker-end="url(#lsfArr-${it.e.k})"/>`;
+    const lw = Math.max(108, Math.min(span - 16, 200, 30 + it.e.w.length * 5.6));
     const lines = Math.max(1, Math.ceil((it.e.w.length * 6.2) / (lw - 30))), lh = (o._h && o._h[it.i]) || 8 + lines * 14;
-    // Место для подписи: на кривой, иначе со сдвигом вверх/вниз — с наименьшим перекрытием блоков и других подписей
     const ov = (r, q) => Math.max(0, Math.min(r.r, q.r) - Math.max(r.l, q.l)) * Math.max(0, Math.min(r.b, q.b) - Math.max(r.t, q.t));
     let pos = null, best = Infinity;
+    // Кандидаты — точки маршрута от середины к краям (для обхода — сначала горизонтальный участок)
+    const order = pts.map((q, j) => [q, j]).sort((p, q) => Math.abs(p[1] - 10) - Math.abs(q[1] - 10)).slice(0, 15);
     for (const dy of [0, -(lh / 2 + 10), lh / 2 + 10, -(lh + 16), lh + 16]) {
-      for (const t of [0.5, 0.42, 0.58, 0.34, 0.66, 0.26, 0.74]) {
-        const [px, py0] = pt(t), py = py0 + dy, r = { l: px - lw / 2, t: py - lh / 2, r: px + lw / 2, b: py + lh / 2 };
-        const score = nodeR.reduce((sum, q) => sum + 3 * ov(r, q), 0) + placed.reduce((sum, q) => sum + 2 * ov(r, q), 0) + Math.abs(dy) * 0.5 + Math.abs(t - 0.5) * 20;
+      for (const [[px, py0], j] of order) {
+        const py = py0 + dy, r = { l: px - lw / 2, t: py - lh / 2, r: px + lw / 2, b: py + lh / 2 };
+        const score = obst.reduce((sum, q) => sum + 3 * ov(r, q), 0) + placed.reduce((sum, q) => sum + 2 * ov(r, q), 0) + Math.abs(dy) * 0.5 + Math.abs(j - 10) * 2;
         if (score < best) { best = score; pos = r; }
       }
       if (best < 60) break;
@@ -338,13 +468,14 @@ function lsFocus(host, grid, edges, view, o = {}) {
     placed.push({ l: pos.l - 3, t: pos.t - 3, r: pos.r + 3, b: pos.b + 3 });
     labels += `<div class="ls-fl ${cls}" style="left:${pos.l}px;top:${pos.t}px;width:${lw}px" title="${it.e.f} → ${it.e.t} · ${it.e.r}">${it.e.n ? `<b>${it.e.n}</b>` : ''}${it.e.w}</div>`;
   });
-  const all = nodeR.concat(placed, [{ l: 0, t: 0, r: R * NW + (R - 1) * GAP, b: H0 + 24 + backN * 22 + 6 }]);
+  const all = [...groups.values()].map((g) => ({ l: g.x, t: g.y, r: g.x + g.w, b: g.y + g.h })).concat(placed, [{ l: 0, t: 0, r: 1, b: H0 + 22 + backN * 20 + 6 }]);
   const minX = Math.min(...all.map((q) => q.l)), minY = Math.min(...all.map((q) => q.t)), maxX = Math.max(...all.map((q) => q.r)), maxY = Math.max(...all.map((q) => q.b));
   const sh = -minX + 2, sv = -minY + 2, CW = maxX - minX + 4, CH = maxY - minY + 4;
   const mk = (k, c) => `<marker id="lsfArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`;
-  host.innerHTML = `<div class="ls-fcanvas" style="width:${CW}px;height:${CH}px">
+  host.innerHTML = `<div class="ls-fcanvas v-${view}" style="width:${CW}px;height:${CH}px">
+    ${[...groups.values()].map((g) => `<div class="ls-fgrp g-${g.type}" style="left:${g.x + sh}px;top:${g.y + sv}px;width:${g.w}px;height:${g.h}px"><span>${g.title}</span></div>`).join('')}
     <svg width="${CW}" height="${CH}"><defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}</defs><g transform="translate(${sh},${sv})">${paths}</g></svg>
-    ${[...nodes.values()].map((n) => `<div class="ls-fnode k-${n.kind}" style="left:${n.x + sh}px;top:${n.y0 + sv}px;width:${NW}px;height:${NH}px"><b>${n.k}</b><span>${n.zone}</span></div>`).join('')}
+    ${[...nodes.values()].map((n) => `<div class="ls-fnode k-${n.kind}" style="left:${n.x + sh}px;top:${n.y0 + sv}px;width:${NW}px;height:${NH}px"><b>${n.k}</b></div>`).join('')}
     <div class="ls-flbls" style="transform:translate(${sh}px,${sv}px)">${labels}</div>
   </div>`;
   // Второй проход: раскладка подписей по их реальной высоте
