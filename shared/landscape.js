@@ -236,8 +236,8 @@ function abaiLandscape(root, view = 'dream', flow) {
       if (!pop) { pop = document.createElement('div'); pop.className = 'ls ls-pop'; document.body.appendChild(pop); }
       const name = c.classList.contains('ls-cell') ? key : c.dataset.sys;
       pop.innerHTML = `<div class="ls-pop-h"><b>${name}</b> — потоки данных · ${V.name} · ${list.length}</div><div class="ls-focus"></div>`;
-      pop.style.transform = ''; pop.style.width = 'auto'; pop.style.maxWidth = (innerWidth - 40) + 'px'; pop.style.display = 'block';
-      lsFocus(pop.querySelector('.ls-focus'), grid, list, view);
+      pop.style.transform = ''; pop.style.width = 'auto'; pop.style.maxWidth = 'none'; pop.style.display = 'block';
+      lsBus(pop.querySelector('.ls-focus'), grid, key, list, view);
       // Схема вертикальная: ставим сбоку от системы, если не влезает по высоте — уменьшаем
       const r = c.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
       const sc = Math.min(1, (innerHeight - 24) / ph, (innerWidth - 24) / pw);
@@ -479,6 +479,111 @@ function lsFocus(host, grid, edges, view, o = {}) {
   </div>`;
   // Второй проход: раскладка подписей по их реальной высоте
   if (!o._h) lsFocus(host, grid, edges, view, Object.assign({}, o, { _h: [...host.querySelectorAll('.ls-fl')].map((x) => x.offsetHeight) }));
+}
+
+// ---------- Всплывающая схема связей одной системы ----------
+// Система — широкая полоса посередине; кто передаёт ей данные — снизу, кому передаёт она — сверху (снизу вверх, как большая схема).
+// Каждая связь — прямая вертикальная стрелка под своей системой, подпись — на стрелке; двусторонняя связь — две стрелки рядом.
+const LS_ROW_ORDER = ['users', 'eng', 'cd', 'data', 'manual', 'ext', 'mes', 'asu'];
+function lsBus(host, grid, key, list, view, o = {}) {
+  const info = (k) => {
+    const el = lsAnchor(grid, k);
+    const kind = el && el.classList.contains('ls-chip') ? (el.className.match(/k-(\w+)/) || [])[1] : 'user';
+    return { k, kind: kind || 'ext', g: lsGroup(el, view) };
+  };
+  const me = info(key);
+  const peers = new Map();
+  list.forEach((e) => {
+    const k = e.f === key ? e.t : e.f;
+    if (!peers.has(k)) peers.set(k, Object.assign(info(k), { inn: null, out: null }));
+    peers.get(k)[e.t === key ? 'inn' : 'out'] = e;
+  });
+  // Рамки: ЦД — всегда одна; в остальных источники и получатели расходятся в две рамки (снизу и сверху)
+  const groups = new Map();
+  peers.forEach((p) => {
+    const gk = p.g.type === 'cd' || (p.inn && p.out) ? p.g.key : p.g.key + (p.out ? '#up' : '#down');
+    if (!groups.has(gk)) groups.set(gk, Object.assign({}, p.g, { nodes: [] }));
+    groups.get(gk).nodes.push(p);
+  });
+  const gl = [...groups.values()];
+  gl.forEach((g) => { g.side = g.nodes.every((p) => !p.out) ? 'down' : g.nodes.every((p) => !p.inn) ? 'up' : null; });
+  // Рамки с двусторонними связями — на ту сторону, где систем меньше
+  const cnt = { up: 0, down: 0 };
+  gl.filter((g) => g.side).forEach((g) => (cnt[g.side] += g.nodes.length));
+  gl.filter((g) => !g.side).sort((a, b) => b.nodes.length - a.nodes.length).forEach((g) => { g.side = cnt.up <= cnt.down ? 'up' : 'down'; cnt[g.side] += g.nodes.length; });
+  gl.forEach((g) => g.nodes.forEach((p) => (p.side = g.side)));
+  const ordOf = (g) => { const i = LS_ROW_ORDER.indexOf(g.type); return i < 0 ? 9 : i; };
+  // ---- Раскладка ----
+  const NW = 156, NH = 42, CG = 18, P = 10, HDR = 22, GG = 18, BH = 58, LW = NW + CG - 6, M = 20;
+  const FH = HDR + P + NH + P;
+  const row = (side) => gl.filter((g) => g.side === side).sort((a, b) => ordOf(a) - ordOf(b));
+  const place = (gs) => {
+    let x = 0;
+    gs.forEach((g) => {
+      const nw = g.nodes.length * NW + (g.nodes.length - 1) * CG;
+      g.w = Math.max(nw + 2 * P, Math.min(330, 30 + g.title.length * 7.4));
+      g.x = x;
+      g.nodes.forEach((p, i) => (p.x = x + (g.w - nw) / 2 + i * (NW + CG)));
+      x += g.w + GG;
+    });
+    return Math.max(0, x - GG);
+  };
+  const up = row('up'), down = row('down');
+  const wU = place(up), wD = place(down), W = Math.max(wU, wD, 460);
+  [[up, wU], [down, wD]].forEach(([gs, w]) => gs.forEach((g) => { g.x += (W - w) / 2; g.nodes.forEach((p) => (p.x += (W - w) / 2)); }));
+  // Подписи: на стрелке, в промежутке между системой и полосой; высота — оценка, во втором проходе — по факту
+  const items = [];
+  peers.forEach((p) => {
+    const isUp = p.side === 'up';
+    // Стрелки по экрану: «↑» — данные идут вверх, «↓» — вниз
+    [p.inn, p.out].filter(Boolean).forEach((e) => items.push({ p, e, upArrow: isUp === (e === p.out), isUp }));
+  });
+  items.forEach((it, i) => {
+    it.i = i;
+    const txt = it.e.w.length + it.e.r.length * 0.85;
+    it.h = (o._h && o._h[i]) || 10 + Math.ceil((txt * 6.1) / (LW - 34)) * 14;
+  });
+  const stackH = (side) => Math.max(0, ...[...peers.values()].filter((p) => p.side === side).map((p) => items.filter((it) => it.p === p).reduce((s, it) => s + it.h, 0) + 6 * (items.filter((it) => it.p === p).length - 1)));
+  const gapU = Math.max(64, stackH('up') + 2 * M), gapD = Math.max(64, stackH('down') + 2 * M);
+  const yBus = (up.length ? FH : 0) + (up.length ? gapU : 0), yDown = yBus + BH + gapD;
+  up.forEach((g) => { g.y = 0; g.nodes.forEach((p) => (p.y0 = HDR + P)); });
+  down.forEach((g) => { g.y = yDown; g.nodes.forEach((p) => (p.y0 = yDown + HDR + P)); });
+  const H = down.length ? yDown + FH : yBus + BH;
+  // ---- Стрелки и подписи ----
+  let paths = '', labels = '';
+  peers.forEach((p) => {
+    const its = items.filter((it) => it.p === p);
+    const cx = p.x + NW / 2;
+    const isUp = its[0].isUp;
+    // Две стрелки: «вверх» — левее, «вниз» — правее; подписи стопкой в том же порядке
+    its.sort((a, b) => (b.upArrow ? 1 : 0) - (a.upArrow ? 1 : 0));
+    const total = its.reduce((s, it) => s + it.h, 0) + 6 * (its.length - 1);
+    const g0 = isUp ? FH - P : yBus + BH, g1 = isUp ? yBus : yDown + P;
+    let ty = (g0 + g1) / 2 - total / 2;
+    its.forEach((it, j) => {
+      const x = its.length > 1 ? cx + (j ? 14 : -14) : cx;
+      const yNode = isUp ? p.y0 + NH : p.y0, yB = isUp ? yBus : yBus + BH;
+      const [y0, y1] = (it.e === p.out) ? [yB, yNode] : [yNode, yB];
+      paths += `<path d="M${x},${y0} L${x},${y1}" class="k-${it.e.k}" marker-end="url(#lsbArr-${it.e.k})"/>`;
+      labels += `<div class="ls-fl k-${it.e.k}" data-i="${it.i}" style="left:${cx - LW / 2}px;top:${ty}px;width:${LW}px"><b>${it.upArrow ? '↑' : '↓'}</b><span>${it.e.w}<em>${it.e.r}</em></span></div>`;
+      ty += it.h + 6;
+    });
+  });
+  const mk = (k, c) => `<marker id="lsbArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`;
+  const nIn = list.filter((e) => e.t === key).length, nOut = list.length - nIn;
+  host.innerHTML = `<div class="ls-fcanvas v-${view}" style="width:${W}px;height:${H}px">
+    ${gl.map((g) => `<div class="ls-fgrp g-${g.type}" style="left:${g.x}px;top:${g.y}px;width:${g.w}px;height:${FH}px"><span>${g.title}</span></div>`).join('')}
+    <svg width="${W}" height="${H}"><defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}</defs>${paths}</svg>
+    <div class="ls-fnode ls-bus k-${me.kind}" style="left:0;top:${yBus}px;width:${W}px;height:${BH}px"><span>${me.g.title}</span><b>${key}</b><span>${[nIn ? `получает: ${nIn}` : '', nOut ? `передаёт: ${nOut}` : ''].filter(Boolean).join(' · ')}</span></div>
+    ${[...peers.values()].map((p) => `<div class="ls-fnode k-${p.kind}" style="left:${p.x}px;top:${p.y0}px;width:${NW}px;height:${NH}px"><b>${p.k}</b></div>`).join('')}
+    <div class="ls-flbls">${labels}</div>
+  </div>`;
+  // Второй проход: подписи по их реальной высоте
+  if (!o._h) {
+    const h = [];
+    host.querySelectorAll('.ls-fl[data-i]').forEach((x) => (h[+x.dataset.i] = x.offsetHeight));
+    lsBus(host, grid, key, list, view, { _h: h });
+  }
 }
 
 // ---------- Стрелки потоков на большой схеме (при наведении на систему) ----------

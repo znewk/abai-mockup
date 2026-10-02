@@ -216,6 +216,13 @@
 .ls-pop-h { font-size: 13px; color: #4d5563; margin: 0 0 8px 2px; }
 .ls-pop-h b { color: #16191f; font-size: 14px; }
 .ls-pop .ls-focus { overflow: hidden; }
+.ls-pop * { pointer-events: none !important; }
+/* Система посередине — широкая полоса, к ней прямые стрелки; подпись — на стрелке, с направлением ↑ / ↓ */
+.ls-bus { align-items: center; text-align: center; border-width: 2px; }
+.ls-bus b { font-size: 14px; }
+.ls-pop .ls-fnode:not(.ls-bus) b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ls-bus span:first-child { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
+.ls-fl span em { display: block; font-style: normal; font-size: 10px; color: #7a8291; }
 
 /* Группы на компактной схеме: в какой ЦД / слой входит система */
 .ls-fgrp { position: absolute; box-sizing: border-box; border: 1.5px solid #d5d9e1; border-radius: 12px; background: rgba(255,255,255,.7); z-index: 1; }
