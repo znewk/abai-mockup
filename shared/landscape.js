@@ -206,13 +206,43 @@ const LS_FMT = [[/xlsx|excel/i, 'Excel'], [/word|docx/i, 'Word'], [/pdf/i, 'PDF'
 function lsSteps(view, ref) {
   return lsRefParts(ref).map((p) => (p.codes ? Object.assign({}, p, { steps: p.codes.map((c) => ({ code: c, list: (LS_STEPS[view] || {})[p.proc + ' ' + c] || [] })) }) : p));
 }
+// Исполнитель шага с организацией: «ДОУП · ОМГ (ДЗО)», «Службы НГДУ», «КазНИПИ»
+const lsRole = (x) => (!x.o || x.r === x.o || x.r.includes(x.o) ? x.r : `${x.r} · ${x.o}`);
+// Кто выполняет шаги связи: «откуда → куда» по шагам BPMN
+function lsWho(e, view) {
+  const parts = (e.refs || [e.r]).flatMap((r) => lsSteps(view, r)).filter((p) => p.steps);
+  const roles = (st) => [...new Set(st.flatMap((s) => s.list.map(lsRole)))].join(', ');
+  const who = [...new Set(parts.map((p) => (p.arrow && p.steps.length === 2 ? `${roles([p.steps[0]])} → ${roles([p.steps[1]])}` : roles(p.steps))).filter(Boolean))].join('; ');
+  return who || (typeof LS_WHO !== 'undefined' && LS_WHO[e.f + '|' + e.t]) || '';
+}
+// Организации — группы блока «Кто что делает»
+const LS_ORGS = [[/^КМГ$/, 'КМГ — корпоративный центр'], [/^КМГИ|КазНИПИ/, 'КМГИ и КазНИПИ'], [/ОМГ|НГДУ/, 'ДЗО — ОМГ и НГДУ'], [/[Пп]одряд|бригада/, 'Подрядчики']];
+const lsOrgCat = (o) => (LS_ORGS.find(([re]) => re.test(o)) || [0, 'Другие участники'])[1];
+function lsRoles(edges, view, open) {
+  const m = new Map();
+  edges.forEach((e) => (e.refs || [e.r]).flatMap((r) => lsSteps(view, r)).forEach((p) => (p.steps || []).forEach((s) => s.list.forEach((x) => {
+    const cat = lsOrgCat(x.o || x.r);
+    if (!m.has(cat)) m.set(cat, new Map());
+    const rm = m.get(cat), role = lsRole(x);
+    if (!rm.has(role)) rm.set(role, new Map());
+    rm.get(role).set(`${p.proc} ${x.c}`, x.t);
+  }))));
+  if (!m.size) return '';
+  const order = LS_ORGS.map((x) => x[1]).concat('Другие участники');
+  const cats = [...m].sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+  return `<div class="ls-roles">
+    <div class="ls-roles-h"><b>Кто что делает</b><span>исполнители шагов BPMN, на которые опираются связи (дорожки BPMN) · клик по роли — свернуть / развернуть её шаги</span></div>
+    <div class="ls-roles-c">${cats.map(([cat, rm]) => `<div><b>${cat}</b>${[...rm].sort((a, b) => b[1].size - a[1].size).map(([role, st]) => `<details${open ? ' open' : ''}><summary>${role} <em>${st.size}</em></summary><ul>${[...st].map(([code, t]) => `<li><span>${code}</span> ${t}</li>`).join('')}</ul></details>`).join('')}</div>`).join('')}</div>
+  </div>`;
+}
+
 function lsDetail(e, view) {
   const parts = (e.refs || [e.r]).flatMap((r) => lsSteps(view, r));
   const docs = parts.flatMap((p) => (p.steps || []).flatMap((s) => s.list.flatMap((x) => x.d)));
   const fmt = LS_FMT.filter(([re]) => re.test(e.w) || docs.some((d) => re.test(d))).map((x) => x[1]);
   let proc = null;
   const step = (x, tag) => `<div class="ls-d-st"><i>${tag}</i><div><b>${x.c}</b> ${x.t}
-    <span>исполнитель: ${x.r}${x.s.length ? ` · системы: ${x.s.join(', ')}` : ''}</span>
+    <span>исполнитель: ${lsRole(x)}${x.s.length ? ` · системы: ${x.s.join(', ')}` : ''}</span>
     ${x.d.length ? `<span>документ: ${x.d.join('; ')}</span>` : ''}${x.n.map((n) => `<q>${n}</q>`).join('')}</div></div>`;
   return `<div class="ls-d">
     <div class="ls-d-row"><i>Как</i><span>${LS_KINDS[e.k]}</span></div>
@@ -270,9 +300,10 @@ function abaiLandscape(root, view = 'dream', flow) {
       <div class="ls-fbtns"><button data-fl="all" class="all ${isAll ? 'on' : ''}">Вся сеть<span>все связи</span></button>${flows.map((f) => `<button data-fl="${f.id}" class="${fl && f.id === fl.id ? 'on' : ''}">${f.name}<span>${f.mods}</span></button>`).join('')}<button data-fl="" class="off ${fl ? '' : 'on'}">Без стрелок</button></div>
       ${fl ? `<div class="ls-fnote">${fl.note}</div>
       <div class="ls-fbody ${isAll ? 'all' : ''}"><div class="ls-focus"></div>
-        <ol class="ls-fsteps ${full ? 'full' : ''}">${fl.e.map(([f, t, w, r, k, refs, sc], i) => `<li data-fi="${i}" class="k-${k}"><b>${i + 1}</b><div><span class="ft">${f} → ${t}</span>${w}<em>${r} · ${LS_KINDS[k]}${sc ? ` · ${sc.join(', ')}` : ''}</em>${isAll
+        <ol class="ls-fsteps ${full ? 'full' : ''}">${fl.e.map(([f, t, w, r, k, refs, sc], i) => `<li data-fi="${i}" class="k-${k}"><b>${i + 1}</b><div><span class="ft">${f} → ${t}</span>${w}<em>${r} · ${LS_KINDS[k]}${sc ? ` · ${sc.join(', ')}` : ''}</em>${(() => { const who = lsWho({ f, t, r, refs }, view); return who ? `<span class="ls-who">кто: ${who}</span>` : ''; })()}${isAll
           ? `<details${full ? ' open' : ''}><summary>подробно: шаги BPMN</summary>${lsDetail({ f, t, w, r, k, refs }, view)}</details>`
           : full ? lsDetail({ f, t, w, r, k }, view) : ''}</div></li>`).join('')}</ol></div>
+      ${lsRoles(fl.e.map(([f, t, w, r, k, refs]) => ({ r, refs })), view, full || !isAll)}
       <div class="ls-fkinds">${[...new Set(fl.e.map((x) => x[4]))].map((k) => `<span class="k-${k}">${LS_KINDS[k]}</span>`).join('')}</div>` : ''}
     </div>
     <div class="ls-scroll"><div class="ls-grid ${view}">
@@ -696,7 +727,7 @@ function lsBus(host, grid, key, list, view, o = {}) {
       const yNode = isUp ? p.y0 + NH : p.y0, yB = isUp ? yBus : yBus + BH;
       const [y0, y1] = (it.e === p.out) ? [yB, yNode] : [yNode, yB];
       paths += `<path d="M${x},${y0} L${x},${y1}" class="k-${it.e.k}" marker-end="url(#lsbArr-${it.e.k})"/>`;
-      labels += `<div class="ls-fl k-${it.e.k}" data-i="${it.i}" style="left:${cx - LW / 2}px;top:${ty}px;width:${LW}px"><b>${it.upArrow ? '↑' : '↓'}</b><span>${o.full ? `<strong>${it.e.w}</strong><em>${it.e.f} → ${it.e.t}</em>${lsDetail(it.e, view)}` : `${it.e.w}<em>${it.e.r}</em>`}</span></div>`;
+      labels += `<div class="ls-fl k-${it.e.k}" data-i="${it.i}" style="left:${cx - LW / 2}px;top:${ty}px;width:${LW}px"><b>${it.upArrow ? '↑' : '↓'}</b><span>${o.full ? `<strong>${it.e.w}</strong><em>${it.e.f} → ${it.e.t}</em>${lsDetail(it.e, view)}` : `${it.e.w}${(() => { const who = lsWho(it.e, view); return who ? `<i class="ls-who">кто: ${who}</i>` : ''; })()}<em>${it.e.r}</em>`}</span></div>`;
       ty += it.h + 6;
     });
   });
@@ -917,7 +948,8 @@ function lsNet(host, grid, edges, view, o = {}) {
     canvas.querySelectorAll('.ls-fnode').forEach((x) => x.classList.toggle('hot', !!ids && items.some((q) => ids.includes(q.i) && (q.a.k === x.dataset.n || q.b.k === x.dataset.n))));
     if (it) {
       const bx = canvas.querySelector(`.ls-nb[data-e="${it.i}"]`);
-      call.innerHTML = `<b>${it.e.n}</b> ${it.e.f} → ${it.e.t}<span>${it.e.w}</span><em>${it.e.r} · ${LS_KINDS[it.e.k]}</em>`;
+      const who = lsWho(it.e, view);
+      call.innerHTML = `<b>${it.e.n}</b> ${it.e.f} → ${it.e.t}<span>${it.e.w}</span>${who ? `<i>кто: ${who}</i>` : ''}<em>${it.e.r} · ${LS_KINDS[it.e.k]}</em>`;
       call.style.display = 'block';
       const L = parseFloat(bx.style.left) + sh + 24, T = parseFloat(bx.style.top) - 6;
       call.style.left = Math.min(L, CW - call.offsetWidth - 4) + 'px'; call.style.top = Math.min(T, H - call.offsetHeight - 4) + 'px';
