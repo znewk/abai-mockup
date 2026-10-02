@@ -263,7 +263,7 @@ function abaiLandscape(root, view = 'dream', flow) {
   root._ro.observe(grid);
 }
 
-// ---------- Компактная схема сценария: только участвующие системы, сверху вниз по направлению потока ----------
+// ---------- Компактная схема сценария: только участвующие системы, снизу вверх по направлению потока (как на большой схеме) ----------
 // Группа системы на компактной схеме: в какой ЦД / слой она входит на большой схеме
 function lsGroup(el, view) {
   if (!el) return { key: 'other', title: 'Прочее', type: 'eng' };
@@ -330,7 +330,7 @@ function lsFocus(host, grid, edges, view, o = {}) {
   };
   const items = edges.map((e, i) => { const a = node(e.f), b = node(e.t); a.out.push(b); b.inn.push(a); return { e, i, a, b }; });
   // Пользователи, внешние системы, АСУ ТП: если в группе есть и чистые источники, и чистые получатели — две рамки
-  // («кто передаёт» сверху, «кто получает» снизу). Рамка ЦД всегда одна.
+  // («кто передаёт» снизу, «кто получает» сверху). Рамка ЦД всегда одна.
   const byKey = {};
   nodes.forEach((n) => (byKey[n.g.key] = byKey[n.g.key] || []).push(n));
   Object.values(byKey).forEach((list) => {
@@ -349,7 +349,7 @@ function lsFocus(host, grid, edges, view, o = {}) {
     g.subs = Math.max(...g.nodes.map((n) => n.sub)) + 1;
     g.rowsOf = Array.from({ length: g.subs }, (_, s) => g.nodes.filter((n) => n.sub === s));
   });
-  // ---- Вертикальная раскладка: ряды сверху вниз по ходу данных, группы ряда — рядом ----
+  // ---- Вертикальная раскладка: ряды снизу вверх по ходу данных (источники внизу), группы ряда — рядом ----
   const NW = 172, NH = 34, HG = 22, IGV = 74, P = 12, HDR = 24, GG = 30, GAPV = 96;
   groups.forEach((g) => {
     g.cmax = Math.max(...g.rowsOf.map((r) => r.length));
@@ -376,25 +376,26 @@ function lsFocus(host, grid, edges, view, o = {}) {
   const W0 = Math.max(...rowW, 600);
   let y = 0;
   const rowY = [];
-  rows.forEach((list, r) => {
+  rows.slice().reverse().forEach((list) => {
+    const r = rows.indexOf(list);
     rowY[r] = y;
     let x = (W0 - rowW[r]) / 2;
     list.forEach((g) => {
       g.x = x; g.y = y + (rowH[r] - g.h) / 2; x += g.w + GG;
       g.rowsOf.forEach((rw, s) => {
         const span = rw.length * NW + (rw.length - 1) * HG, off = (g.w - span) / 2;
-        rw.forEach((n, i) => { n.x = g.x + off + i * (NW + HG); n.y0 = g.y + HDR + P + s * (NH + IGV); });
+        rw.forEach((n, i) => { n.x = g.x + off + i * (NW + HG); n.y0 = g.y + HDR + P + (g.subs - 1 - s) * (NH + IGV); });
       });
     });
     y += rowH[r] + GAPV;
   });
   const H0 = y - GAPV;
-  // ---- Стрелки: по ходу данных — вниз, обратные — вверх; мимо чужих блоков ----
+  // ---- Стрелки: по ходу данных — вверх, обратные — вниз; мимо чужих блоков ----
   const ord = (n) => gRank.get(n.G) * 100 + n.sub;
   items.forEach((it) => {
     it.back = ord(it.b) <= ord(it.a);
     const same = ord(it.b) === ord(it.a); // в одном ряду — дугой справа
-    it.sa = same ? 'r' : it.back ? 't' : 'b'; it.sb = same ? 'r' : it.back ? 'b' : 't'; it.same = same;
+    it.sa = same ? 'r' : it.back ? 'b' : 't'; it.sb = same ? 'r' : it.back ? 't' : 'b'; it.same = same;
   });
   const ports = new Map();
   const add = (n, side, it, other) => { const k = n.k + '|' + side; if (!ports.has(k)) ports.set(k, []); ports.get(k).push({ it, other, n, side }); };
@@ -420,7 +421,7 @@ function lsFocus(host, grid, edges, view, o = {}) {
       backN++; const rx = maxR + 26 + backN * 20;
       d = `M${x0},${y0} C${rx},${y0} ${rx},${y1} ${x1},${y1}`; pts = bez([x0, y0], [rx, y0], [rx, y1], [x1, y1]);
     } else {
-      const sg = it.back ? -1 : 1; // направление по вертикали
+      const sg = it.back ? 1 : -1; // направление по вертикали: по ходу данных — вверх
       const dy = sg * Math.max(36, Math.abs(y1 - y0) * 0.45);
       const straight = bez([x0, y0], [x0, y0 + dy], [x1, y1 - dy], [x1, y1]);
       const rects = [...nodes.values()].filter((n) => n !== it.a && n !== it.b).map((n) => ({ l: n.x - 6, t: n.y0 - 6, r: n.x + NW + 6, b: n.y0 + NH + 6 }))
