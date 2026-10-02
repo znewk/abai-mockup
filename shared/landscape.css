@@ -300,3 +300,36 @@
 .ls-fkinds .k-pub::before { background: repeating-linear-gradient(90deg, #0e7490 0 2px, transparent 2px 5px, #0e7490 5px 11px, transparent 11px 14px); }
 /* Рамка производственных систем на схемах потоков */
 .ls-fgrp.g-prod { border-color: #d9c7a4; background: #fffdf8; } .ls-fgrp.g-prod span { color: #8a5a00; }
+
+/* Вся сеть: все системы и связи вида на одной схеме, список связей под ней */
+.ls-fbtns button.all { border-color: #1c5cab; color: #1c5cab; font-weight: 600; }
+.ls-fbtns button.all.on { color: #fff; }
+.ls-fbody.all { flex-direction: column; flex-wrap: nowrap; }
+.ls-fbody.all .ls-focus { max-width: 100%; box-sizing: border-box; align-self: stretch; }
+.ls-fbody.all .ls-fsteps { flex: none; width: 100%; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+.ls-net svg { z-index: 1; pointer-events: none; }
+.ls-net .ls-fgrp { z-index: 0; }
+.ls-net svg path.hit { stroke: transparent; stroke-width: 10; stroke-dasharray: none; animation: none; pointer-events: stroke; cursor: pointer; }
+.ls-net svg path { transition: opacity .12s; }
+.ls-net.focus svg path:not(.hot) { opacity: .1; }
+.ls-net svg path.hot:not(.hit) { stroke-width: 3.2; }
+.ls-net.focus .ls-nb:not(.hot) { opacity: .2; }
+.ls-net.focus .ls-fnode:not(.hot) { opacity: .45; }
+.ls-net .ls-fnode { z-index: 2; cursor: default; }
+.ls-net .ls-fnode.hot { box-shadow: 0 0 0 2px #2a78d6; }
+.ls-ngt { position: absolute; z-index: 2; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #4d5563; padding: 4px 8px 2px; border-radius: 10px 0 8px 0; background: rgba(255,255,255,.92); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; }
+.ls-ngt.g-cd { color: #164a8a; } .v-dream .ls-ngt.g-cd { color: #0b6b3a; } .v-nedra .ls-ngt.g-cd { color: #4b2f78; }
+.ls-ngt.g-data { color: #0b6b3a; } .ls-ngt.g-asu, .ls-ngt.g-ext, .ls-ngt.g-prod { color: #8a5a00; } .ls-ngt.g-mes, .ls-ngt.g-manual { color: #a63a32; }
+.ls-nbs { position: absolute; left: 0; top: 0; z-index: 3; }
+.ls-nb { position: absolute; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; font-weight: 700; color: #fff; background: #2a78d6; box-shadow: 0 0 0 2px #fff; cursor: pointer; transition: opacity .12s; }
+.ls-nb.k-input { background: #0f7a55; } .ls-nb.k-seq { background: #6b7383; } .ls-nb.k-manual { background: #c2413a; } .ls-nb.k-int { background: #d08a1e; } .ls-nb.k-pub { background: #0e7490; }
+.ls-nb.hot { transform: scale(1.25); }
+.ls-ncall { position: absolute; z-index: 6; display: none; max-width: 300px; background: #fff; border: 1px solid #cfd6e0; border-radius: 8px; box-shadow: 0 8px 24px rgba(16,24,40,.18); padding: 6px 9px; font-size: 12px; line-height: 1.35; color: #16191f; pointer-events: none; }
+.ls-ncall b { color: #1c5cab; margin-right: 4px; }
+.ls-ncall span { display: block; margin-top: 2px; }
+.ls-ncall em { display: block; font-style: normal; font-size: 11px; color: #7a8291; margin-top: 2px; }
+.ls-fsteps li.pick { background: #fff4d6; }
+.ls-fsteps details { margin-top: 4px; }
+.ls-fsteps summary { font-size: 11.5px; color: #1c5cab; cursor: pointer; }
+.ls-net .ls-fnode { padding: 3px 8px; }
+.ls-net .ls-fnode b { font-size: 12px; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

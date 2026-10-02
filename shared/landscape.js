@@ -233,7 +233,22 @@ function abaiLandscape(root, view = 'dream', flow) {
   const V = LS_VIEWS[view];
   const full = LS_MODE === 'full';
   const flows = LS_FLOWS[view] || [];
-  const fl = flow === null ? null : flows.find((f) => f.id === flow) || flows[0];
+  // «Вся сеть» — все связи вида; одинаковые «откуда → куда» из разных сценариев объединяются в одну связь
+  const lsAll = () => {
+    const m = new Map();
+    flows.forEach((f) => f.e.forEach(([a, z, w, r, k]) => {
+      const id = a + '|' + z;
+      if (!m.has(id)) { m.set(id, [a, z, w, r, k, [r], [f.name]]); return; }
+      const e = m.get(id);
+      if (!e[2].includes(w)) e[2] += '; ' + w;
+      if (!e[5].includes(r)) { e[5].push(r); e[3] += ' · ' + r; }
+      if (!e[6].includes(f.name)) e[6].push(f.name);
+    }));
+    return { id: 'all', name: 'Вся сеть', e: [...m.values()],
+      note: `Все системы и связи вида на одной схеме: ${m.size} связей из ${flows.length} сценариев, одинаковые «откуда → куда» объединены. Ряды — как на большой схеме, снизу вверх. Наведите на номер или систему — подсветятся связи; клик по номеру — связь в списке ниже, там же шаги BPMN.` };
+  };
+  const fl = flow === null ? null : flow === 'all' ? lsAll() : flows.find((f) => f.id === flow) || flows[0];
+  const isAll = !!fl && fl.id === 'all';
   const tot = (k) => LS_MODS.reduce((s, m) => s + ((ABAI_LANDSCAPE_DATA[m.id][V.v] || {})[k] || 0), 0);
   root.innerHTML = `
     <div class="ls-top">
@@ -252,10 +267,12 @@ function abaiLandscape(root, view = 'dream', flow) {
     <div class="ls-fbar">
       <div class="ls-fbar-h"><b>Потоки данных</b><span>выберите сценарий — стрелки покажут, что и куда передаётся · наведите на систему — её входящие и исходящие потоки, клик — закрепить окно</span>
         <div class="ls-mode" title="Подробно — по каждой связи шаги BPMN: действие, исполнитель, системы, документы и аннотации">${[['simple', 'Простой'], ['full', 'Подробный']].map(([k, t]) => `<button data-mode="${k}" class="${LS_MODE === k ? 'on' : ''}">${t}</button>`).join('')}</div></div>
-      <div class="ls-fbtns">${flows.map((f) => `<button data-fl="${f.id}" class="${fl && f.id === fl.id ? 'on' : ''}">${f.name}<span>${f.mods}</span></button>`).join('')}<button data-fl="" class="off ${fl ? '' : 'on'}">Без стрелок</button></div>
+      <div class="ls-fbtns"><button data-fl="all" class="all ${isAll ? 'on' : ''}">Вся сеть<span>все связи</span></button>${flows.map((f) => `<button data-fl="${f.id}" class="${fl && f.id === fl.id ? 'on' : ''}">${f.name}<span>${f.mods}</span></button>`).join('')}<button data-fl="" class="off ${fl ? '' : 'on'}">Без стрелок</button></div>
       ${fl ? `<div class="ls-fnote">${fl.note}</div>
-      <div class="ls-fbody"><div class="ls-focus"></div>
-        <ol class="ls-fsteps ${full ? 'full' : ''}">${fl.e.map(([f, t, w, r, k], i) => `<li data-fi="${i}" class="k-${k}"><b>${i + 1}</b><div><span class="ft">${f} → ${t}</span>${w}<em>${r} · ${LS_KINDS[k]}</em>${full ? lsDetail({ f, t, w, r, k }, view) : ''}</div></li>`).join('')}</ol></div>
+      <div class="ls-fbody ${isAll ? 'all' : ''}"><div class="ls-focus"></div>
+        <ol class="ls-fsteps ${full ? 'full' : ''}">${fl.e.map(([f, t, w, r, k, refs, sc], i) => `<li data-fi="${i}" class="k-${k}"><b>${i + 1}</b><div><span class="ft">${f} → ${t}</span>${w}<em>${r} · ${LS_KINDS[k]}${sc ? ` · ${sc.join(', ')}` : ''}</em>${isAll
+          ? `<details${full ? ' open' : ''}><summary>подробно: шаги BPMN</summary>${lsDetail({ f, t, w, r, k, refs }, view)}</details>`
+          : full ? lsDetail({ f, t, w, r, k }, view) : ''}</div></li>`).join('')}</ol></div>
       <div class="ls-fkinds">${[...new Set(fl.e.map((x) => x[4]))].map((k) => `<span class="k-${k}">${LS_KINDS[k]}</span>`).join('')}</div>` : ''}
     </div>
     <div class="ls-scroll"><div class="ls-grid ${view}">
@@ -282,7 +299,7 @@ function abaiLandscape(root, view = 'dream', flow) {
     abaiLandscape(root, view, fl ? fl.id : null);
   }));
   const grid = root.querySelector('.ls-grid');
-  const base = fl ? fl.e.map(([f, t, w, r, k], i) => ({ f, t, w, r, k, n: i + 1 })) : [];
+  const base = fl ? fl.e.map(([f, t, w, r, k, refs], i) => ({ f, t, w, r, k, refs, n: i + 1 })) : [];
   const focus = root.querySelector('.ls-focus');
   const mark = () => {
     lsDraw(grid, []);
@@ -290,7 +307,14 @@ function abaiLandscape(root, view = 'dream', flow) {
     base.forEach((e) => [e.f, e.t].forEach((k) => { const a = lsAnchor(grid, k); if (a) a.classList.add('ep'); }));
   };
   const draw = (edges, o) => (edges === base ? mark() : lsDraw(grid, edges, o));
-  const drawFocus = (o) => focus && lsFocus(focus, grid, base, view, o);
+  // Вся сеть: клик по номеру на схеме — раскрыть связь в списке
+  const pick = (i) => {
+    const li = root.querySelector(`[data-fi="${i}"]`); if (!li) return;
+    const d = li.querySelector('details'); if (d) d.open = true;
+    li.classList.add('pick'); setTimeout(() => li.classList.remove('pick'), 1800);
+    li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  };
+  const drawFocus = (o) => focus && (isAll ? (o && o.hot !== undefined ? focus._hot(o.hot) : lsNet(focus, grid, base, view, { onPick: pick })) : lsFocus(focus, grid, base, view, o));
   draw(base); drawFocus();
   // Наведение на систему: её потоки во всех сценариях вида; клик — закрепить окно (его можно прокрутить и прочитать)
   const linksOf = (key) => {
@@ -352,7 +376,7 @@ function abaiLandscape(root, view = 'dream', flow) {
   // Наведение на пункт списка — выделить одну стрелку
   root.querySelectorAll('[data-fi]').forEach((li) => {
     li.onmouseenter = () => drawFocus({ hot: +li.dataset.fi });
-    li.onmouseleave = () => drawFocus();
+    li.onmouseleave = () => (isAll ? focus._hot(null) : drawFocus());
   });
   if (root._ro) root._ro.disconnect();
   root._ro = new ResizeObserver(() => { draw(base); drawFocus(); });
@@ -691,6 +715,230 @@ function lsBus(host, grid, key, list, view, o = {}) {
     host.querySelectorAll('.ls-fl[data-i]').forEach((x) => (h[+x.dataset.i] = x.offsetHeight));
     lsBus(host, grid, key, list, view, Object.assign({}, o, { _h: h }));
   }
+}
+
+// ---------- Вся сеть: все системы и связи вида на одной схеме ----------
+// Ряды — как на большой схеме, снизу вверх: АСУ ТП → промысловые, производственные системы и инженерное ПО → слой данных и внешние →
+// модули ЦД → ЦД актива и ручной обмен → пользователи. Стрелки ортогональные: от системы в коридор между рядами, по своей дорожке,
+// между рамками — по свободному вертикальному коридору. На стрелке — номер связи, описание — в списке под схемой.
+function lsNetRow(el) {
+  if (!el) return 3;
+  if (el.closest('.ls-box.users')) return 5;
+  if (el.closest('.ls-box.plat') || el.closest('.ls-manual')) return 4;
+  if (el.closest('.ls-zone.cz') || el.closest('.ls-zone.asis:not(.data)') || el.closest('.ls-mod')) return 3;
+  if (el.closest('.ls-zone.data') || el.closest('.ls-box.ext')) return 2;
+  if (el.closest('.ls-box.asu')) return 0;
+  return 1;
+}
+function lsNet(host, grid, edges, view, o = {}) {
+  if (!edges.length) { host.innerHTML = ''; return; }
+  const NH = 38, P = 9, HDR = 22, HG = 12, GG = 40, CM = 14, TS = 8, BR = 9;
+  const FH = HDR + P + NH + P;
+  // ---- Узлы, рамки, ряды ----
+  const nodes = new Map();
+  const node = (k) => {
+    if (!nodes.has(k)) {
+      const el = lsAnchor(grid, k);
+      const kind = el && el.classList.contains('ls-chip') ? (el.className.match(/k-(\w+)/) || [])[1] : 'user';
+      nodes.set(k, { k, kind: kind || 'ext', g: lsGroup(el, view), row: lsNetRow(el), w: Math.round(Math.min(150, Math.max(92, 22 + k.length * 6.4))), e: [] });
+    }
+    return nodes.get(k);
+  };
+  const items = edges.map((e, i) => { const a = node(e.f), b = node(e.t); const it = { e, i, a, b }; a.e.push(it); b.e.push(it); return it; });
+  const groups = new Map();
+  nodes.forEach((n) => {
+    const gk = n.row + '|' + n.g.key;
+    if (!groups.has(gk)) groups.set(gk, Object.assign({}, n.g, { id: gk, row: n.row, nodes: [] }));
+    groups.get(gk).nodes.push(n); n.G = groups.get(gk);
+  });
+  const used = [...new Set([...nodes.values()].map((n) => n.row))].sort((a, b) => a - b);
+  const rowIx = new Map(used.map((r, i) => [r, i]));
+  nodes.forEach((n) => (n.r = rowIx.get(n.row)));
+  const R = used.length;
+  const rows = Array.from({ length: R }, (_, r) => [...groups.values()].filter((g) => rowIx.get(g.row) === r));
+  items.forEach((it) => {
+    it.dir = it.b.r > it.a.r ? 'up' : it.b.r < it.a.r ? 'down' : 'same';
+    it.sa = it.dir === 'down' ? 'b' : 't'; it.sb = it.dir === 'up' ? 'b' : 't';
+  });
+  // Система с множеством связей шире — точки крепления не сливаются, стрелки идут почти прямо
+  nodes.forEach((n) => { const c = (sd) => n.e.filter((it) => (it.a === n && it.sa === sd) || (it.b === n && it.sb === sd)).length; n.w = Math.max(n.w, Math.min(820, Math.max(c('t'), c('b')) * 28)); });
+  // ---- По горизонтали: порядок рамок и систем по соседям (меньше пересечений) ----
+  const place = () => {
+    rows.forEach((gs) => {
+      let x = 0;
+      gs.forEach((g) => {
+        const nw = g.nodes.reduce((s, n) => s + n.w, 0) + (g.nodes.length - 1) * HG;
+        g.w = Math.max(nw + 2 * P, Math.min(270, 26 + g.title.length * 6.9));
+        g.x = x;
+        let nx = x + (g.w - nw) / 2;
+        g.nodes.forEach((n) => { n.x = nx; nx += n.w + HG; });
+        x += g.w + GG;
+      });
+      gs.wd = Math.max(0, x - GG);
+    });
+    const W = Math.max(...rows.map((gs) => gs.wd));
+    rows.forEach((gs) => { const dx = (W - gs.wd) / 2; gs.forEach((g) => { g.x += dx; g.nodes.forEach((n) => (n.x += dx)); }); });
+    return W;
+  };
+  const cx = (n) => n.x + n.w / 2;
+  place();
+  for (let it = 0; it < 8; it++) {
+    rows.forEach((gs) => {
+      gs.forEach((g) => {
+        const nb = g.nodes.flatMap((n) => n.e.map((x) => (x.a === n ? x.b : x.a))).filter((m) => m.G !== g);
+        g.bc = nb.length ? nb.reduce((s, m) => s + cx(m), 0) / nb.length : g.x + g.w / 2;
+        g.nodes.forEach((n) => { const m = n.e.map((x) => (x.a === n ? x.b : x.a)); n.bc = m.length ? m.reduce((s, q) => s + cx(q), 0) / m.length : cx(n); });
+        g.nodes.sort((p, q) => p.bc - q.bc);
+      });
+      gs.sort((p, q) => p.bc - q.bc);
+    });
+    place();
+  }
+  const W = place();
+  // ---- Маршруты по горизонтали: каналы между рядами и вертикальные коридоры ----
+  // Канал c — над рядом c (между рядами c и c + 1)
+  const free = (r) => {
+    const b = rows[r].map((g) => [g.x - 8, g.x + g.w + 8]).sort((p, q) => p[0] - q[0]);
+    const out = []; let cur = -1e6;
+    b.forEach(([l, h]) => { if (l > cur) out.push([cur, l]); cur = Math.max(cur, h); });
+    out.push([cur, 1e6]);
+    return out;
+  };
+  const corr = [];
+  const corridor = (r0, r1, want) => {
+    // Свободно во всех рядах r0..r1
+    let iv = [[-1e6, 1e6]];
+    for (let r = r0; r <= r1; r++) {
+      const f = free(r), nx = [];
+      iv.forEach(([l, h]) => f.forEach(([a, b]) => { const L = Math.max(l, a), H = Math.min(h, b); if (H - L > 14) nx.push([L, H]); }));
+      iv = nx;
+    }
+    let best = null;
+    iv.forEach(([l, h]) => { const x = Math.max(l + 8, Math.min(h - 8, want)); if (!best || Math.abs(x - want) < Math.abs(best.x - want)) best = { x, l, h }; });
+    let x = best.x, k = 0;
+    // Несколько связей в одном коридоре — дорожки через 7 px
+    while (corr.some((c) => Math.abs(c.x - x) < 6 && c.r0 <= r1 && r0 <= c.r1) && k < 40) { k++; x = best.x + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 7; if (x < best.l + 4 || x > best.h - 4) x = best.x + k * 7 * (best.x - best.l < best.h - best.x ? 1 : -1); }
+    corr.push({ x, r0, r1 });
+    return x;
+  };
+  const ports = new Map();
+  const port = (n, side, it) => { const key = n.k + side; if (!ports.has(key)) ports.set(key, []); ports.get(key).push(it); };
+  items.forEach((it) => { port(it.a, it.sa, it); port(it.b, it.sb, it); });
+  // Точки крепления: по ширине системы, по порядку другого конца
+  ports.forEach((list, key) => {
+    const n = nodes.get(key.slice(0, -1)), side = key.slice(-1);
+    list.sort((p, q) => cx(p.a === n && p.sa === side ? p.b : p.a) - cx(q.a === n && q.sa === side ? q.b : q.a));
+    list.forEach((it, j) => { const x = n.x + (n.w * (j + 1)) / (list.length + 1); if (it.a === n && it.sa === side && it.xa === undefined) it.xa = x; else it.xb = x; });
+  });
+  const hseg = []; // { c, x1, x2, it, k }
+  items.forEach((it) => {
+    const { a, b } = it;
+    // U — конец отрезка, от которого линия идёт вверх, L — вниз (для порядка дорожек без лишних пересечений)
+    if (it.dir === 'same') { hseg.push(it.h1 = { c: a.r, x1: it.xa, x2: it.xb, it, same: true }); return; }
+    const up = it.dir === 'up', c1 = up ? a.r : a.r - 1, c2 = up ? b.r - 1 : b.r;
+    if (c1 === c2) { hseg.push(it.h1 = { c: c1, x1: it.xa, x2: it.xb, it, U: up ? it.xb : it.xa, L: up ? it.xa : it.xb }); return; }
+    const lo = up ? a.r + 1 : b.r + 1, hi = up ? b.r - 1 : a.r - 1;
+    it.xc = corridor(lo, hi, (it.xa + it.xb) / 2);
+    hseg.push(it.h1 = { c: c1, x1: it.xa, x2: it.xc, it, U: up ? it.xc : it.xa, L: up ? it.xa : it.xc }, it.h2 = { c: c2, x1: it.xc, x2: it.xb, it, U: up ? it.xb : it.xc, L: up ? it.xc : it.xb });
+  });
+  // Дорожки в канале: отрезки не перекрываются на одной дорожке
+  const tracks = {};
+  hseg.forEach((s) => { s.l = Math.min(s.x1, s.x2); s.h = Math.max(s.x1, s.x2); });
+  // Порядок сверху вниз: уходящие влево — по возрастанию U, затем уходящие вправо — по убыванию U, внизу — связи внутри ряда
+  // (так линии из одной системы не перекрещиваются); перекрывающиеся отрезки — на разных дорожках, остальные делят дорожку
+  const okey = (s) => (s.same ? [2, s.h - s.l] : s.L <= s.U ? [0, s.U] : [1, -s.U]);
+  [...new Set(hseg.map((s) => s.c))].forEach((c) => {
+    const list = hseg.filter((s) => s.c === c).sort((p, q) => { const a = okey(p), b = okey(q); return a[0] - b[0] || a[1] - b[1]; });
+    list.forEach((s, i) => { s.k = Math.max(-1, ...list.slice(0, i).filter((q) => q.l < s.h + 10 && s.l < q.h + 10).map((q) => q.k)) + 1; });
+    tracks[c] = Math.max(...list.map((s) => s.k)) + 1;
+  });
+  // ---- По вертикали: сверху вниз ----
+  const chH = (c) => (tracks[c] ? 2 * CM + (tracks[c] - 1) * TS : 26);
+  let y = tracks[R - 1] ? chH(R - 1) : 0;
+  const rowY = [];
+  for (let r = R - 1; r >= 0; r--) { rowY[r] = y; y += FH + (r ? chH(r - 1) : 0); }
+  const H = y + (tracks[-1] ? chH(-1) : 0);
+  groups.forEach((g) => { g.y = rowY[rowIx.get(g.row)]; });
+  nodes.forEach((n) => { n.y0 = rowY[n.r] + HDR + P; });
+  const chTop = (c) => (c >= R - 1 ? 0 : rowY[c + 1] + FH); // канал над рядом c
+  const ty = (s) => chTop(s.c) + CM + s.k * TS;
+  // ---- Пути: скруглённые ломаные ----
+  const poly = (pts) => {
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], [x2, y2] = pts[i + 1];
+      const r1 = Math.min(5, Math.hypot(x1 - x0, y1 - y0) / 2), r2 = Math.min(5, Math.hypot(x2 - x1, y2 - y1) / 2);
+      const ax = x1 - Math.sign(x1 - x0) * r1, ay = y1 - Math.sign(y1 - y0) * r1, bx = x1 + Math.sign(x2 - x1) * r2, by = y1 + Math.sign(y2 - y1) * r2;
+      d += ` L${ax},${ay} Q${x1},${y1} ${bx},${by}`;
+    }
+    const [lx, ly] = pts[pts.length - 1];
+    return d + ` L${lx},${ly}`;
+  };
+  const nodeBox = [...nodes.values()].map((n) => ({ l: n.x - 2, t: n.y0 - 2, r: n.x + n.w + 2, b: n.y0 + NH + 2 }));
+  const placed = [];
+  let paths = '', badges = '';
+  items.forEach((it) => {
+    const { a, b } = it;
+    const ya = it.sa === 't' ? a.y0 : a.y0 + NH, yb = it.sb === 't' ? b.y0 : b.y0 + NH;
+    const pts = it.h2
+      ? [[it.xa, ya], [it.xa, ty(it.h1)], [it.xc, ty(it.h1)], [it.xc, ty(it.h2)], [it.xb, ty(it.h2)], [it.xb, yb]]
+      : [[it.xa, ya], [it.xa, ty(it.h1)], [it.xb, ty(it.h1)], [it.xb, yb]];
+    it.pts = pts;
+    paths += `<path d="${poly(pts)}" class="k-${it.e.k}" data-e="${it.i}" marker-end="url(#lsnArr-${it.e.k})"/><path d="${poly(pts)}" class="hit" data-e="${it.i}"/>`;
+    // Номер: на отрезке, где не мешает другим номерам и системам
+    const segs = []; for (let s = 0; s < pts.length - 1; s++) segs.push([pts[s], pts[s + 1]]);
+    let best = null;
+    const order = segs.map((sg, s) => [sg, s]).sort((p, q) => Math.hypot(q[0][1][0] - q[0][0][0], q[0][1][1] - q[0][0][1]) - Math.hypot(p[0][1][0] - p[0][0][0], p[0][1][1] - p[0][0][1]));
+    for (const [[p0, p1]] of order) for (const t of [0.5, 0.3, 0.7, 0.15, 0.85]) {
+      const x = p0[0] + (p1[0] - p0[0]) * t, yy = p0[1] + (p1[1] - p0[1]) * t, q = { l: x - BR, t: yy - BR, r: x + BR, b: yy + BR };
+      const ov = (z) => Math.max(0, Math.min(q.r, z.r) - Math.max(q.l, z.l)) * Math.max(0, Math.min(q.b, z.b) - Math.max(q.t, z.t));
+      const sc = placed.reduce((s, z) => s + 3 * ov(z), 0) + nodeBox.reduce((s, z) => s + 2 * ov(z), 0) + Math.abs(t - 0.5) * 4;
+      if (!best || sc < best.sc) best = { sc, x, y: yy };
+      if (sc < 1) break;
+    }
+    placed.push({ l: best.x - BR - 2, t: best.y - BR - 2, r: best.x + BR + 2, b: best.y + BR + 2 });
+    badges += `<b class="ls-nb k-${it.e.k}" data-e="${it.i}" style="left:${best.x - BR}px;top:${best.y - BR}px">${it.e.n}</b>`;
+  });
+  const minX = Math.min(0, ...corr.map((c) => c.x - 10)), maxX = Math.max(W, ...corr.map((c) => c.x + 10));
+  const sh = -minX + 4, CW = maxX - minX + 8;
+  const mk = (k, c) => `<marker id="lsnArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`;
+  host.innerHTML = `<div class="ls-fcanvas ls-net v-${view}" style="width:${CW}px;height:${H}px">
+    ${[...groups.values()].map((g) => `<div class="ls-fgrp g-${g.type}" style="left:${g.x + sh}px;top:${g.y}px;width:${g.w}px;height:${FH}px"></div><div class="ls-ngt g-${g.type}" title="${g.title}" style="left:${g.x + sh + 1}px;top:${g.y + 1}px;max-width:${g.w - 2}px">${g.title}</div>`).join('')}
+    <svg width="${CW}" height="${H}"><defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}${mk('pub', '#0e7490')}</defs><g transform="translate(${sh},0)">${paths}</g></svg>
+    ${[...nodes.values()].map((n) => `<div class="ls-fnode k-${n.kind}" data-n="${n.k}" title="${n.k}" style="left:${n.x + sh}px;top:${n.y0}px;width:${n.w}px;height:${NH}px"><b>${n.k}</b></div>`).join('')}
+    <div class="ls-nbs" style="transform:translate(${sh}px,0)">${badges}</div>
+    <div class="ls-ncall"></div>
+  </div>`;
+  // ---- Подсветка: наведение на номер, стрелку или систему; клик по номеру — раскрыть связь в списке ----
+  const canvas = host.querySelector('.ls-net'), call = host.querySelector('.ls-ncall');
+  const hot = (ids, it) => {
+    canvas.classList.toggle('focus', !!ids);
+    canvas.querySelectorAll('[data-e]').forEach((x) => x.classList.toggle('hot', !!ids && ids.includes(+x.dataset.e)));
+    canvas.querySelectorAll('.ls-fnode').forEach((x) => x.classList.toggle('hot', !!ids && items.some((q) => ids.includes(q.i) && (q.a.k === x.dataset.n || q.b.k === x.dataset.n))));
+    if (it) {
+      const bx = canvas.querySelector(`.ls-nb[data-e="${it.i}"]`);
+      call.innerHTML = `<b>${it.e.n}</b> ${it.e.f} → ${it.e.t}<span>${it.e.w}</span><em>${it.e.r} · ${LS_KINDS[it.e.k]}</em>`;
+      call.style.display = 'block';
+      const L = parseFloat(bx.style.left) + sh + 24, T = parseFloat(bx.style.top) - 6;
+      call.style.left = Math.min(L, CW - call.offsetWidth - 4) + 'px'; call.style.top = Math.min(T, H - call.offsetHeight - 4) + 'px';
+      if (L > CW - call.offsetWidth - 4) call.style.left = Math.max(4, L - 48 - call.offsetWidth) + 'px';
+    } else call.style.display = 'none';
+  };
+  canvas.querySelectorAll('[data-e]').forEach((x) => {
+    const it = items[+x.dataset.e];
+    x.onmouseenter = () => hot([it.i], it);
+    x.onmouseleave = () => hot(null);
+    x.onclick = () => o.onPick && o.onPick(it.i);
+  });
+  canvas.querySelectorAll('.ls-fnode').forEach((x) => {
+    const n = nodes.get(x.dataset.n);
+    x.onmouseenter = () => hot(n.e.map((q) => q.i));
+    x.onmouseleave = () => hot(null);
+  });
+  host._hot = (i) => hot(i === null ? null : [i], i === null ? null : items[i]);
+  // Широкая сеть — уменьшаем, чтобы вся карта была видна без прокрутки
+  const avail = host.clientWidth - 30;
+  canvas.style.zoom = CW > avail && avail > 300 ? (avail / CW).toFixed(3) : '';
 }
 
 // ---------- Стрелки потоков на большой схеме (при наведении на систему) ----------
