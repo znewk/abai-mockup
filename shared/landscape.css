@@ -149,6 +149,13 @@
 .ls-fbtns button.off { background: #fff; color: #7a8291; }
 .ls-fbtns button.off.on { background: #4d5563; border-color: #4d5563; color: #fff; }
 .ls-fnote { margin: 10px 0 8px; font-size: 13px; color: #2e3440; }
+.ls-fsteps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 6px 14px; }
+.ls-fsteps li { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; line-height: 1.35; padding: 5px 7px; border-radius: 8px; cursor: default; }
+.ls-fsteps li:hover { background: #f3f6fb; }
+.ls-fsteps li > b { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 11px; background: #2a78d6; }
+.ls-fsteps li.k-input > b { background: #0f7a55; } .ls-fsteps li.k-seq > b { background: #6b7383; } .ls-fsteps li.k-manual > b { background: #c2413a; } .ls-fsteps li.k-int > b { background: #d08a1e; }
+.ls-fsteps .ft { display: block; font-weight: 600; color: #16191f; }
+.ls-fsteps em { display: block; font-style: normal; font-size: 11px; color: #7a8291; }
 
 .ls-grid { position: relative; }
 .ls-svg { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 5; overflow: visible; }
@@ -173,83 +180,30 @@
 .fl-on .ls-chip.ep, .fl-on .ls-cell.ep { opacity: 1; box-shadow: 0 0 0 2px #2a78d6; position: relative; z-index: 7; }
 .fl-on .ls-link i, .fl-on .ls-hlink i { opacity: .35; }
 
-/* Схемы потоков: у каждой связи своя строка, подпись — на стрелке */
-.ls-focus { overflow-x: auto; background: #f8fafc; border: 1px solid #e6eaf0; border-radius: 12px; padding: 12px 14px; }
-.ls-sq, .ls-ego { --c: #2a78d6; font-size: 12px; }
-.ls-sq .k-input, .ls-ego .k-input { --c: #0f7a55; }
-.ls-sq .k-seq, .ls-ego .k-seq { --c: #6b7383; }
-.ls-sq .k-manual, .ls-ego .k-manual { --c: #c2413a; }
-.ls-sq .k-int, .ls-ego .k-int { --c: #d08a1e; }
-.ls-sq .k-auto, .ls-ego .k-auto { --c: #2a78d6; }
-
-/* Рамка ЦД / слоя и её заголовок */
-.ls-fgrp { box-sizing: border-box; border: 1.5px solid #d5d9e1; border-radius: 12px; background: rgba(255,255,255,.7); z-index: 0; }
-.ls-fgt { z-index: 2; padding: 7px 10px 3px; font-size: 10.5px; line-height: 1.25; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #4d5563; }
-.ls-fgrp.g-cd { border-color: #9cbde8; background: #f1f6fd; } .ls-fgt.g-cd { color: #164a8a; }
-.v-dream .ls-fgrp.g-cd { border-color: #9fd3b6; background: #eef8f2; } .v-dream .ls-fgt.g-cd { color: #0b6b3a; }
-.v-nedra .ls-fgrp.g-cd { border-color: #c9b6ea; background: #f6f2fc; } .v-nedra .ls-fgt.g-cd { color: #4b2f78; }
-.ls-fgrp.g-data { border-color: #a9d8ba; background: #f0f8f3; border-style: dashed; } .ls-fgt.g-data { color: #0b6b3a; }
-.ls-fgrp.g-asu { border-color: #ecd497; background: #fffaea; } .ls-fgt.g-asu { color: #8a5a00; }
-.ls-fgrp.g-mes { border-color: #f2cfcc; background: #fdf3f2; } .ls-fgt.g-mes { color: #a63a32; }
-.ls-fgrp.g-users { border-color: #c4c9d3; background: #f3f4f7; }
-.ls-fgrp.g-ext { border-color: #f0cf96; background: #fff8ec; } .ls-fgt.g-ext { color: #8a5a00; }
-.ls-fgrp.g-eng { border-color: #d5d9e1; background: #f8f9fb; }
-.ls-fgrp.g-manual { border-color: #eab0aa; background: #fdf3f2; border-style: dashed; } .ls-fgt.g-manual { color: #a63a32; }
-
-/* Система */
-.ls-fnode { z-index: 2; box-sizing: border-box; border: 1.5px solid #c9cfd8; background: #fff; border-radius: 10px; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; min-height: 36px; }
+/* Компактная схема сценария */
+.ls-fbody { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-start; }
+.ls-fbody .ls-focus { flex: 0 1 auto; max-width: 100%; }
+.ls-fbody .ls-fsteps { flex: 1 1 340px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-content: start; }
+.ls-focus { overflow-x: auto; background: #f8fafc; border: 1px solid #e6eaf0; border-radius: 12px; padding: 14px; }
+.ls-fcanvas { position: relative; margin: 0 auto; }
+.ls-fcanvas svg { position: absolute; left: 0; top: 0; overflow: visible; }
+.ls-fcanvas svg path { fill: none; stroke-width: 2.2; stroke-linecap: round; animation: lsDash 1.1s linear infinite; }
+.ls-fcanvas svg path.k-auto { stroke: #2a78d6; stroke-dasharray: 8 5; }
+.ls-fcanvas svg path.k-input { stroke: #0f7a55; stroke-dasharray: 8 5; }
+.ls-fcanvas svg path.k-seq { stroke: #6b7383; stroke-dasharray: 8 5; animation-duration: 1.8s; }
+.ls-fcanvas svg path.k-manual { stroke: #c2413a; stroke-dasharray: 3 5; animation-duration: 2.4s; }
+.ls-fcanvas svg path.k-int { stroke: #d08a1e; stroke-dasharray: 8 5; }
+.ls-fcanvas svg path.hot { stroke-width: 3.6; } .ls-fcanvas svg path.dim { opacity: .15; }
+.ls-fcol { position: absolute; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #7a8291; text-align: center; }
+.ls-fnode { position: absolute; box-sizing: border-box; border: 1.5px solid #c9cfd8; background: #fff; border-radius: 10px; padding: 5px 10px; display: flex; flex-direction: column; justify-content: center; z-index: 2; }
 .ls-fnode b { font-size: 12.5px; line-height: 1.2; color: #16191f; }
-.ls-fnode span { font-size: 11px; line-height: 1.35; color: #4d5563; margin-top: 4px; }
+.ls-fnode span { font-size: 10.5px; color: #7a8291; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ls-fnode.k-abai { border-color: #9cbde8; background: #eef4fc; } .ls-fnode.k-abai b { color: #164a8a; }
 .ls-fnode.k-nedra { border-color: #c9b6ea; background: #f3effa; } .ls-fnode.k-nedra b { color: #4b2f78; }
 .ls-fnode.k-manual { border-color: #eab0aa; background: #fdf0ef; } .ls-fnode.k-manual b { color: #a63a32; }
 .ls-fnode.k-user { border-color: #b9bfca; background: #f1f2f5; }
-
-/* Стрелка: точка у источника, наконечник у получателя, бегущий пунктир по ходу данных */
-.ls-sq-e i, .ls-ego-e i { display: block; position: relative; height: 2.4px; background: repeating-linear-gradient(90deg, var(--c) 0 8px, transparent 8px 13px); animation: lsRun 1.1s linear infinite; }
-.k-seq > i { animation-duration: 1.8s; }
-.k-manual > i { background: repeating-linear-gradient(90deg, var(--c) 0 3px, transparent 3px 8px); animation-duration: 2.4s; }
-.ls-sq-e i::before, .ls-ego-e i::before { content: ""; position: absolute; left: -3px; top: -2.6px; width: 7.6px; height: 7.6px; border-radius: 50%; background: var(--c); }
-.ls-sq-e i::after, .ls-ego-e i::after { content: ""; position: absolute; right: -2px; top: -5.3px; border: 6.5px solid transparent; border-right: 0; border-left: 11px solid var(--c); }
-.ls-sq-e.bw i { animation-direction: reverse; }
-.ls-sq-e.bw i::before { left: auto; right: -3px; }
-.ls-sq-e.bw i::after { right: auto; left: -2px; border-left: 0; border-right: 11px solid var(--c); }
-@keyframes lsRun { from { background-position: 0 0; } to { background-position: 13px 0; } }
-
-/* Сценарий: системы — колонки, шаги — строки */
-.ls-sq { display: grid; width: max-content; margin: 0 auto; }
-.ls-sq > .ls-fnode { margin: 4px 0 6px; text-align: center; }
-.ls-sq-life { z-index: 1; justify-self: center; width: 0; border-left: 1.5px dashed #c3cad5; margin-bottom: 4px; }
-.ls-sq-n { z-index: 2; align-self: end; width: 20px; height: 20px; margin-bottom: 3px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 11px; background: var(--c); }
-.ls-sq-e { z-index: 3; align-self: end; padding: 8px 0 4px; }
-.ls-sq-e span { display: block; width: max(100%, 230px); margin: 0 0 6px calc(50% - max(50%, 115px)); text-align: center; line-height: 1.3; color: #16191f; }
-.ls-sq-e span::first-letter { text-transform: uppercase; }
-.ls-sq-r { z-index: 2; align-self: end; padding: 0 0 2px 4px; font-size: 11px; line-height: 1.3; color: #4d5563; }
-.ls-sq-r em { display: block; font-style: normal; color: var(--c); }
-.ls-sq .hot.ls-sq-e span { font-weight: 600; }
-.ls-sq .hot.ls-sq-e i { height: 3.4px; }
-.ls-sq .hot.ls-sq-n { box-shadow: 0 0 0 3px rgba(42,120,214,.25); }
-
-/* Связи системы: откуда → система → куда */
-.ls-ego { display: flex; align-items: stretch; }
-.ls-ego-side { display: grid; grid-auto-rows: auto; align-content: center; }
-.ls-ego-side.l { grid-template-columns: 200px minmax(250px, 290px); }
-.ls-ego-side.r { grid-template-columns: minmax(250px, 290px) 200px; }
-.ls-ego-cap { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #7a8291; padding: 0 4px 8px; }
-.ls-ego-side.r .ls-ego-cap { text-align: right; }
-.ls-ego-gap { height: 10px; }
-.ls-ego-side > .ls-fnode { margin: 3px 10px; align-self: center; }
-.ls-ego-side > .ls-fgt { padding-bottom: 2px; }
-.ls-ego-side > .ls-fnode:nth-last-child(2) { margin-bottom: 10px; }
-.ls-ego-e { z-index: 1; position: relative; display: flex; align-items: center; justify-content: center; padding: 3px 22px; }
-.ls-ego-e i { position: absolute; top: 50%; margin-top: -1.2px; left: 0; right: 2px; }
-.ls-ego-side.l .ls-ego-e i { left: -10px; }
-.ls-ego-side.r .ls-ego-e i { right: -8px; }
-.ls-ego-e span { position: relative; z-index: 1; background: #fff; border: 1.5px solid var(--c); border-radius: 7px; padding: 3px 8px; line-height: 1.3; color: #16191f; box-shadow: 0 2px 6px rgba(16,24,40,.1); }
-.ls-ego-e span::first-letter { text-transform: uppercase; }
-.ls-ego-e em { display: block; font-style: normal; font-size: 10.5px; color: #7a8291; }
-.ls-ego-me { width: 150px; margin-top: 26px; text-align: center; align-items: center; border-width: 2px; }
-.ls-ego-me b { font-size: 14px; }
+.ls-flbls { position: absolute; left: 0; top: 0; z-index: 3; }
+.ls-flbls .ls-fl { position: absolute; }
 .ls-fkinds { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; font-size: 11.5px; color: #4d5563; }
 .ls-fkinds span::before { content: ""; display: inline-block; width: 20px; height: 3px; margin-right: 6px; vertical-align: 3px; border-radius: 2px; background: repeating-linear-gradient(90deg, #2a78d6 0 6px, transparent 6px 10px); }
 .ls-fkinds .k-input::before { background: repeating-linear-gradient(90deg, #0f7a55 0 6px, transparent 6px 10px); }
@@ -262,3 +216,19 @@
 .ls-pop-h { font-size: 13px; color: #4d5563; margin: 0 0 8px 2px; }
 .ls-pop-h b { color: #16191f; font-size: 14px; }
 .ls-pop .ls-focus { overflow: hidden; }
+
+/* Группы на компактной схеме: в какой ЦД / слой входит система */
+.ls-fgrp { position: absolute; box-sizing: border-box; border: 1.5px solid #d5d9e1; border-radius: 12px; background: rgba(255,255,255,.7); z-index: 1; }
+.ls-fgrp span { position: absolute; left: 10px; top: 5px; right: 10px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #4d5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ls-fgrp.g-cd { border-color: #9cbde8; background: #f1f6fd; } .ls-fgrp.g-cd span { color: #164a8a; }
+.v-dream .ls-fgrp.g-cd { border-color: #9fd3b6; background: #eef8f2; } .v-dream .ls-fgrp.g-cd span { color: #0b6b3a; }
+.v-nedra .ls-fgrp.g-cd { border-color: #c9b6ea; background: #f6f2fc; } .v-nedra .ls-fgrp.g-cd span { color: #4b2f78; }
+.ls-fgrp.g-data { border-color: #a9d8ba; background: #f0f8f3; border-style: dashed; } .ls-fgrp.g-data span { color: #0b6b3a; }
+.ls-fgrp.g-asu { border-color: #ecd497; background: #fffaea; } .ls-fgrp.g-asu span { color: #8a5a00; }
+.ls-fgrp.g-mes { border-color: #f2cfcc; background: #fdf3f2; } .ls-fgrp.g-mes span { color: #a63a32; }
+.ls-fgrp.g-users { border-color: #c4c9d3; background: #f3f4f7; }
+.ls-fgrp.g-ext { border-color: #f0cf96; background: #fff8ec; } .ls-fgrp.g-ext span { color: #8a5a00; }
+.ls-fgrp.g-eng { border-color: #d5d9e1; background: #f8f9fb; }
+.ls-fgrp.g-manual { border-color: #eab0aa; background: #fdf3f2; border-style: dashed; } .ls-fgrp.g-manual span { color: #a63a32; }
+.ls-fnode { justify-content: center; }
+.ls-fnode b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
