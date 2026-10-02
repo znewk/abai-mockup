@@ -160,19 +160,18 @@ function lsCentral(view) {
 // Производственные системы ДЗО вне BPMN модулей — по встрече по ЦД 01.10 и публикациям КМГ; потоки данных не показаны (источника нет)
 const LS_PROD = [
   ['HSE — работы повышенной опасности', 'ЦД скважины и ЦД добычи: ТКРС, работы на промысле', [
-    ['Электронный наряд-допуск', 'оформление и согласование с ЭЦП · ОМГ, ЭМГ, Казгермунай, Каражанбас'],
+    ['Электронный наряд-допуск', 'модуль ABAI (предварительно) · оформление и согласование с ЭЦП · ОМГ, ЭМГ, Казгермунай, Каражанбас', 'abai'],
     ['TUMAR', 'ИИ-видеоаналитика охраны труда · 60 бригад ТКРС'],
   ]],
   ['ТКРС', 'ЦД скважины: ремонт скважин', [
-    ['Электронный заказ-наряд ПРС/КРС', 'формирование и многоуровневое согласование · ОМГ'],
+    ['Электронный заказ-наряд ПРС/КРС', 'формирование и многоуровневое согласование · ОМГ; в BPMN Dream (Б5 5.4.1) заказ-наряд оформляется в АВР+'],
   ]],
   ['Транспорт и спецтехника', 'наземная инфраструктура: заказ транспорта и техники', [
-    ['ИС УТО', 'маршрутизация спецтехники'],
-    ['ИС «Управление поездками»', 'заявки, план-разнарядка, GPS-мониторинг'],
+    ['ИС УТО', '«Управление поездками»: заявки на транспорт, план-разнарядка, GPS-мониторинг, маршрутизация спецтехники'],
   ]],
 ];
 const lsProd = (view) => lsBox('Производственные системы ДЗО — HSE, ТКРС, транспорт',
-  `<div class="ls-cols c3">${LS_PROD.map(([t, to, list]) => `<div class="ls-prod"><b>${t}</b><span>→ ${view === 'asis' ? to.replace(/^.*?:\s*/, '') : to}</span>${list.map(([n, d]) => lsChip(n, 'ext', d)).join('')}</div>`).join('')}</div>
+  `<div class="ls-cols c3">${LS_PROD.map(([t, to, list]) => `<div class="ls-prod"><b>${t}</b><span>→ ${view === 'asis' ? to.replace(/^.*?:\s*/, '') : to}</span>${list.map(([n, d, k]) => lsChip(n, k || 'ext', d)).join('')}</div>`).join('')}</div>
   <div class="ls-note">Не корпоративные, а часть производственных систем; «Транспорт… может быть на всех ЦД» — ${'встреча по ЦД 01.10'}. Описания — пресс-релизы КМГ 2023–2026. В BPMN модулей этих систем нет, поэтому потоки данных для них не показаны.</div>`, 'prod');
 
 function lsDzo(view) {
@@ -219,7 +218,7 @@ function lsDetail(e, view) {
     <div class="ls-d-row"><i>Как</i><span>${LS_KINDS[e.k]}</span></div>
     <div class="ls-d-row"><i>Формат</i><span>${fmt.length ? fmt.join(', ') : '<em>в BPMN не указан</em>'}</span></div>
     ${parts.map((p) => {
-      if (!p.steps) return `<div class="ls-d-src">${/слайд|стратсесс/.test(p.text) ? 'Источник' : 'Пометка в ссылке'}: ${p.text}</div>`;
+      if (!p.steps) return `<div class="ls-d-src">${/слайд|стратсесс|встреча|пресс-релиз|dprom/.test(p.text) ? 'Источник' : 'Пометка в ссылке'}: ${p.text}</div>`;
       const head = p.proc !== proc && LS_PROCS[p.proc] ? `<div class="ls-d-p">${p.proc} · ${LS_PROCS[p.proc]}</div>` : '';
       proc = p.proc;
       const tags = p.arrow && p.steps.length === 2 ? ['откуда', 'куда'] : p.steps.map(() => 'шаг');
@@ -388,6 +387,7 @@ function lsGroup(el, view) {
   }
   if (el.closest('.ls-manual')) return { key: 'manual', title: 'Ручной обмен: файлы, почта, чат', type: 'manual' };
   if (el.closest('.ls-zone.asis')) return { key: boxT, title: boxT, type: el.classList.contains('k-abai') ? 'cd' : 'eng' };
+  if (el.closest('.ls-box.prod')) return { key: 'prod', title: 'Производственные системы ДЗО', type: 'prod' };
   if (el.closest('.ls-box.asu')) return { key: 'asu', title: 'Данные с датчиков / АСУ ТП', type: 'asu' };
   if (el.closest('.ls-box.mes') || el.closest('.ls-box.warn')) return { key: 'mes', title: boxT, type: 'mes' };
   if (el.closest('.ls-zone.dzo')) {
@@ -579,7 +579,7 @@ function lsFocus(host, grid, edges, view, o = {}) {
   const mk = (k, c) => `<marker id="lsfArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`;
   host.innerHTML = `<div class="ls-fcanvas v-${view}" style="width:${CW}px;height:${CH}px">
     ${[...groups.values()].map((g) => `<div class="ls-fgrp g-${g.type}" style="left:${g.x + sh}px;top:${g.y + sv}px;width:${g.w}px;height:${g.h}px"><span>${g.title}</span></div>`).join('')}
-    <svg width="${CW}" height="${CH}"><defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}</defs><g transform="translate(${sh},${sv})">${paths}</g></svg>
+    <svg width="${CW}" height="${CH}"><defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}${mk('pub', '#0e7490')}</defs><g transform="translate(${sh},${sv})">${paths}</g></svg>
     ${[...nodes.values()].map((n) => `<div class="ls-fnode k-${n.kind}" style="left:${n.x + sh}px;top:${n.y0 + sv}px;width:${NW}px;height:${NH}px"><b>${n.k}</b></div>`).join('')}
     <div class="ls-flbls" style="transform:translate(${sh}px,${sv}px)">${labels}</div>
   </div>`;
@@ -590,7 +590,7 @@ function lsFocus(host, grid, edges, view, o = {}) {
 // ---------- Всплывающая схема связей одной системы ----------
 // Система — широкая полоса посередине; кто передаёт ей данные — снизу, кому передаёт она — сверху (снизу вверх, как большая схема).
 // Каждая связь — прямая вертикальная стрелка под своей системой, подпись — на стрелке; двусторонняя связь — две стрелки рядом.
-const LS_ROW_ORDER = ['users', 'eng', 'cd', 'data', 'manual', 'ext', 'mes', 'asu'];
+const LS_ROW_ORDER = ['users', 'eng', 'cd', 'data', 'manual', 'ext', 'prod', 'mes', 'asu'];
 function lsBus(host, grid, key, list, view, o = {}) {
   const info = (k) => {
     const el = lsAnchor(grid, k);
@@ -680,7 +680,7 @@ function lsBus(host, grid, key, list, view, o = {}) {
   const nIn = list.filter((e) => e.t === key).length, nOut = list.length - nIn;
   host.innerHTML = `<div class="ls-fcanvas v-${view}" style="width:${W}px;height:${H}px">
     ${gl.map((g) => `<div class="ls-fgrp g-${g.type}" style="left:${g.x}px;top:${g.y}px;width:${g.w}px;height:${FH}px"><span>${g.title}</span></div>`).join('')}
-    <svg width="${W}" height="${H}"><defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}</defs>${paths}</svg>
+    <svg width="${W}" height="${H}"><defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}${mk('pub', '#0e7490')}</defs>${paths}</svg>
     <div class="ls-fnode ls-bus k-${me.kind}" style="left:0;top:${yBus}px;width:${W}px;height:${BH}px"><span>${me.g.title}</span><b>${key}</b><span>${[nIn ? `получает: ${nIn}` : '', nOut ? `передаёт: ${nOut}` : ''].filter(Boolean).join(' · ')}</span></div>
     ${[...peers.values()].map((p) => `<div class="ls-fnode k-${p.kind}" style="left:${p.x}px;top:${p.y0}px;width:${NW}px;height:${NH}px"><b>${p.k}</b></div>`).join('')}
     <div class="ls-flbls">${labels}</div>
@@ -754,6 +754,6 @@ function lsDraw(grid, edges, o = {}) {
     x.a.classList.add('ep'); x.z.classList.add('ep');
   });
   const mk = (k, c) => `<marker id="lsArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`;
-  svg.innerHTML = `<defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}</defs>${paths}`;
+  svg.innerHTML = `<defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}${mk('pub', '#0e7490')}</defs>${paths}`;
   lbls.innerHTML = labels;
 }

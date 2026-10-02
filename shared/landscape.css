@@ -292,3 +292,11 @@
 .ls-prod .ls-chip { white-space: normal; max-width: 100%; box-sizing: border-box; }
 .ls-prod .ls-chip em { white-space: normal; }
 .ls-kpis > .ls-kpi-sys { max-width: 400px; }
+
+/* Вид связи «по публикациям КМГ / встрече по ЦД — способ не описан» */
+.ls-svg path.k-pub, .ls-fcanvas svg path.k-pub { stroke: #0e7490; stroke-dasharray: 2 4 8 4; animation-duration: 2s; }
+.ls-fl.k-pub { border-color: #0e7490; } .ls-fl.k-pub > b { background: #0e7490; }
+.ls-fsteps li.k-pub > b { background: #0e7490; }
+.ls-fkinds .k-pub::before { background: repeating-linear-gradient(90deg, #0e7490 0 2px, transparent 2px 5px, #0e7490 5px 11px, transparent 11px 14px); }
+/* Рамка производственных систем на схемах потоков */
+.ls-fgrp.g-prod { border-color: #d9c7a4; background: #fffdf8; } .ls-fgrp.g-prod span { color: #8a5a00; }
