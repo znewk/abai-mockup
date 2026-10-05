@@ -7,12 +7,22 @@ const scnRoles = () => scenario().roles;
 
 // Состояние в адресе: #fast/3/geologist — удобно делиться ссылкой на конкретный слайд
 function readHash() {
-  const [scn, idx, role] = location.hash.replace('#', '').split('/');
+  const [scn, idx, role, mode] = location.hash.replace('#', '').split('/');
+  // «/full» — все действия слайда сразу, без «Пошагово»; «/a3» — пошагово, раскрыто до 3-го действия (так слайд открывается из окна системы на портале)
+  if (mode === 'full') st.stepMode = false;
+  else if (/^a\d+$/.test(mode || '')) { st.stepMode = true; st.reveal = +mode.slice(1); }
   if (SCENARIOS.some((s) => s.id === scn)) st.scn = scn;
   st.role = scnRoles().includes(role) ? role : 'all';
   st.idx = Math.max(0, Math.min((+idx || 1) - 1, slideList().length - 1));
 }
-function writeHash() { history.replaceState(null, '', `#${st.scn}/${st.idx + 1}/${st.role}`); }
+// Слайд встроен в окно системы на портале — сообщаем, какой слайд и какое действие на экране: портал листает шаги вместе со слайдом
+function notifyParent() {
+  if (window.parent === window) return;
+  const s = SLIDES[curId()];
+  const act = s && st.stepMode ? Math.min(st.reveal, visibleActions(s).length) : 0;
+  window.parent.postMessage({ abaiSlide: { mod: 'dobycha', scn: st.scn, idx: st.idx + 1, role: st.role, act } }, '*');
+}
+function writeHash() { history.replaceState(null, '', `#${st.scn}/${st.idx + 1}/${st.role}${st.stepMode ? '' : '/full'}`); }
 
 const scenario = () => SCENARIOS.find((s) => s.id === st.scn);
 // В режиме роли остаются только слайды, где эта роль что-то видит
@@ -71,6 +81,7 @@ function render() {
   if (s) requestAnimationFrame(() => { layoutLinks(); applyReveal(); });
   else if (id === 'cover') requestAnimationFrame(layoutMapLinks);
   writeHash();
+  notifyParent();
 }
 
 function footerHTML(list) {
@@ -181,6 +192,7 @@ function applyReveal() {
   const f = $('.st-foot');
   if (f) f.outerHTML = footerHTML(slideList());
   bindFooter();
+  notifyParent();
 }
 
 // ---------- Навигация ----------

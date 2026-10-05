@@ -424,12 +424,15 @@ function lsUnpin() {
   if (bg) bg.style.display = 'none';
   document.querySelectorAll('.ls-side, .ls-center').forEach((x) => x.classList.remove('open'));
   if (LS_STORY) { LS_STORY.stop(); LS_STORY = null; }
+  LS_SLIDE_SYNC = null;
   if (LS_PATH_STOP) { LS_PATH_STOP(); LS_PATH_STOP = null; }
   if (typeof LS_PIN === 'function') LS_PIN();
   LS_PIN = false;
 }
 let LS_STORY = null; // история по шагам в центральном окне: { step(±1), stop() }
 let LS_PATH_STOP = null; // остановить проигрывание пути данных при закрытии
+let LS_SLIDE_SYNC = null; // встроенный слайд сообщает, какое действие на экране (shared/proc/v2/present.js → notifyParent)
+window.addEventListener('message', (e) => { const m = e.data && e.data.abaiSlide; if (m && LS_SLIDE_SYNC) LS_SLIDE_SYNC(m); });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && LS_PIN) lsUnpin();
   if (LS_STORY && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { e.preventDefault(); LS_STORY.step(e.key === 'ArrowRight' ? 1 : -1); }
@@ -457,6 +460,26 @@ function lsTrailOf(view, key) {
   return (LS_TRAIL[view] || []).map((P) => ({ P, list: P.s.map((s, i) => (s.s.some((x) => lsKey(x) === key) ? i : -1)).filter((i) => i >= 0) })).filter((x) => x.list.length);
 }
 const LS_MOD_NAME = { geologiya: 'Геология', razrabotka: 'Разработка', burenie: 'Бурение', dobycha: 'Добыча' };
+// Слайд презентации (v — из landscape-trail.js, только Dream TO BE: презентации построены по нему) и экран шага в прототипе
+const lsModHref = (m, k) => { const x = typeof ABAI_MODULES !== 'undefined' && ABAI_MODULES.find((y) => y.id === m); return x ? x[k] : m + '/' + (k === 'v2' ? 'v2/' : ''); };
+// Явно index.html: при открытии сайта с диска ссылка на папку показывает список файлов
+const lsSlideHref = (P, s) => (s.v ? `${lsModHref(P.m, 'v2')}index.html#${s.v[0]}/${s.v[1]}/all/a${s.v[3] || 1}` : '');
+const lsProtoHref = (P, s) => `${lsModHref(P.m, 'v1')}index.html#/p/${P.n}/flow/${s.id}`;
+// Ссылки на слайды шагов BPMN из ссылки связи («Д1 1.2 → 1.3 · Д2 2.2») — только в Dream TO BE
+function lsRefSlides(view, ref) {
+  if (view !== 'dream' || typeof LS_TRAIL === 'undefined') return '';
+  const seen = new Set(), out = [];
+  lsRefParts(ref).forEach((p) => (p.codes || []).forEach((c) => {
+    const P = LS_TRAIL.dream.find((x) => x.p === p.proc);
+    const st = P && (P.s.find((x) => x.c === c) || P.s.find((x) => x.c.startsWith(c + '.')));
+    if (!st) return;
+    const href = st.v ? lsSlideHref(P, st) : lsProtoHref(P, st);
+    if (seen.has(href)) return;
+    seen.add(href);
+    out.push(`<a class="ls-slide" href="${href}" target="_blank" title="${st.v ? 'Слайд презентации: ' + st.v[2] : 'Слайда нет — шаг в прототипе'}">${p.proc} ${c} ${st.v ? 'слайд' : 'прототип'} ↗</a>`);
+  }));
+  return out.length ? `<span class="ls-slides">${out.join('')}</span>` : '';
+}
 
 function lsSide(root, grid, key, links, view) {
   const V = LS_VIEWS[view], full = LS_MODE === 'full';
@@ -481,7 +504,7 @@ function lsSide(root, grid, key, links, view) {
   const linkRow = (e) => `<div class="ls-sl k-${e.k}">
       <div class="ls-sl-h"><span class="${e.f === key ? 'me' : ''}">${e.f}</span><i>→</i><span class="${e.t === key ? 'me' : ''}">${e.t}</span></div>
       <div class="ls-sl-w">${e.w}</div>
-      <div class="ls-sl-m"><span>как: ${LS_KINDS[e.k]}</span><span>шаг: ${e.r}</span>${(() => { const who = lsWho(e, view); return who ? `<span>кто: ${who}</span>` : ''; })()}</div>
+      <div class="ls-sl-m"><span>как: ${LS_KINDS[e.k]}</span><span>шаг: ${e.r}</span>${lsRefSlides(view, e.r)}${(() => { const who = lsWho(e, view); return who ? `<span>кто: ${who}</span>` : ''; })()}</div>
       ${full ? lsDetail(e, view) : ''}
     </div>`;
   const inn = links.filter((e) => e.t === key), out = links.filter((e) => e.f === key);
@@ -500,7 +523,7 @@ function lsSide(root, grid, key, links, view) {
     ${trail.map(({ P, list }) => {
       const prs = [...new Set(list.map((i) => lsRole(P.s[i])))];
       return `<details class="ls-tp" data-m="${P.m}"${nSteps <= 20 || trail.length === 1 ? ' open' : ''}>
-        <summary><button class="ls-play" data-story="${fIx.get(P.p + '|' + list[0])}" title="Пройти шаги процесса по схеме">▶ по шагам</button><b>${P.p}</b> ${P.t}<span>${list.length} ${list.length === 1 ? 'шаг' : list.length < 5 ? 'шага' : 'шагов'} · ${prs.join(', ')}</span></summary>
+        <summary><button class="ls-play" data-story="${fIx.get(P.p + '|' + list[0])}" title="Пройти шаги процесса по схеме">▶ по шагам</button>${(() => { const st = P.s.find((x) => x.v); return st ? `<a class="ls-slide fr" href="${lsModHref(P.m, 'v2')}index.html#${st.v[0]}/1/all" target="_blank" title="Презентация процесса — сценарий глазами ролей">презентация ↗</a>` : ''; })()}<b>${P.p}</b> ${P.t}<span>${list.length} ${list.length === 1 ? 'шаг' : list.length < 5 ? 'шага' : 'шагов'} · ${prs.join(', ')}</span></summary>
         <div class="ls-tl">${list.map((i, j) => {
           const s = P.s[i], prev = list[j - 1], next = list[j + 1];
           const pv = s.pv.filter((x) => x[0] !== prev), nx = s.nx.filter((x) => x[0] !== next);
@@ -509,7 +532,7 @@ function lsSide(root, grid, key, links, view) {
           const linked = next !== undefined && s.nx.some((x) => x[0] === next);
           return `${pv.length ? `<div class="ls-tw pv"><i>до</i><div>${pv.map((x) => nb(P, x)).join('')}</div></div>` : j ? '' : '<div class="ls-tw pv"><i>до</i><div><div class="ls-tn"><em>начало процесса</em></div></div></div>'}
             <div class="ls-ts" data-story="${fIx.get(P.p + '|' + i)}" title="Показать шаг в центре">
-              <span class="ls-play">▶ показать</span>
+              <span class="ls-play">▶ показать</span>${s.v ? `<a class="ls-slide fr" href="${lsSlideHref(P, s)}" target="_blank" title="Слайд презентации: ${s.v[2]}">слайд ↗</a>` : ''}
               <div class="ls-ts-h"><b>${s.c || 'без номера'}</b>${s.t}</div>
               <div class="ls-ts-r">${lsRole(s)}</div>
               ${other.length ? `<div class="ls-ts-x"><i>вместе с</i>${sysChips(other)}</div>` : ''}
@@ -572,7 +595,7 @@ function lsSide(root, grid, key, links, view) {
     if (m === 'story') story.open(k || 0); else { story.close(); side.querySelectorAll('.ls-ts.cur').forEach((x) => x.classList.remove('cur')); }
   };
   center.querySelectorAll('[data-cm]').forEach((b) => (b.onclick = () => mode(b.dataset.cm)));
-  side.querySelectorAll('[data-story]').forEach((b) => (b.onclick = (ev) => { ev.preventDefault(); ev.stopPropagation(); mode('story', +b.dataset.story); }));
+  side.querySelectorAll('[data-story]').forEach((b) => (b.onclick = (ev) => { if (ev.target.closest('a')) return; ev.preventDefault(); ev.stopPropagation(); mode('story', +b.dataset.story); }));
   side.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => {
     side.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
     side.querySelectorAll('[data-pane]').forEach((x) => (x.hidden = x.dataset.pane !== b.dataset.tab));
@@ -723,7 +746,7 @@ function lsLineage(host, grid, key, view, o = {}) {
   });
   const mk = (k, c) => `<marker id="lsnArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:${c}"/></marker>`;
   const stageName = (L) => (L < -1 ? 'раньше — по пути к системе' : L === -1 ? `в «${key}»` : L === 0 ? `из «${key}»` : 'дальше');
-  const edgeLine = (it) => `<li data-e="${it.n}" class="k-${it.e.k}"><b>${it.n}</b><span class="ft">${it.e.f} → ${it.e.t}</span> — ${it.e.w}<em>${it.e.r} · ${LS_KINDS[it.e.k]}</em></li>`;
+  const edgeLine = (it) => `<li data-e="${it.n}" class="k-${it.e.k}"><b>${it.n}</b><span class="ft">${it.e.f} → ${it.e.t}</span> — ${it.e.w}<em>${it.e.r} · ${LS_KINDS[it.e.k]}</em>${lsRefSlides(view, it.e.r)}</li>`;
   host.innerHTML = `
     <div class="ls-ln-bar">
       <div class="ls-ln-sum">${(() => { const nu = up.size - 1, nd = down.size - 1; // все, кто передаёт системе / получает от неё на этом пути, включая обратные связи
@@ -799,6 +822,49 @@ function lsLineage(host, grid, key, view, o = {}) {
 // вверху — куда дальше: следующий шаг BPMN и связи, по которым система передаёт данные. На большой схеме подсвечены системы шага.
 function lsStoryPane(pane, grid, key, view, frames, marks, sysChips, onFrame) {
   let cur = 0, timer = null;
+  pane.innerHTML = '<div class="ls-st-main"></div><div class="ls-st-view"></div><div class="ls-st-navw"></div>';
+  const main = pane.querySelector('.ls-st-main'), viewEl = pane.querySelector('.ls-st-view'), navw = pane.querySelector('.ls-st-navw');
+  // «Как выглядит в ABAI»: слайд презентации, открытый на действии этого шага. Синхронно в обе стороны:
+  // шаг сверху → слайд переходит на его действие (меняется только якорь адреса — без перезагрузки);
+  // слайд листают снизу → презентация сообщает (postMessage) слайд и действие → сверху открывается шаг этого действия.
+  let sent = null, tick = 0;
+  const same = (x, y) => !!x && !!y && x.mod === y.mod && x.scn === y.scn && x.idx === y.idx && x.act === y.act;
+  const syncNote = (t, kind) => { const el = viewEl.querySelector('.ls-st-sync'); if (el) { el.textContent = t; el.className = 'ls-st-sync ' + (kind || ''); } };
+  const showView = (P, s, fromSlide) => {
+    const head = (t, sub, links) => `<div class="ls-st-vh"><b>${t}</b><span>${sub}</span>${links}</div>`;
+    if (view !== 'dream') { if (!viewEl.innerHTML) viewEl.innerHTML = head('Как выглядит в ABAI', 'презентации и прототипы построены по Dream TO BE — откройте систему в виде Dream TO BE, чтобы увидеть экраны шага', ''); return; }
+    // Шага нет в презентации — ближайший слайд процесса (сначала предыдущий шаг со слайдом, иначе следующий)
+    const i = P.s.indexOf(s), near = s.v ? s : P.s.slice(0, i).reverse().find((x) => x.v) || P.s.slice(i + 1).find((x) => x.v);
+    const proto = lsProtoHref(P, s);
+    const a = (href, t) => `<a href="${href}" target="_blank">${t}</a>`;
+    if (!viewEl.querySelector('.ls-st-vw')) viewEl.innerHTML = '<div class="ls-st-vw"></div><div class="ls-st-sync"></div><div class="ls-st-fw"></div>';
+    viewEl.querySelector('.ls-st-vw').innerHTML = s.v
+      ? head('Как выглядит в ABAI', `слайд «${s.v[2]}», действие ${s.v[3]} — экраны ролей на этом шаге`, a(lsSlideHref(P, s), 'Открыть в презентации ↗') + a(proto, 'Шаг в прототипе ↗'))
+      : head('Как выглядит в ABAI', `этого шага нет в быстром сценарии презентации${near ? ` — ближайший слайд процесса: шаг ${near.c}, «${near.v[2]}»` : ''}; экран самого шага — в прототипе`, (near ? a(lsSlideHref(P, near), 'Ближайший слайд ↗') : '') + a(proto, 'Шаг в прототипе ↗'));
+    const fw = viewEl.querySelector('.ls-st-fw');
+    if (!near) { fw.innerHTML = ''; sent = null; syncNote(''); return; }
+    syncNote(s.v ? '⇅ слайд и шаг синхронны: листайте шаги сверху или слайд снизу' : 'ближайший слайд процесса — сам шаг в презентации не показан', s.v ? 'on' : '');
+    if (fromSlide) return; // слайд уже на этом действии — его и листали
+    const target = { mod: P.m, scn: near.v[0], idx: near.v[1], act: near.v[3] || 1 };
+    const base = `${lsModHref(P.m, 'v2')}index.html`, url = `${base}#${target.scn}/${target.idx}/all/a${target.act}/${++tick}`;
+    sent = target;
+    let fr = fw.querySelector('iframe');
+    if (fr && fr.dataset.base === base) fr.src = url; // тот же файл — меняется только якорь
+    else { fw.innerHTML = `<div class="ls-st-frame"><iframe data-base="${base}" src="${url}" title="Слайд презентации"></iframe></div>`; fr = fw.querySelector('iframe'); }
+    fr.parentElement.classList.toggle('near', !s.v);
+  };
+  // Презентация сообщила слайд и действие: свой же переход — ничего; иначе — шаг этого действия, если в нём есть система
+  const onSlide = (m) => {
+    if (same(m, sent)) return;
+    sent = null;
+    if (!m.act || m.role !== 'all') { syncNote('на слайде карта сценария или итог — шаги сверху не меняются'); return; }
+    const hit = (fr) => { const x = fr.P.s[fr.i]; return x.v && same(m, { mod: fr.P.m, scn: x.v[0], idx: x.v[1], act: x.v[3] }); };
+    if (hit(frames[cur])) { syncNote('⇅ слайд и шаг синхронны: листайте шаги сверху или слайд снизу', 'on'); return; }
+    const k = frames.findIndex(hit);
+    if (k < 0) { syncNote(`на слайде действие ${m.act} — оно не относится к шагам BPMN, где указана «${key}»; шаг сверху не меняется`, 'off'); return; }
+    if (timer) stopPlay();
+    go(k, true);
+  };
   const kindOf = (name) => { const a = lsAnchor(grid, lsKey(name)); return a && a.classList.contains('ls-chip') ? (a.className.match(/k-(\w+)/) || [])[1] : name === 'MS Office' ? 'manual' : 'ext'; };
   const short = (n) => n.replace(/^(ABAI|SLB)\s+/, '');
   const stepCard = (P, x, dir) => {
@@ -812,7 +878,7 @@ function lsStoryPane(pane, grid, key, view, frames, marks, sysChips, onFrame) {
     grid.classList.add('fl-on');
     s.s.map(lsKey).concat(mk.flatMap((e) => [e.f, e.t])).forEach((k) => { const a = lsAnchor(grid, k); if (a) a.classList.add('ep'); });
   };
-  const render = () => {
+  const render = (fromSlide) => {
     const f = frames[cur], P = f.P, s = P.s[f.i];
     const mk = marks.get(P.p + ' ' + s.c) || [];
     const inF = mk.filter((e) => e.t === key), outF = mk.filter((e) => e.f === key);
@@ -824,7 +890,7 @@ function lsStoryPane(pane, grid, key, view, frames, marks, sysChips, onFrame) {
     // Полоса прогресса: процессы и шаги системы в них
     const strip = [];
     frames.forEach((fr, k) => { if (!k || frames[k - 1].P !== fr.P) strip.push({ P: fr.P, ks: [] }); strip[strip.length - 1].ks.push(k); });
-    pane.innerHTML = `
+    main.innerHTML = `
       <div class="ls-st-strip">${strip.map(({ P: Q, ks }) => `<div class="${Q === P ? 'on' : ''}" title="${Q.p} · ${Q.t}"><span>${Q.p}</span><div>${ks.map((k) => `<button data-go="${k}" class="${k < cur ? 'done' : k === cur ? 'cur' : ''}" title="${Q.s[frames[k].i].c} ${Q.s[frames[k].i].t}"></button>`).join('')}</div></div>`).join('')}</div>
       <div class="ls-st-h"><span>${LS_MOD_NAME[P.m]} · <b>${P.p}</b> ${P.t}</span><em>шаг ${cur + 1} из ${frames.length}</em></div>
       <div class="ls-st-c">
@@ -840,7 +906,8 @@ function lsStoryPane(pane, grid, key, view, frames, marks, sysChips, onFrame) {
         <div class="ls-st-row">${bot.length ? bot.join('') : '<div class="ls-sn ev"><em>начало процесса</em></div>'}</div>
         <svg class="ls-st-svg"></svg>
       </div>
-      <div class="ls-st-lg"><span class="seq">порядок шагов BPMN</span>${[...new Set(mk.map((e) => e.k))].map((k) => `<span class="k-${k}">${LS_KINDS[k]}</span>`).join('')}</div>
+      <div class="ls-st-lg"><span class="seq">порядок шагов BPMN</span>${[...new Set(mk.map((e) => e.k))].map((k) => `<span class="k-${k}">${LS_KINDS[k]}</span>`).join('')}</div>`;
+    navw.innerHTML = `
       <div class="ls-st-nav"><button data-nav="-1" ${cur ? '' : 'disabled'}>◀ Назад</button><button data-nav="play" class="play">${timer ? '❚❚ Пауза' : '▶ Проиграть'}</button><button data-nav="1" ${cur < frames.length - 1 ? '' : 'disabled'}>Далее ▶</button><span>← → на клавиатуре</span></div>`;
     // Стрелки: снизу — в шаг, из шага — вверх; у каждой карточки своя вертикальная стрелка
     const c = pane.querySelector('.ls-st-c'), svg = pane.querySelector('.ls-st-svg'), mid = pane.querySelector('.ls-scur');
@@ -862,8 +929,9 @@ function lsStoryPane(pane, grid, key, view, frames, marks, sysChips, onFrame) {
     pane.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => go(+b.dataset.go)));
     pane.querySelectorAll('[data-nav]').forEach((b) => (b.onclick = () => (b.dataset.nav === 'play' ? play() : step(+b.dataset.nav))));
     mark(s, mk);
+    showView(P, s, fromSlide);
   };
-  const go = (k) => { cur = Math.max(0, Math.min(frames.length - 1, k)); render(); pane.querySelector('.ls-st-c').classList.add('enter'); if (onFrame) onFrame(cur); };
+  const go = (k, fromSlide) => { cur = Math.max(0, Math.min(frames.length - 1, k)); render(fromSlide); pane.querySelector('.ls-st-c').classList.add('enter'); if (onFrame) onFrame(cur); };
   const step = (dk) => { if (timer && dk) stopPlay(); go(cur + dk); };
   const stopPlay = () => { clearInterval(timer); timer = null; };
   const play = () => {
@@ -872,8 +940,8 @@ function lsStoryPane(pane, grid, key, view, frames, marks, sysChips, onFrame) {
     timer = setInterval(() => { if (cur >= frames.length - 1) { stopPlay(); render(); return; } go(cur + 1); }, 3500);
     go(cur + 1);
   };
-  const open = (k) => { LS_STORY = { step, stop: stopPlay }; go(k); };
-  const close = () => { stopPlay(); if (LS_STORY && LS_STORY.step === step) LS_STORY = null; };
+  const open = (k) => { LS_STORY = { step, stop: stopPlay }; LS_SLIDE_SYNC = onSlide; go(k); };
+  const close = () => { stopPlay(); if (LS_STORY && LS_STORY.step === step) LS_STORY = null; if (LS_SLIDE_SYNC === onSlide) LS_SLIDE_SYNC = null; };
   return { open, close };
 }
 
