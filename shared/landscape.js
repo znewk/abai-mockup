@@ -357,32 +357,25 @@ function abaiLandscape(root, view = 'dream', flow) {
     }));
     return [...seen.values()];
   };
-  const show = (c, pin) => {
-    const key = c.dataset.sys, list = linksOf(key);
-    if (!list.length) return false;
+  const lit = (key, list) => {
     root.classList.add('hl');
     root.querySelectorAll(`.ls-chip[data-sys="${CSS.escape(key)}"]`).forEach((x) => x.classList.add('on'));
-    // Связи системы — всплывающей схемой рядом, на большой схеме только подсветка участников
+    // На большой схеме — только подсветка участников связей
     grid.querySelectorAll('.ep').forEach((x) => x.classList.remove('ep'));
     grid.classList.add('fl-on');
     list.forEach((e) => [e.f, e.t].forEach((k) => { const a = lsAnchor(grid, k); if (a) a.classList.add('ep'); }));
+  };
+  // Наведение — краткая схема связей; без связей — только число шагов BPMN. Клик — панель «История системы».
+  const show = (c) => {
+    const key = c.dataset.sys, list = linksOf(key), tr = lsTrailOf(view, key);
+    const nSt = tr.reduce((s, x) => s + x.list.length, 0);
+    if (!list.length && !nSt) return false;
+    lit(key, list);
     let pop = document.querySelector('.ls-pop');
     if (!pop) { pop = document.createElement('div'); pop.className = 'ls ls-pop'; document.body.appendChild(pop); }
-    pop.classList.toggle('pin', !!pin);
-    // Подробно — только в закреплённом окне (его можно прокрутить); при наведении — краткая схема
-    const det = full && pin;
-    pop.innerHTML = `<div class="ls-pop-h"><b>${key}</b> — потоки данных · ${V.name} · ${list.length}${det ? ' · подробно' : ''}${pin ? '<button class="ls-pop-x" title="Закрыть (Esc)">×</button>' : `<span>${full ? 'клик — подробно' : 'клик — закрепить окно'}</span>`}</div><div class="ls-focus"></div>`;
+    pop.innerHTML = `<div class="ls-pop-h"><b>${key}</b> — ${V.name} · связей на схеме: ${list.length}${nSt ? ` · шагов BPMN: ${nSt}` : ''}<span>клик — история шагов и связи</span></div>${list.length ? '<div class="ls-focus"></div>' : ''}`;
     pop.style.transform = ''; pop.style.width = 'auto'; pop.style.maxWidth = 'none'; pop.style.display = 'block';
-    lsBus(pop.querySelector('.ls-focus'), grid, key, list, view, { full: det });
-    if (pin) {
-      LS_PIN = () => { root.classList.remove('hl'); root.querySelectorAll('.ls-chip.on').forEach((x) => x.classList.remove('on')); draw(base); };
-      pop.style.left = ''; pop.style.top = '';
-      let bg = document.querySelector('.ls-pop-bg');
-      if (!bg) { bg = document.createElement('div'); bg.className = 'ls-pop-bg'; document.body.appendChild(bg); }
-      bg.style.display = 'block'; bg.onclick = lsUnpin;
-      pop.querySelector('.ls-pop-x').onclick = lsUnpin;
-      return true;
-    }
+    if (list.length) lsBus(pop.querySelector('.ls-focus'), grid, key, list, view, {});
     // Схема вертикальная: ставим сбоку от системы, если не влезает — уменьшаем
     const r = c.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
     const sc = Math.min(1, (innerHeight - 24) / ph, (innerWidth - 24) / pw);
@@ -394,15 +387,26 @@ function abaiLandscape(root, view = 'dream', flow) {
     return true;
   };
   root.querySelectorAll('.ls-chip, .ls-cell[data-sys]').forEach((c) => {
-    c.onmouseenter = () => { if (!LS_PIN) show(c); };
+    c.onmouseenter = () => { if (!LS_PIN) show(c); lsTrailLoad(); };
     c.onmouseleave = () => {
       if (LS_PIN) return;
       root.classList.remove('hl'); root.querySelectorAll('.ls-chip.on').forEach((x) => x.classList.remove('on'));
       const pop = document.querySelector('.ls-pop'); if (pop) pop.style.display = 'none';
       draw(base);
     };
-    // Клик по системе с потоками — закрепить окно (иначе, как раньше, открывается модуль)
-    c.onclick = (ev) => { if (show(c, true)) { ev.preventDefault(); ev.stopPropagation(); } };
+    // Клик по системе — панель «История системы»: шаги BPMN и связи (если нет ни того, ни другого — как раньше, открывается модуль)
+    c.onclick = (ev) => {
+      ev.preventDefault(); ev.stopPropagation();
+      const key = c.dataset.sys, a = c.closest('a[href]');
+      lsTrailLoad().then(() => {
+        const list = linksOf(key);
+        if (!list.length && !lsTrailOf(view, key).length) { if (a) location.href = a.href; return; }
+        const pop = document.querySelector('.ls-pop'); if (pop) pop.style.display = 'none';
+        lit(key, list);
+        LS_PIN = () => { root.classList.remove('hl'); root.querySelectorAll('.ls-chip.on').forEach((x) => x.classList.remove('on')); draw(base); };
+        lsSide(root, grid, key, list, view);
+      });
+    };
   });
   // Наведение на пункт списка — выделить одну стрелку
   root.querySelectorAll('[data-fi]').forEach((li) => {
@@ -418,10 +422,467 @@ function lsUnpin() {
   const pop = document.querySelector('.ls-pop'), bg = document.querySelector('.ls-pop-bg');
   if (pop) { pop.style.display = 'none'; pop.classList.remove('pin'); }
   if (bg) bg.style.display = 'none';
+  document.querySelectorAll('.ls-side, .ls-center').forEach((x) => x.classList.remove('open'));
+  if (LS_STORY) { LS_STORY.stop(); LS_STORY = null; }
+  if (LS_PATH_STOP) { LS_PATH_STOP(); LS_PATH_STOP = null; }
   if (typeof LS_PIN === 'function') LS_PIN();
   LS_PIN = false;
 }
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && LS_PIN) lsUnpin(); });
+let LS_STORY = null; // история по шагам в центральном окне: { step(±1), stop() }
+let LS_PATH_STOP = null; // остановить проигрывание пути данных при закрытии
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && LS_PIN) lsUnpin();
+  if (LS_STORY && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { e.preventDefault(); LS_STORY.step(e.key === 'ArrowRight' ? 1 : -1); }
+});
+
+// ---------- История системы: центральное окно (схема связей / история по шагам) и сайдбар справа (списки шагов BPMN и связей) ----------
+// Шаги — shared/landscape-trail.js (генерирует tools/build_landscape.js), подгружается при первом открытии.
+let LS_TRAIL_WAIT = null;
+function lsTrailLoad() {
+  if (typeof LS_TRAIL !== 'undefined') return Promise.resolve();
+  if (!LS_TRAIL_WAIT) {
+    LS_TRAIL_WAIT = new Promise((ok) => {
+      const me = document.querySelector('script[src*="landscape.js"]');
+      const s = document.createElement('script');
+      s.src = me ? me.getAttribute('src').replace('landscape.js', 'landscape-trail.js') : 'shared/landscape-trail.js';
+      s.onload = ok; s.onerror = ok;
+      document.head.appendChild(s);
+    });
+  }
+  return LS_TRAIL_WAIT;
+}
+// Шаги системы по процессам: [{ P: процесс, list: [номера шагов] }]
+function lsTrailOf(view, key) {
+  if (typeof LS_TRAIL === 'undefined') return [];
+  return (LS_TRAIL[view] || []).map((P) => ({ P, list: P.s.map((s, i) => (s.s.some((x) => lsKey(x) === key) ? i : -1)).filter((i) => i >= 0) })).filter((x) => x.list.length);
+}
+const LS_MOD_NAME = { geologiya: 'Геология', razrabotka: 'Разработка', burenie: 'Бурение', dobycha: 'Добыча' };
+
+function lsSide(root, grid, key, links, view) {
+  const V = LS_VIEWS[view], full = LS_MODE === 'full';
+  const anchor = lsAnchor(grid, key);
+  const kind = anchor && anchor.classList.contains('ls-chip') ? (anchor.className.match(/k-(\w+)/) || [])[1] : 'user';
+  const trail = lsTrailOf(view, key);
+  const nSteps = trail.reduce((s, x) => s + x.list.length, 0);
+  // Шаги, на которые опираются связи схемы: «Г1 1.1» → связи
+  const marks = new Map();
+  links.forEach((e) => (e.refs || [e.r]).flatMap((r) => lsSteps(view, r)).forEach((p) => (p.steps || []).forEach((s) => s.list.forEach((x) => {
+    const k = p.proc + ' ' + x.c;
+    if (!marks.has(k)) marks.set(k, []);
+    if (!marks.get(k).includes(e)) marks.get(k).push(e);
+  }))));
+  const sysChips = (list) => list.map((x) => { const k = lsKey(x), a = lsAnchor(grid, k); const kd = a && a.classList.contains('ls-chip') ? (a.className.match(/k-(\w+)/) || [])[1] : x === 'MS Office' ? 'manual' : 'ext'; return `<span class="ls-sc k-${kd}">${x}</span>`; }).join('');
+  const nb = (P, x) => {
+    if (typeof x[0] !== 'number') return `<div class="ls-tn"><em>${x[0]}</em></div>`;
+    const s = P.s[x[0]];
+    return `<div class="ls-tn"><b>${s.c || '—'}</b> ${s.t}<span>${lsRole(s)}${s.s.length ? ' · ' + s.s.join(', ') : ''}</span>${x[1] ? `<q>${x[1]}</q>` : ''}</div>`;
+  };
+  // Связь одной строкой: откуда → куда, что, как, шаг, кто
+  const linkRow = (e) => `<div class="ls-sl k-${e.k}">
+      <div class="ls-sl-h"><span class="${e.f === key ? 'me' : ''}">${e.f}</span><i>→</i><span class="${e.t === key ? 'me' : ''}">${e.t}</span></div>
+      <div class="ls-sl-w">${e.w}</div>
+      <div class="ls-sl-m"><span>как: ${LS_KINDS[e.k]}</span><span>шаг: ${e.r}</span>${(() => { const who = lsWho(e, view); return who ? `<span>кто: ${who}</span>` : ''; })()}</div>
+      ${full ? lsDetail(e, view) : ''}
+    </div>`;
+  const inn = links.filter((e) => e.t === key), out = links.filter((e) => e.f === key);
+  const linksHTML = links.length
+    ? [['Получает данные', inn], ['Передаёт данные', out]].filter(([, l]) => l.length).map(([t, l]) => `<div class="ls-sg"><div class="ls-sg-h">${t} <em>${l.length}</em></div>${l.map(linkRow).join('')}</div>`).join('')
+    : '<div class="ls-empty">Связей этой системы на схеме нет — потоки данных ведутся по сценариям, а эта система в них не участвует.</div>';
+  // История: процессы по модулям, шаги по порядку номеров; «до / после» — соседние шаги BPMN (через развилки)
+  const mods = [...new Set(trail.map((x) => x.P.m))];
+  const frames = trail.flatMap(({ P, list }) => list.map((i) => ({ P, i })));
+  const fIx = new Map(frames.map((f, k) => [f.P.p + '|' + f.i, k]));
+  const roles = new Map();
+  trail.forEach(({ P, list }) => list.forEach((i) => { const r = lsRole(P.s[i]); roles.set(r, (roles.get(r) || 0) + 1); }));
+  const histHTML = !nSteps ? '<div class="ls-empty">В шагах BPMN этого вида система не указана.</div>' : `
+    <div class="ls-hf">${['', ...mods].map((m) => `<button data-hm="${m}" class="${m ? '' : 'on'}">${m ? LS_MOD_NAME[m] : 'Все'} <em>${m ? trail.filter((x) => x.P.m === m).reduce((s, x) => s + x.list.length, 0) : nSteps}</em></button>`).join('')}</div>
+    <div class="ls-hr"><b>Кто работает с системой:</b> ${(() => { const rs = [...roles].sort((a, b) => b[1] - a[1]); return rs.slice(0, 6).map(([r, n]) => `${r} <em>${n}</em>`).join(' · ') + (rs.length > 6 ? ` · <span title="${rs.slice(6).map(([r, n]) => `${r} (${n})`).join(', ')}">ещё ${rs.length - 6}</span>` : ''); })()}</div>
+    ${trail.map(({ P, list }) => {
+      const prs = [...new Set(list.map((i) => lsRole(P.s[i])))];
+      return `<details class="ls-tp" data-m="${P.m}"${nSteps <= 20 || trail.length === 1 ? ' open' : ''}>
+        <summary><button class="ls-play" data-story="${fIx.get(P.p + '|' + list[0])}" title="Пройти шаги процесса по схеме">▶ по шагам</button><b>${P.p}</b> ${P.t}<span>${list.length} ${list.length === 1 ? 'шаг' : list.length < 5 ? 'шага' : 'шагов'} · ${prs.join(', ')}</span></summary>
+        <div class="ls-tl">${list.map((i, j) => {
+          const s = P.s[i], prev = list[j - 1], next = list[j + 1];
+          const pv = s.pv.filter((x) => x[0] !== prev), nx = s.nx.filter((x) => x[0] !== next);
+          const mk = marks.get(P.p + ' ' + s.c) || [];
+          const other = s.s.filter((x) => lsKey(x) !== key);
+          const linked = next !== undefined && s.nx.some((x) => x[0] === next);
+          return `${pv.length ? `<div class="ls-tw pv"><i>до</i><div>${pv.map((x) => nb(P, x)).join('')}</div></div>` : j ? '' : '<div class="ls-tw pv"><i>до</i><div><div class="ls-tn"><em>начало процесса</em></div></div></div>'}
+            <div class="ls-ts" data-story="${fIx.get(P.p + '|' + i)}" title="Показать шаг в центре">
+              <span class="ls-play">▶ показать</span>
+              <div class="ls-ts-h"><b>${s.c || 'без номера'}</b>${s.t}</div>
+              <div class="ls-ts-r">${lsRole(s)}</div>
+              ${other.length ? `<div class="ls-ts-x"><i>вместе с</i>${sysChips(other)}</div>` : ''}
+              ${s.d.length ? `<div class="ls-ts-x"><i>документы</i><span>${s.d.join('; ')}</span></div>` : ''}
+              ${s.n.map((n) => `<q>${n}</q>`).join('')}
+              ${mk.length ? mk.map((e) => `<div class="ls-ts-f k-${e.k}">на схеме: ${e.f === key ? `передаёт → <b>${e.t}</b>` : `получает ← <b>${e.f}</b>`} · ${e.w}</div>`).join('') : '<div class="ls-ts-f none">в потоках данных на схеме не показан</div>'}
+            </div>
+            ${next === undefined ? (nx.length ? `<div class="ls-tw nx"><i>после</i><div>${nx.map((x) => nb(P, x)).join('')}</div></div>` : '<div class="ls-tw nx"><i>после</i><div><div class="ls-tn"><em>конец процесса</em></div></div></div>')
+              : `${nx.length ? `<div class="ls-tw nx"><i>после</i><div>${nx.map((x) => nb(P, x)).join('')}</div></div>` : ''}<div class="ls-tg">${linked ? '↓ следующий шаг' : '⋯ другие шаги процесса'}</div>`}`;
+        }).join('')}</div>
+      </details>`;
+    }).join('')}`;
+  let side = document.querySelector('.ls-side'), center = document.querySelector('.ls-center');
+  if (!side) { side = document.createElement('aside'); side.className = 'ls ls-side'; document.body.appendChild(side); }
+  if (!center) { center = document.createElement('section'); center.className = 'ls ls-center'; document.body.appendChild(center); }
+  const tab0 = nSteps ? 'hist' : 'links';
+  side.innerHTML = `
+    <div class="ls-side-h">
+      <div><span class="ls-side-g">${lsGroup(anchor, view).title} · ${V.name}</span><b class="k-${kind}">${key}</b>
+        <span class="ls-side-s">в BPMN: <b>${nSteps}</b> ${nSteps === 1 ? 'шаг' : nSteps > 1 && nSteps < 5 ? 'шага' : 'шагов'} в ${trail.length} ${trail.length === 1 ? 'процессе' : 'процессах'} · связей на схеме: <b>${links.length}</b></span></div>
+      <button class="ls-pop-x" title="Закрыть (Esc)">×</button>
+    </div>
+    <div class="ls-side-t"><button data-tab="hist" class="${tab0 === 'hist' ? 'on' : ''}">Шаги BPMN <em>${nSteps}</em></button><button data-tab="links" class="${tab0 === 'links' ? 'on' : ''}">Связи на схеме <em>${links.length}</em></button></div>
+    <div class="ls-side-b" data-pane="hist" ${tab0 === 'hist' ? '' : 'hidden'}>${histHTML}</div>
+    <div class="ls-side-b" data-pane="links" ${tab0 === 'links' ? '' : 'hidden'}>${linksHTML}</div>`;
+  center.innerHTML = `
+    <div class="ls-center-h">
+      <b class="k-${kind}">${key}</b>
+      <div class="ls-center-m">${links.length ? `<button data-cm="path">Путь данных</button><button data-cm="bus">Связи системы <em>${links.length}</em></button>` : ''}${nSteps ? `<button data-cm="story">История по шагам <em>${nSteps}</em></button>` : ''}</div>
+      <span class="ls-center-hint"></span>
+    </div>
+    <div class="ls-center-b" data-cpane="path" hidden></div>
+    <div class="ls-center-b" data-cpane="bus" hidden>${links.length ? '<div class="ls-center-sub">Все связи системы на схеме ЦД: снизу — кто передаёт ей данные, сверху — кому передаёт она. Справа — их список и все шаги BPMN системы.</div><div class="ls-focus"></div>' : ''}</div>
+    <div class="ls-center-b ls-story" data-cpane="story" hidden></div>`;
+  // Схема связей — в натуральную величину: широкая прокручивается, а не сжимается. Рисуется, когда окно видно (подписи меряются по факту)
+  let busDone = false, path = null;
+  // Текущий шаг истории — подсвечен в списке сайдбара
+  const syncSide = (k) => {
+    side.querySelectorAll('.ls-ts.cur').forEach((x) => x.classList.remove('cur'));
+    const el = side.querySelector(`.ls-ts[data-story="${k}"]`);
+    if (!el) return;
+    el.classList.add('cur');
+    const d = el.closest('details'); if (d) d.open = true;
+    const tp = el.closest('.ls-tp'); if (tp && tp.hidden) side.querySelector('[data-hm=""]').click();
+    if (side.querySelector('[data-pane="hist"]').hidden) side.querySelector('[data-tab="hist"]').click();
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  };
+  const story = lsStoryPane(center.querySelector('[data-cpane="story"]'), grid, key, view, frames, marks, sysChips, syncSide);
+  const mode = (m, k) => {
+    center.querySelectorAll('[data-cm]').forEach((x) => x.classList.toggle('on', x.dataset.cm === m));
+    center.querySelectorAll('[data-cpane]').forEach((x) => (x.hidden = x.dataset.cpane !== m));
+    center.querySelector('.ls-center-hint').textContent = m === 'story' ? '← → — листать шаги · Esc — закрыть' : m === 'path' ? 'клик по системе — её путь данных · Esc — закрыть' : 'наведите на подпись — шаг BPMN связи · Esc — закрыть';
+    if (path && m !== 'path') path.stop();
+    if (m === 'path' && !path) path = lsPaths(center.querySelector('[data-cpane="path"]'), grid, key, view, { onPick: (n) => {
+      const el = [...grid.querySelectorAll('[data-sys]')].find((x) => x.dataset.sys === n);
+      if (el) { lsUnpin(); el.click(); }
+    } }) || { stop() {} };
+    center.querySelector('.ls-center-b:not([hidden])').scrollTop = 0;
+    if (m === 'bus' && !busDone) { busDone = true; lsBus(center.querySelector('[data-cpane="bus"] .ls-focus'), grid, key, links, view, { full: LS_MODE === 'full' }); }
+    if (m === 'story') story.open(k || 0); else { story.close(); side.querySelectorAll('.ls-ts.cur').forEach((x) => x.classList.remove('cur')); }
+  };
+  center.querySelectorAll('[data-cm]').forEach((b) => (b.onclick = () => mode(b.dataset.cm)));
+  side.querySelectorAll('[data-story]').forEach((b) => (b.onclick = (ev) => { ev.preventDefault(); ev.stopPropagation(); mode('story', +b.dataset.story); }));
+  side.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => {
+    side.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
+    side.querySelectorAll('[data-pane]').forEach((x) => (x.hidden = x.dataset.pane !== b.dataset.tab));
+  }));
+  side.querySelectorAll('[data-hm]').forEach((b) => (b.onclick = () => {
+    side.querySelectorAll('[data-hm]').forEach((x) => x.classList.toggle('on', x === b));
+    side.querySelectorAll('.ls-tp').forEach((x) => (x.hidden = !!b.dataset.hm && x.dataset.m !== b.dataset.hm));
+  }));
+  side.querySelector('.ls-pop-x').onclick = lsUnpin;
+  let bg = document.querySelector('.ls-pop-bg');
+  if (!bg) { bg = document.createElement('div'); bg.className = 'ls-pop-bg'; document.body.appendChild(bg); }
+  bg.style.display = 'block'; bg.onclick = lsUnpin;
+  side.scrollTop = 0;
+  LS_PATH_STOP = () => path && path.stop();
+  mode(links.length ? 'path' : 'story');
+  requestAnimationFrame(() => { side.classList.add('open'); center.classList.add('open'); });
+  return true;
+}
+
+// ---------- Путь данных: откуда данные приходят в систему и куда уходят дальше — через промежуточные системы ----------
+// По сценариям потоков (landscape-flows.js): сценарий — связная история («Суточная добыча», «Строительство скважины»),
+// в нём — цепочки до системы и после неё. «Все сценарии» — связи всех сценариев, но не дальше двух передач в каждую сторону
+// (через БД 2.0 и КХД иначе в путь попадает вся сеть).
+function lsPaths(host, grid, key, view, o = {}) {
+  const fl = (LS_FLOWS[view] || []).filter((f) => f.e.some((e) => e[0] === key || e[1] === key));
+  const tabs = fl.map((f) => ({ id: f.id, name: f.name, sub: f.mods, flows: [f], depth: Infinity })).concat(fl.length > 1 ? [{ id: '*', name: 'Все сценарии', sub: 'до 2 передач в каждую сторону', flows: LS_FLOWS[view], depth: 2 }] : []);
+  host.innerHTML = `<div class="ls-pth-t">${tabs.map((t, i) => `<button data-pt="${i}"><b>${t.name}</b><span>${t.sub}</span></button>`).join('')}</div><div class="ls-pth-b"></div>`;
+  let cur = null;
+  const show = (i) => {
+    if (cur) cur.stop();
+    host.querySelectorAll('[data-pt]').forEach((b) => b.classList.toggle('on', +b.dataset.pt === i));
+    cur = lsLineage(host.querySelector('.ls-pth-b'), grid, key, view, Object.assign({}, o, { flows: tabs[i].flows, depth: tabs[i].depth, scen: tabs[i] })) || { stop() {} };
+  };
+  host.querySelectorAll('[data-pt]').forEach((b) => (b.onclick = () => show(+b.dataset.pt)));
+  show(0);
+  return { stop: () => cur && cur.stop() };
+}
+function lsLineage(host, grid, key, view, o = {}) {
+  const NH = 46, HG = 26, VG = 92, VW = 14, BR = 9;
+  // Связи выбранных сценариев: одинаковые «откуда → куда» объединены
+  const E = [], byId = new Map();
+  (o.flows || LS_FLOWS[view] || []).forEach((f) => f.e.forEach(([a, z, w, r, k]) => {
+    const id = a + '|' + z;
+    if (!byId.has(id)) { const e = { f: a, t: z, w, r, k }; byId.set(id, e); E.push(e); } else { const e = byId.get(id); if (!e.w.includes(w)) { e.w += '; ' + w; e.r += ' · ' + r; } }
+  }));
+  const depth = o.depth || Infinity;
+  const bfs = (dir) => {
+    const dist = new Map([[key, 0]]), q = [key];
+    while (q.length) { const v = q.shift(); if (dist.get(v) >= depth) continue; E.forEach((e) => { const [from, to] = dir > 0 ? [e.f, e.t] : [e.t, e.f]; if (from === v && !dist.has(to)) { dist.set(to, dist.get(v) + 1); q.push(to); } }); }
+    return dist;
+  };
+  const up = bfs(-1), down = bfs(1); // up — источники (сколько передач до системы), down — получатели
+  // Сторона системы на пути: до неё (уровень < 0) или после (> 0) — по ближайшей; связи — только внутри своей стороны
+  const lvl = (n) => (n === key ? 0 : up.has(n) && (!down.has(n) || up.get(n) <= down.get(n)) ? -up.get(n) : down.get(n));
+  const edges = E.filter((e) => (up.has(e.f) && up.has(e.t) && lvl(e.f) <= 0 && lvl(e.t) <= 0) || (down.has(e.f) && down.has(e.t) && lvl(e.f) >= 0 && lvl(e.t) >= 0));
+  if (!edges.length) { host.innerHTML = '<div class="ls-empty">Связей этой системы на схеме нет — путь данных не построить.</div>'; return; }
+  const kindOf = (n) => { const a = lsAnchor(grid, n); return a && a.classList.contains('ls-chip') ? (a.className.match(/k-(\w+)/) || [])[1] : 'user'; };
+  const nodes = new Map();
+  edges.forEach((e) => [e.f, e.t].forEach((n) => { if (!nodes.has(n)) nodes.set(n, { n, real: true, L: lvl(n), kind: kindOf(n), g: lsGroup(lsAnchor(grid, n), view).title, w: Math.round(Math.min(210, Math.max(118, 26 + n.length * 7.2))), e: [] }); }));
+  const minL = Math.min(...[...nodes.values()].map((x) => x.L)), maxL = Math.max(...[...nodes.values()].map((x) => x.L));
+  // Длинные связи — через промежуточные ряды (точки-проводники), обратные (против хода данных) — дугой справа
+  const items = edges.map((e, i) => {
+    const a = nodes.get(e.f), b = nodes.get(e.t), it = { e, a, b, back: b.L <= a.L, via: [] };
+    if (!it.back) for (let L = a.L + 1; L < b.L; L++) { const v = { real: false, L, w: VW, e: [it] }; nodes.set('~' + i + '~' + L, v); it.via.push(v); }
+    a.e.push(it); b.e.push(it);
+    return it;
+  });
+  const rows = Array.from({ length: maxL - minL + 1 }, (_, r) => [...nodes.values()].filter((x) => x.L === minL + r));
+  // Соседи узла в соседних рядах (с учётом проводников)
+  const chainOf = (it) => [it.a, ...it.via, it.b];
+  const nbr = (x, dL) => items.filter((it) => !it.back).flatMap((it) => { const ch = chainOf(it), i = ch.indexOf(x); return i < 0 ? [] : [ch[i + dL]].filter((y) => y && y.L === x.L + dL); });
+  // Порядок в рядах — по соседям (барицентры), затем координаты: как можно ближе к соседям, без наложений
+  const cx = (x) => x.x + x.w / 2;
+  const pack = (row) => { let x = 0; row.forEach((n) => { n.x = x; x += n.w + HG; }); row.wd = x - HG; };
+  rows.forEach(pack);
+  const W0 = () => Math.max(...rows.map((r) => r.wd));
+  rows.forEach((r) => { const dx = (W0() - r.wd) / 2; r.forEach((n) => (n.x += dx)); });
+  for (let it = 0; it < 10; it++) {
+    const sweep = it % 2 ? rows.slice().reverse() : rows;
+    sweep.forEach((row) => {
+      const dL = it % 2 ? 1 : -1;
+      row.forEach((n) => { const nb = nbr(n, dL).concat(nbr(n, -dL).map((y) => y)); n.bc = nb.length ? nb.reduce((s, y) => s + cx(y), 0) / nb.length : cx(n); });
+      row.sort((p, q) => p.bc - q.bc);
+      // Желаемые позиции по соседям, затем раздвигаем, сохраняя порядок
+      row.forEach((n) => (n.x = n.bc - n.w / 2));
+      for (let i = 1; i < row.length; i++) row[i].x = Math.max(row[i].x, row[i - 1].x + row[i - 1].w + HG);
+      for (let i = row.length - 2; i >= 0; i--) row[i].x = Math.min(row[i].x, row[i + 1].x - row[i].w - HG);
+    });
+  }
+  const minX = Math.min(...[...nodes.values()].map((n) => n.x));
+  nodes.forEach((n) => (n.x -= minX - 64));
+  const backN = items.filter((it) => it.back).length;
+  const W = Math.max(...[...nodes.values()].map((n) => n.x + n.w)) + 20;
+  const yOf = (L) => 14 + (maxL - L) * (NH + VG);
+  nodes.forEach((n) => (n.y = yOf(n.L)));
+  const H = yOf(minL) + NH + 14;
+  // Точки крепления: по ширине узла, в порядке другого конца
+  const ports = new Map();
+  const port = (n, side, it, other) => { const k = n.n + side; if (!ports.has(k)) ports.set(k, []); ports.get(k).push({ it, other }); };
+  items.filter((it) => !it.back).forEach((it) => { const ch = chainOf(it); port(it.a, 't', it, cx(ch[1])); port(it.b, 'b', it, cx(ch[ch.length - 2])); });
+  ports.forEach((list, k) => {
+    const n = nodes.get(k.slice(0, -1)), side = k.slice(-1);
+    list.sort((p, q) => p.other - q.other).forEach((p, j) => { const x = n.x + (n.w * (j + 1)) / (list.length + 1); if (side === 't') p.it.x0 = x; else p.it.x1 = x; });
+  });
+  // Номера связей — по этапам (ряд источника), внутри — слева направо
+  const fwd = items.filter((it) => !it.back).sort((p, q) => p.a.L - q.a.L || p.x0 - q.x0);
+  const order = fwd.concat(items.filter((it) => it.back));
+  order.forEach((it, i) => (it.n = i + 1));
+  const stages = [...new Set(fwd.map((it) => it.a.L))].sort((p, q) => p - q);
+  let paths = '', badges = '';
+  const placed = [];
+  const nodeBox = [...nodes.values()].filter((n) => n.real).map((n) => ({ l: n.x, t: n.y, r: n.x + n.w, b: n.y + NH }));
+  const ov = (p, q) => Math.max(0, Math.min(p.r, q.r) - Math.max(p.l, q.l)) * Math.max(0, Math.min(p.b, q.b) - Math.max(p.t, q.t));
+  let bi = 0;
+  order.forEach((it) => {
+    let d, pts;
+    if (it.back) {
+      bi++;
+      const xa = Math.min(it.a.x + it.a.w - 8, cx(it.a) + 16), xb = Math.min(it.b.x + it.b.w - 8, cx(it.b) + 16);
+      if (it.a.L === it.b.L) {
+        const y = it.a.y + NH, dy = 34 + bi * 6;
+        d = `M${xa},${y} C${xa},${y + dy} ${xb},${y + dy} ${xb},${y + 2}`;
+        pts = [[(xa + xb) / 2, y + dy * 0.75]];
+      } else {
+        const y0 = it.a.y + NH, y1 = it.b.y, m = (y1 - y0) / 2;
+        d = `M${xa},${y0} C${xa},${y0 + m} ${xb},${y1 - m} ${xb},${y1}`;
+        pts = [0.5, 0.35, 0.65].map((t) => { const u = 1 - t; return [u * u * u * xa + 3 * u * u * t * xa + 3 * u * t * t * xb + t * t * t * xb, u * u * u * y0 + 3 * u * u * t * (y0 + m) + 3 * u * t * t * (y1 - m) + t * t * t * y1]; });
+      }
+    } else {
+      // Ломаная по рядам: вверх от источника, через проводники, к получателю; плавные переходы между рядами
+      const P = [[it.x0, it.a.y]];
+      it.via.forEach((v) => { P.push([cx(v), v.y + NH], [cx(v), v.y]); });
+      P.push([it.x1, it.b.y + NH]);
+      d = `M${P[0][0]},${P[0][1]}`;
+      for (let i = 1; i < P.length; i++) {
+        const [x0, y0] = P[i - 1], [x1, y1] = P[i];
+        if (x0 === x1 && i % 2 === 0) d += ` L${x1},${y1}`; else { const m = (y0 - y1) / 2; d += ` C${x0},${y0 - m} ${x1},${y1 + m} ${x1},${y1}`; }
+      }
+      // Номер — на последнем переходе, ближе к получателю
+      const [x0, y0] = P[P.length - 2], [x1, y1] = P[P.length - 1];
+      pts = [0.55, 0.4, 0.7, 0.3, 0.8].map((t) => { const u = 1 - t, m = (y0 - y1) / 2; return [u * u * u * x0 + 3 * u * u * t * x0 + 3 * u * t * t * x1 + t * t * t * x1, u * u * u * y0 + 3 * u * u * t * (y0 - m) + 3 * u * t * t * (y1 + m) + t * t * t * y1]; });
+    }
+    let best = null;
+    pts.forEach(([x, y]) => { const q = { l: x - BR, t: y - BR, r: x + BR, b: y + BR }; const sc = placed.reduce((s, z) => s + 3 * ov(q, z), 0) + nodeBox.reduce((s, z) => s + ov(q, z), 0); if (!best || sc < best.sc) best = { sc, x, y }; });
+    placed.push({ l: best.x - BR - 2, t: best.y - BR - 2, r: best.x + BR + 2, b: best.y + BR + 2 });
+    paths += `<path d="${d}" class="k-${it.e.k}${it.back ? ' back' : ''}" data-e="${it.n}" marker-end="url(#lsnArr-${it.e.k})"/><path d="${d}" class="hit" data-e="${it.n}"/>`;
+    badges += `<b class="ls-nb k-${it.e.k}" data-e="${it.n}" style="left:${best.x - BR}px;top:${best.y - BR}px">${it.n}</b>`;
+  });
+  const mk = (k, c) => `<marker id="lsnArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:${c}"/></marker>`;
+  const stageName = (L) => (L < -1 ? 'раньше — по пути к системе' : L === -1 ? `в «${key}»` : L === 0 ? `из «${key}»` : 'дальше');
+  const edgeLine = (it) => `<li data-e="${it.n}" class="k-${it.e.k}"><b>${it.n}</b><span class="ft">${it.e.f} → ${it.e.t}</span> — ${it.e.w}<em>${it.e.r} · ${LS_KINDS[it.e.k]}</em></li>`;
+  host.innerHTML = `
+    <div class="ls-ln-bar">
+      <div class="ls-ln-sum">${(() => { const nu = up.size - 1, nd = down.size - 1; // все, кто передаёт системе / получает от неё на этом пути, включая обратные связи
+        return `<span>${nu ? `<b>${nu}</b> ${nu === 1 ? 'система передаёт' : 'систем передают'} данные в «${key}»` : `в «${key}» данные не приходят — она источник`}</span><span>${nd ? `<b>${nd}</b> ${nd === 1 ? 'система получает' : 'систем получают'} их дальше` : 'дальше данные не уходят'}</span>`; })()}</div>
+      <div class="ls-ln-ctl"><button data-st="-1">◀ Этап</button><button data-st="play" class="play">▶ Проиграть путь</button><button data-st="1">Этап ▶</button><button data-st="all">Весь путь</button></div>
+    </div>
+    <div class="ls-ln-cap">Весь путь данных: снизу — откуда данные изначально приходят, посередине — «${key}», сверху — куда уходят. Наведите на номер или систему — что передаётся; клик по системе — её путь данных.</div>
+    <div class="ls-ln-wrap"><div class="ls-fcanvas ls-net ls-ln v-${view}" style="width:${W}px;height:${H}px">
+      ${rows.map((r, i) => `<div class="ls-ln-row${minL + i === 0 ? ' me' : ''}" style="top:${yOf(minL + i) - 8}px;height:${NH + 16}px"><span>${minL + i === 0 ? 'система' : minL + i < 0 ? `−${-(minL + i)}` : `+${minL + i}`}</span></div>`).join('')}
+      <svg width="${W}" height="${H}"><defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}${mk('pub', '#0e7490')}</defs>${paths}</svg>
+      ${[...nodes.values()].filter((n) => n.real).map((n) => `<div class="ls-fnode k-${n.kind}${n.n === key ? ' me' : ''}" data-n="${n.n}" title="${n.n === key ? '' : 'Клик — путь данных этой системы'}" style="left:${n.x}px;top:${n.y}px;width:${n.w}px;height:${NH}px"><span>${n.g}</span><b>${n.n}</b></div>`).join('')}
+      <div class="ls-nbs">${badges}</div>
+      <div class="ls-ncall"></div>
+    </div></div>
+    <div class="ls-ln-list">${stages.map((L) => `<div><h4>Этап ${stages.indexOf(L) + 1} · ${stageName(L)}</h4><ol>${fwd.filter((it) => it.a.L === L).map(edgeLine).join('')}</ol></div>`).join('')}
+      ${backN ? `<div><h4>Обратные связи · данные возвращаются против хода пути</h4><ol>${items.filter((it) => it.back).map(edgeLine).join('')}</ol></div>` : ''}</div>`;
+  // ---- Подсветка, этапы, клик по системе ----
+  const canvas = host.querySelector('.ls-ln'), call = host.querySelector('.ls-ncall');
+  lsRail(host.querySelector('.ls-ln-wrap'));
+  const byN = new Map(order.map((it) => [it.n, it]));
+  let stage = null, timer = null;
+  const paint = () => {
+    canvas.classList.toggle('staged', stage !== null);
+    if (stage === null) { canvas.querySelectorAll('.done, .now').forEach((x) => x.classList.remove('done', 'now')); host.querySelectorAll('.ls-ln-list li').forEach((x) => x.classList.remove('done', 'now')); host.querySelector('.ls-ln-cap').innerHTML = `Весь путь данных: снизу — откуда данные изначально приходят, посередине — «${key}», сверху — куда уходят. Наведите на номер или систему — что передаётся; клик по системе — её путь данных.`; return; }
+    const L = stages[stage];
+    const st = (it) => (it.back ? '' : it.a.L < L ? 'done' : it.a.L === L ? 'now' : '');
+    canvas.querySelectorAll('[data-e]').forEach((x) => { const c = st(byN.get(+x.dataset.e)); x.classList.toggle('done', c === 'done'); x.classList.toggle('now', c === 'now'); });
+    host.querySelectorAll('.ls-ln-list li').forEach((x) => { const c = st(byN.get(+x.dataset.e)); x.classList.toggle('done', c === 'done'); x.classList.toggle('now', c === 'now'); });
+    const reached = new Set(fwd.filter((it) => it.a.L <= L).flatMap((it) => [it.a.n, it.b.n]));
+    canvas.querySelectorAll('.ls-fnode').forEach((x) => { x.classList.toggle('done', reached.has(x.dataset.n)); });
+    const now = fwd.filter((it) => it.a.L === L);
+    host.querySelector('.ls-ln-cap').innerHTML = `<b>Этап ${stage + 1} из ${stages.length} · ${stageName(L)}:</b> ${now.map((it) => `${it.e.f} → ${it.e.t} <i>(${it.e.w})</i>`).join('; ')}`;
+  };
+  const stop = () => { clearInterval(timer); timer = null; host.querySelector('[data-st="play"]').textContent = '▶ Проиграть путь'; };
+  host.querySelectorAll('[data-st]').forEach((b) => (b.onclick = () => {
+    const a = b.dataset.st;
+    if (a === 'all') { stop(); stage = null; paint(); return; }
+    if (a === 'play') {
+      if (timer) { stop(); return; }
+      stage = stage === null || stage >= stages.length - 1 ? 0 : stage + 1; paint();
+      b.textContent = '❚❚ Пауза';
+      timer = setInterval(() => { if (stage >= stages.length - 1) { stop(); return; } stage++; paint(); }, 2600);
+      return;
+    }
+    stop(); stage = stage === null ? (+a > 0 ? 0 : stages.length - 1) : Math.max(0, Math.min(stages.length - 1, stage + +a)); paint();
+  }));
+  const hot = (ids, it) => {
+    canvas.classList.toggle('focus', !!ids);
+    canvas.querySelectorAll('[data-e]').forEach((x) => x.classList.toggle('hot', !!ids && ids.includes(+x.dataset.e)));
+    canvas.querySelectorAll('.ls-fnode').forEach((x) => x.classList.toggle('hot', !!ids && order.some((q) => ids.includes(q.n) && (q.a.n === x.dataset.n || q.b.n === x.dataset.n))));
+    if (it) {
+      const bx = canvas.querySelector(`.ls-nb[data-e="${it.n}"]`);
+      call.innerHTML = `<b>${it.n}</b> ${it.e.f} → ${it.e.t}<span>${it.e.w}</span><em>${it.e.r} · ${LS_KINDS[it.e.k]}</em>`;
+      call.style.display = 'block';
+      const L = parseFloat(bx.style.left) + 24, T = parseFloat(bx.style.top) - 6;
+      call.style.left = (L + call.offsetWidth > W ? Math.max(4, L - 48 - call.offsetWidth) : L) + 'px'; call.style.top = Math.min(T, H - call.offsetHeight - 4) + 'px';
+    } else call.style.display = 'none';
+  };
+  canvas.querySelectorAll('[data-e]').forEach((x) => { const it = byN.get(+x.dataset.e); x.onmouseenter = () => hot([it.n], it); x.onmouseleave = () => hot(null); });
+  host.querySelectorAll('.ls-ln-list li').forEach((x) => { const it = byN.get(+x.dataset.e); x.onmouseenter = () => hot([it.n]); x.onmouseleave = () => hot(null); });
+  canvas.querySelectorAll('.ls-fnode').forEach((x) => {
+    const n = nodes.get(x.dataset.n);
+    x.onmouseenter = () => hot(n.e.map((q) => q.n));
+    x.onmouseleave = () => hot(null);
+    if (n.n !== key && o.onPick) x.onclick = () => { stop(); o.onPick(n.n); };
+  });
+  return { stop };
+}
+
+// ---------- История по шагам: каждый шаг BPMN системы — вертикальная схема снизу вверх ----------
+// Внизу — откуда пришли: предыдущий шаг BPMN и связи схемы, по которым система получает данные на этом шаге;
+// посередине — сам шаг: исполнитель, системы (аннотации BPMN — под системой, о которой они), документы;
+// вверху — куда дальше: следующий шаг BPMN и связи, по которым система передаёт данные. На большой схеме подсвечены системы шага.
+function lsStoryPane(pane, grid, key, view, frames, marks, sysChips, onFrame) {
+  let cur = 0, timer = null;
+  const kindOf = (name) => { const a = lsAnchor(grid, lsKey(name)); return a && a.classList.contains('ls-chip') ? (a.className.match(/k-(\w+)/) || [])[1] : name === 'MS Office' ? 'manual' : 'ext'; };
+  const short = (n) => n.replace(/^(ABAI|SLB)\s+/, '');
+  const stepCard = (P, x, dir) => {
+    if (typeof x[0] !== 'number') return `<div class="ls-sn ev" data-a="seq"><i>${dir}</i><em>${x[0]}</em></div>`;
+    const s = P.s[x[0]];
+    return `<div class="ls-sn step" data-a="seq"><i>${dir} · шаг BPMN</i><div><b>${s.c || '—'}</b> ${s.t}</div><span class="ls-sn-r">${lsRole(s)}</span>${s.s.length ? `<div class="ls-sn-s">${sysChips(s.s)}</div>` : ''}${x[1] ? `<q>${x[1]}</q>` : ''}</div>`;
+  };
+  const flowCard = (e, inn) => `<div class="ls-sn sys k-${kindOf(inn ? e.f : e.t)}" data-a="${e.k}"><i>${inn ? 'передаёт данные' : 'получает данные'} · связь на схеме</i><b>${inn ? e.f : e.t}</b><span>${e.w}</span><em>${LS_KINDS[e.k]}</em></div>`;
+  const mark = (s, mk) => {
+    grid.querySelectorAll('.ep').forEach((x) => x.classList.remove('ep'));
+    grid.classList.add('fl-on');
+    s.s.map(lsKey).concat(mk.flatMap((e) => [e.f, e.t])).forEach((k) => { const a = lsAnchor(grid, k); if (a) a.classList.add('ep'); });
+  };
+  const render = () => {
+    const f = frames[cur], P = f.P, s = P.s[f.i];
+    const mk = marks.get(P.p + ' ' + s.c) || [];
+    const inF = mk.filter((e) => e.t === key), outF = mk.filter((e) => e.f === key);
+    // Аннотации — к системе, которую они называют («…берётся из БД 2.0»); остальные — под шагом
+    const notesOf = new Map(s.s.map((x) => [x, []])), rest = [];
+    s.n.forEach((n) => { const hit = s.s.find((x) => n.includes(x) || n.includes(short(x))); if (hit) notesOf.get(hit).push(n); else rest.push(n); });
+    const bot = s.pv.map((x) => stepCard(P, x, 'до')).concat(inF.map((e) => flowCard(e, true)));
+    const top = s.nx.map((x) => stepCard(P, x, 'после')).concat(outF.map((e) => flowCard(e, false)));
+    // Полоса прогресса: процессы и шаги системы в них
+    const strip = [];
+    frames.forEach((fr, k) => { if (!k || frames[k - 1].P !== fr.P) strip.push({ P: fr.P, ks: [] }); strip[strip.length - 1].ks.push(k); });
+    pane.innerHTML = `
+      <div class="ls-st-strip">${strip.map(({ P: Q, ks }) => `<div class="${Q === P ? 'on' : ''}" title="${Q.p} · ${Q.t}"><span>${Q.p}</span><div>${ks.map((k) => `<button data-go="${k}" class="${k < cur ? 'done' : k === cur ? 'cur' : ''}" title="${Q.s[frames[k].i].c} ${Q.s[frames[k].i].t}"></button>`).join('')}</div></div>`).join('')}</div>
+      <div class="ls-st-h"><span>${LS_MOD_NAME[P.m]} · <b>${P.p}</b> ${P.t}</span><em>шаг ${cur + 1} из ${frames.length}</em></div>
+      <div class="ls-st-c">
+        <div class="ls-st-row">${top.length ? top.join('') : '<div class="ls-sn ev"><em>конец процесса</em></div>'}</div>
+        <div class="ls-scur">
+          <div class="ls-scur-r">${lsRole(s)}</div>
+          <div class="ls-scur-t"><b>${s.c || 'без номера'}</b>${s.t}</div>
+          <div class="ls-scur-s">${s.s.map((x) => `<div class="ls-ssys k-${kindOf(x)}${lsKey(x) === key ? ' me' : ''}"><b>${x}</b>${notesOf.get(x).map((n) => `<q>${n}</q>`).join('')}</div>`).join('')}</div>
+          ${s.d.length ? `<div class="ls-scur-d"><i>документы</i>${s.d.join('; ')}</div>` : ''}
+          ${rest.map((n) => `<q>${n}</q>`).join('')}
+          ${mk.length ? '' : '<div class="ls-scur-n">в потоках данных на схеме этот шаг не показан — данные между системами по BPMN</div>'}
+        </div>
+        <div class="ls-st-row">${bot.length ? bot.join('') : '<div class="ls-sn ev"><em>начало процесса</em></div>'}</div>
+        <svg class="ls-st-svg"></svg>
+      </div>
+      <div class="ls-st-lg"><span class="seq">порядок шагов BPMN</span>${[...new Set(mk.map((e) => e.k))].map((k) => `<span class="k-${k}">${LS_KINDS[k]}</span>`).join('')}</div>
+      <div class="ls-st-nav"><button data-nav="-1" ${cur ? '' : 'disabled'}>◀ Назад</button><button data-nav="play" class="play">${timer ? '❚❚ Пауза' : '▶ Проиграть'}</button><button data-nav="1" ${cur < frames.length - 1 ? '' : 'disabled'}>Далее ▶</button><span>← → на клавиатуре</span></div>`;
+    // Стрелки: снизу — в шаг, из шага — вверх; у каждой карточки своя вертикальная стрелка
+    const c = pane.querySelector('.ls-st-c'), svg = pane.querySelector('.ls-st-svg'), mid = pane.querySelector('.ls-scur');
+    const cb = c.getBoundingClientRect(), m = mid.getBoundingClientRect();
+    const [rowT, rowB] = pane.querySelectorAll('.ls-st-row');
+    let d = '';
+    const arrow = (el, up) => {
+      const r = el.getBoundingClientRect(), cx = r.left + r.width / 2;
+      const x = Math.max(m.left + 16, Math.min(m.right - 16, cx)) - cb.left;
+      const k = el.dataset.a || 'seq';
+      d += up === 'in' ? `<path class="k-${k}" d="M${cx - cb.left},${r.top - cb.top} C${cx - cb.left},${r.top - cb.top - 24} ${x},${m.bottom - cb.top + 24} ${x},${m.bottom - cb.top}" marker-end="url(#lssA-${k})"/>`
+        : `<path class="k-${k}" d="M${x},${m.top - cb.top} C${x},${m.top - cb.top - 24} ${cx - cb.left},${r.bottom - cb.top + 24} ${cx - cb.left},${r.bottom - cb.top}" marker-end="url(#lssA-${k})"/>`;
+    };
+    rowB.querySelectorAll('.ls-sn[data-a]').forEach((el) => arrow(el, 'in'));
+    rowT.querySelectorAll('.ls-sn[data-a]').forEach((el) => arrow(el, 'out'));
+    const mkr = (k, col) => `<marker id="lssA-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:${col}"/></marker>`;
+    svg.setAttribute('width', c.scrollWidth); svg.setAttribute('height', c.scrollHeight);
+    svg.innerHTML = `<defs>${mkr('seq', '#8a93a6')}${mkr('auto', '#2a78d6')}${mkr('input', '#0f7a55')}${mkr('manual', '#c2413a')}${mkr('int', '#d08a1e')}${mkr('pub', '#0e7490')}</defs>${d}`;
+    pane.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => go(+b.dataset.go)));
+    pane.querySelectorAll('[data-nav]').forEach((b) => (b.onclick = () => (b.dataset.nav === 'play' ? play() : step(+b.dataset.nav))));
+    mark(s, mk);
+  };
+  const go = (k) => { cur = Math.max(0, Math.min(frames.length - 1, k)); render(); pane.querySelector('.ls-st-c').classList.add('enter'); if (onFrame) onFrame(cur); };
+  const step = (dk) => { if (timer && dk) stopPlay(); go(cur + dk); };
+  const stopPlay = () => { clearInterval(timer); timer = null; };
+  const play = () => {
+    if (timer) { stopPlay(); render(); return; }
+    if (cur >= frames.length - 1) cur = -1;
+    timer = setInterval(() => { if (cur >= frames.length - 1) { stopPlay(); render(); return; } go(cur + 1); }, 3500);
+    go(cur + 1);
+  };
+  const open = (k) => { LS_STORY = { step, stop: stopPlay }; go(k); };
+  const close = () => { stopPlay(); if (LS_STORY && LS_STORY.step === step) LS_STORY = null; };
+  return { open, close };
+}
+
+// Ось слева от вертикальной схемы: схема читается снизу вверх — внизу откуда данные приходят, вверху куда уходят
+function lsRail(el) {
+  if (!el || el.querySelector(':scope > .ls-rail')) return;
+  el.classList.add('ls-railed');
+  el.insertAdjacentHTML('afterbegin', '<div class="ls-rail" title="Схема читается снизу вверх: внизу — откуда данные приходят, вверху — куда уходят"><span>куда</span><i></i><span>откуда</span></div>');
+}
 
 // ---------- Компактная схема сценария: только участвующие системы, снизу вверх по направлению потока (как на большой схеме) ----------
 // Группа системы на компактной схеме: в какой ЦД / слой она входит на большой схеме
@@ -631,7 +1092,7 @@ function lsFocus(host, grid, edges, view, o = {}) {
   const all = [...groups.values()].map((g) => ({ l: g.x, t: g.y, r: g.x + g.w, b: g.y + g.h })).concat(placed, [{ l: 0, t: 0, r: maxR + 30 + backN * 20, b: H0 }]);
   const minX = Math.min(...all.map((q) => q.l)), minY = Math.min(...all.map((q) => q.t)), maxX = Math.max(...all.map((q) => q.r)), maxY = Math.max(...all.map((q) => q.b));
   const sh = -minX + 2, sv = -minY + 2, CW = maxX - minX + 4, CH = maxY - minY + 4;
-  const mk = (k, c) => `<marker id="lsfArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`;
+  const mk = (k, c) => `<marker id="lsfArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:${c}"/></marker>`;
   host.innerHTML = `<div class="ls-fcanvas v-${view}" style="width:${CW}px;height:${CH}px">
     ${[...groups.values()].map((g) => `<div class="ls-fgrp g-${g.type}" style="left:${g.x + sh}px;top:${g.y + sv}px;width:${g.w}px;height:${g.h}px"><span>${g.title}</span></div>`).join('')}
     <svg width="${CW}" height="${CH}"><defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}${mk('pub', '#0e7490')}</defs><g transform="translate(${sh},${sv})">${paths}</g></svg>
@@ -640,6 +1101,7 @@ function lsFocus(host, grid, edges, view, o = {}) {
   </div>`;
   // Второй проход: раскладка подписей по их реальной высоте
   if (!o._h) lsFocus(host, grid, edges, view, Object.assign({}, o, { _h: [...host.querySelectorAll('.ls-fl')].map((x) => x.offsetHeight) }));
+  else lsRail(host);
 }
 
 // ---------- Всплывающая схема связей одной системы ----------
@@ -731,7 +1193,7 @@ function lsBus(host, grid, key, list, view, o = {}) {
       ty += it.h + 6;
     });
   });
-  const mk = (k, c) => `<marker id="lsbArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`;
+  const mk = (k, c) => `<marker id="lsbArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:${c}"/></marker>`;
   const nIn = list.filter((e) => e.t === key).length, nOut = list.length - nIn;
   host.innerHTML = `<div class="ls-fcanvas v-${view}" style="width:${W}px;height:${H}px">
     ${gl.map((g) => `<div class="ls-fgrp g-${g.type}" style="left:${g.x}px;top:${g.y}px;width:${g.w}px;height:${FH}px"><span>${g.title}</span></div>`).join('')}
@@ -745,7 +1207,7 @@ function lsBus(host, grid, key, list, view, o = {}) {
     const h = [];
     host.querySelectorAll('.ls-fl[data-i]').forEach((x) => (h[+x.dataset.i] = x.offsetHeight));
     lsBus(host, grid, key, list, view, Object.assign({}, o, { _h: h }));
-  }
+  } else lsRail(host);
 }
 
 // ---------- Вся сеть: все системы и связи вида на одной схеме ----------
@@ -932,7 +1394,7 @@ function lsNet(host, grid, edges, view, o = {}) {
   });
   const minX = Math.min(0, ...corr.map((c) => c.x - 10)), maxX = Math.max(W, ...corr.map((c) => c.x + 10));
   const sh = -minX + 4, CW = maxX - minX + 8;
-  const mk = (k, c) => `<marker id="lsnArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`;
+  const mk = (k, c) => `<marker id="lsnArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:${c}"/></marker>`;
   host.innerHTML = `<div class="ls-fcanvas ls-net v-${view}" style="width:${CW}px;height:${H}px">
     ${[...groups.values()].map((g) => `<div class="ls-fgrp g-${g.type}" style="left:${g.x + sh}px;top:${g.y}px;width:${g.w}px;height:${FH}px"></div><div class="ls-ngt g-${g.type}" title="${g.title}" style="left:${g.x + sh + 1}px;top:${g.y + 1}px;max-width:${g.w - 2}px">${g.title}</div>`).join('')}
     <svg width="${CW}" height="${H}"><defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}${mk('pub', '#0e7490')}</defs><g transform="translate(${sh},0)">${paths}</g></svg>
@@ -968,6 +1430,7 @@ function lsNet(host, grid, edges, view, o = {}) {
     x.onmouseleave = () => hot(null);
   });
   host._hot = (i) => hot(i === null ? null : [i], i === null ? null : items[i]);
+  lsRail(host);
   // Широкая сеть — уменьшаем, чтобы вся карта была видна без прокрутки
   const avail = host.clientWidth - 30;
   canvas.style.zoom = CW > avail && avail > 300 ? (avail / CW).toFixed(3) : '';
@@ -1033,7 +1496,7 @@ function lsDraw(grid, edges, o = {}) {
     labels += `<div class="ls-fl ${cls}" style="left:${pos.l}px;top:${pos.t}px;width:${lw}px" title="${x.e.f} → ${x.e.t}: ${x.e.w} · ${x.e.r}">${x.e.n ? `<b>${x.e.n}</b>` : ''}${x.e.w}</div>`;
     x.a.classList.add('ep'); x.z.classList.add('ep');
   });
-  const mk = (k, c) => `<marker id="lsArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`;
+  const mk = (k, c) => `<marker id="lsArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:${c}"/></marker>`;
   svg.innerHTML = `<defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}${mk('pub', '#0e7490')}</defs>${paths}`;
   lbls.innerHTML = labels;
 }
