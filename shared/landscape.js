@@ -1508,6 +1508,9 @@ function lsNet(host, grid, edges, view, o = {}) {
   const nodes = new Map();
   const node = (k) => {
     if (!nodes.has(k)) {
+      // o.info(k) — свои узлы (дерево ЦД Актива: части ЦД целиком): { kind, g: { key, title, type }, row, w }
+      const inf = o.info && o.info(k);
+      if (inf) { nodes.set(k, { k, kind: inf.kind, g: inf.g, row: inf.row, w: inf.w || Math.round(Math.min(150, Math.max(92, 22 + k.length * 6.4))), e: [] }); return nodes.get(k); }
       const el = lsAnchor(grid, k);
       const kind = el && el.classList.contains('ls-chip') ? (el.className.match(/k-(\w+)/) || [])[1] : 'user';
       nodes.set(k, { k, kind: kind || 'ext', g: lsGroup(el, view), row: lsNetRow(el), w: Math.round(Math.min(150, Math.max(92, 22 + k.length * 6.4))), e: [] });
@@ -1558,7 +1561,7 @@ function lsNet(host, grid, edges, view, o = {}) {
         const nb = g.nodes.flatMap((n) => n.e.map((x) => (x.a === n ? x.b : x.a))).filter((m) => m.G !== g);
         g.bc = nb.length ? nb.reduce((s, m) => s + cx(m), 0) / nb.length : g.x + g.w / 2;
         g.nodes.forEach((n) => { const m = n.e.map((x) => (x.a === n ? x.b : x.a)); n.bc = m.length ? m.reduce((s, q) => s + cx(q), 0) / m.length : cx(n); });
-        g.nodes.sort((p, q) => p.bc - q.bc);
+        g.nodes.sort((p, q) => (o.order ? o.order(p.k) - o.order(q.k) : 0) || p.bc - q.bc);
       });
       gs.sort((p, q) => p.bc - q.bc);
     });
@@ -1644,7 +1647,9 @@ function lsNet(host, grid, edges, view, o = {}) {
     const [lx, ly] = pts[pts.length - 1];
     return d + ` L${lx},${ly}`;
   };
-  const nodeBox = [...nodes.values()].map((n) => ({ l: n.x - 2, t: n.y0 - 2, r: n.x + n.w + 2, b: n.y0 + NH + 2 }));
+  // Номера не ставим на системы и на заголовки рамок
+  const nodeBox = [...nodes.values()].map((n) => ({ l: n.x - 2, t: n.y0 - 2, r: n.x + n.w + 2, b: n.y0 + NH + 2 }))
+    .concat([...groups.values()].map((g) => ({ l: g.x, t: g.y, r: g.x + Math.min(g.w, 22 + g.title.length * 6.6), b: g.y + HDR })));
   const placed = [];
   let paths = '', badges = '';
   items.forEach((it) => {
@@ -1654,7 +1659,7 @@ function lsNet(host, grid, edges, view, o = {}) {
       ? [[it.xa, ya], [it.xa, ty(it.h1)], [it.xc, ty(it.h1)], [it.xc, ty(it.h2)], [it.xb, ty(it.h2)], [it.xb, yb]]
       : [[it.xa, ya], [it.xa, ty(it.h1)], [it.xb, ty(it.h1)], [it.xb, yb]];
     it.pts = pts;
-    paths += `<path d="${poly(pts)}" class="k-${it.e.k}" data-e="${it.i}" marker-end="url(#lsnArr-${it.e.k})"/><path d="${poly(pts)}" class="hit" data-e="${it.i}"/>`;
+    paths += `<path d="${poly(pts)}" class="k-${it.e.k}" data-e="${it.i}" marker-end="url(#lsnArr-${it.e.k})"${it.e.both ? ` marker-start="url(#lsnArr-${it.e.k})"` : ''}/><path d="${poly(pts)}" class="hit" data-e="${it.i}"/>`;
     // Номер: на отрезке, где не мешает другим номерам и системам
     const segs = []; for (let s = 0; s < pts.length - 1; s++) segs.push([pts[s], pts[s + 1]]);
     let best = null;
@@ -1674,7 +1679,7 @@ function lsNet(host, grid, edges, view, o = {}) {
   const mk = (k, c) => `<marker id="lsnArr-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:${c}"/></marker>`;
   host.innerHTML = `<div class="ls-fcanvas ls-net v-${view}" style="width:${CW}px;height:${H}px">
     ${[...groups.values()].map((g) => `<div class="ls-fgrp g-${g.type}" style="left:${g.x + sh}px;top:${g.y}px;width:${g.w}px;height:${FH}px"></div><div class="ls-ngt g-${g.type}" title="${g.title}" style="left:${g.x + sh + 1}px;top:${g.y + 1}px;max-width:${g.w - 2}px">${g.title}</div>`).join('')}
-    <svg width="${CW}" height="${H}"><defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}${mk('pub', '#0e7490')}</defs><g transform="translate(${sh},0)">${paths}</g></svg>
+    <svg width="${CW}" height="${H}"><defs>${mk('auto', '#2a78d6')}${mk('input', '#0f7a55')}${mk('seq', '#6b7383')}${mk('manual', '#c2413a')}${mk('int', '#d08a1e')}${mk('pub', '#0e7490')}${mk('ima', '#8a93a6')}</defs><g transform="translate(${sh},0)">${paths}</g></svg>
     ${[...nodes.values()].map((n) => `<div class="ls-fnode k-${n.kind}" data-n="${n.k}" title="${n.k}" style="left:${n.x + sh}px;top:${n.y0}px;width:${n.w}px;height:${NH}px"><b>${n.k}</b></div>`).join('')}
     <div class="ls-nbs" style="transform:translate(${sh}px,0)">${badges}</div>
     <div class="ls-ncall"></div>
@@ -1688,7 +1693,7 @@ function lsNet(host, grid, edges, view, o = {}) {
     if (it) {
       const bx = canvas.querySelector(`.ls-nb[data-e="${it.i}"]`);
       const who = lsWho(it.e, view);
-      call.innerHTML = `<b>${it.e.n}</b> ${it.e.f} → ${it.e.t}<span>${it.e.w}</span>${who ? `<i>кто: ${who}</i>` : ''}<em>${it.e.r} · ${LS_KINDS[it.e.k]}</em>`;
+      call.innerHTML = `<b>${it.e.n}</b> ${it.e.f} ${it.e.both ? '⇄' : '→'} ${it.e.t}<span>${it.e.w}</span>${who ? `<i>кто: ${who}</i>` : ''}<em>${it.e.r} · ${LS_KINDS[it.e.k]}</em>`;
       call.style.display = 'block';
       const L = parseFloat(bx.style.left) + sh + 24, T = parseFloat(bx.style.top) - 6;
       call.style.left = Math.min(L, CW - call.offsetWidth - 4) + 'px'; call.style.top = Math.min(T, H - call.offsetHeight - 4) + 'px';

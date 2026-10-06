@@ -40,8 +40,9 @@
     .arch .sub { color: var(--ink-2); font-size: 15px; margin: 0 0 18px; line-height: 1.5; max-width: 1100px; }
     .tree-link { display: inline-block; margin: 0 0 16px; padding: 9px 16px; border-radius: 9px; background: var(--brand); color: #fff; font-weight: 600; font-size: 14px; }
     .tree-link:hover { filter: brightness(1.08); }
+    .tree-link.sub { margin-left: 10px; background: #fff; color: var(--brand); border: 1px solid #c9d2df; font-weight: 500; font-size: 13px; }
   </style>
-  <link rel="stylesheet" href="shared/landscape.css?v=20261006f">
+  <link rel="stylesheet" href="shared/landscape.css?v=20261006g">
 </head>
 <body>
   <div class="mock-banner">Мокапы для обсуждения · демо-данные</div>
@@ -64,14 +65,14 @@
     <h2>Модули, продукты и потоки данных в цифровом двойнике</h2>
     <p class="sub">Как данные идут от датчиков и промысловых систем через слой данных в цифровой двойник актива и к пользователям — сейчас, в целевом видении с продуктами Nedra и в нашем варианте на ABAI.
       Архитектура — по стратсессии (слайд 54, соответствие продуктов — слайд 34), системы процессов — по BPMN модулей. Наведите на систему, чтобы увидеть, где она используется.</p>
-    <a class="tree-link" href="tree/index.html">Дерево ЦД — пошаговый показ: от слоёв к блокам, системам, процессам и шагам →</a>
+    <a class="tree-link" href="tree/index.html">Дерево ЦД Актива — показ погружением: от ЦД Актива к единым данным, двойникам, модулям и шагам →</a><a class="tree-link sub" href="tree/full.html">подробное дерево: слои → блоки → процессы → шаги →</a>
     <div class="ls" id="landscape"></div>
   </section>
   <script src="shared/modules.js" data-root="./"></script>
-  <script src="shared/landscape-data.js?v=20261006f"></script>
-  <script src="shared/landscape-flows.js?v=20261006f"></script>
-  <script src="shared/landscape-steps.js?v=20261006f"></script>
-  <script src="shared/landscape.js?v=20261006f"></script>
+  <script src="shared/landscape-data.js?v=20261006g"></script>
+  <script src="shared/landscape-flows.js?v=20261006g"></script>
+  <script src="shared/landscape-steps.js?v=20261006g"></script>
+  <script src="shared/landscape.js?v=20261006g"></script>
   <script>
     const plural = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'процесс' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'процесса' : 'процессов');
     document.getElementById('mods').innerHTML = ABAI_MODULES.map((m) => `

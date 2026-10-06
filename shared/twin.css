@@ -1,0 +1,105 @@
+/* Дерево ЦД Актива: показ погружением. Основа — tree.css (дерево схемой, карточка, шаги) и landscape.css (схема связей) */
+.tr-navb button { display: flex; flex-direction: column; align-items: center; line-height: 1.2; max-width: 220px; }
+.tr-navb button small { font-size: 10.5px; opacity: .8; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tw-alt-l { font-size: 12.5px; color: #1c5cab; text-decoration: none; }
+.tw-alt-l:hover { text-decoration: underline; }
+em.alt { font-style: normal; font-weight: 400; color: #7a4fb5; font-size: .82em; }
+
+/* Дерево: части ЦД — цветом */
+.tw-nd.t-akt { border-left: 5px solid #16191f; background: #fff; }
+.tw-nd.t-akt b { font-size: 14px; }
+.tw-nd.t-part { border-left: 5px solid #0f7a55; }
+.tw-nd.t-part.p-data { border-left-color: #0b6b3a; background: #f0f8f3; border-style: dashed; border-left-style: solid; }
+.tw-nd.t-part b { font-size: 13.5px; }
+.tw-nd.t-mod { border-left: 4px solid #1c5cab; }
+.tw-nd.t-mod.k-ext { border-left-color: #b9bfca; }
+
+/* Уровень погружения */
+.tw-depth { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; font-size: 12px; color: #9aa1ad; }
+.tw-depth span { display: inline-flex; align-items: center; gap: 4px; }
+.tw-depth span i { font-style: normal; color: #c9cfd8; margin-right: 2px; }
+.tw-depth span.was { color: #4d5563; }
+.tw-depth span.on { color: #fff; background: #1c5cab; border-radius: 10px; padding: 1px 9px; font-weight: 600; }
+.tw-depth span.on i { display: none; }
+.tw-depth em { margin-left: auto; font-style: normal; font-size: 11.5px; }
+.tr-type.tw-t-akt { background: #16191f; } .tr-type.tw-t-part { background: #0f7a55; } .tr-type.tw-t-mod { background: #164a8a; }
+.tr-type.tw-t-proc { background: #b45309; } .tr-type.tw-t-step { background: #6b3fa0; }
+
+/* Ветви обмена данными уровня */
+.tw-scene { background: #fff; border: 1px solid #cfe0f5; border-radius: 14px; margin: 0 0 14px; overflow: hidden; }
+.tw-scene-h { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding: 10px 16px; background: #f3f7fd; border-bottom: 1px solid #dfe9f6; }
+.tw-scene-h b { font-size: 14px; color: #164a8a; }
+.tw-scene-h span { font-size: 12px; color: #7a8291; }
+.tw-net-t { margin-left: auto; font: inherit; font-size: 12px; border: 1px solid #c9d2df; background: #fff; color: #1c5cab; border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+.tw-scene.off .tw-scene-b { display: none; }
+.tw-scene.off .tw-scene-h { border-bottom: 0; }
+.tw-scene-b { padding: 10px 16px 14px; }
+.tw-net { overflow: auto; }
+.tw-net .ls-fcanvas { margin: 0 auto; }
+.tw-net .ls-fnode.tw-go { cursor: pointer; }
+.tw-net .ls-fnode.tw-go:hover { border-color: #1c5cab; box-shadow: 0 0 0 3px rgba(28,92,171,.2); }
+.tw-net .ls-fnode.tw-go::after { content: '↘'; position: absolute; right: 5px; top: 2px; font-size: 10px; color: #8fb3e3; }
+.tw-ins { margin: 10px 0 0; font-size: 12px; color: #7a8291; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.tw-ins span { background: #f1f3f7; border-radius: 8px; padding: 1px 8px; }
+.tw-ins em { font-style: normal; }
+.tw-ll { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 6px 18px; }
+.tw-ll > li { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; line-height: 1.4; padding: 5px 6px; border-radius: 8px; color: #2e3440; }
+.tw-ll > li:hover { background: #f3f7fd; }
+.tw-ll > li.flash { animation: twFlash 1.6s ease; }
+@keyframes twFlash { 0%, 40% { background: #fff3c4; } 100% { background: transparent; } }
+.tw-ll > li > .ls-nb { position: static; flex: none; }
+.tw-ll > li > div { flex: 1; min-width: 0; }
+.tw-ll .tw-u { font-weight: 600; color: #16191f; }
+.tw-ll .tw-lt i { font-style: normal; color: #7a8291; }
+.tw-ll em { display: block; font-style: normal; font-size: 11px; color: #8a93a6; }
+.tw-ll details summary { cursor: pointer; font-size: 11.5px; color: #1c5cab; margin-top: 2px; }
+.tw-ll details .ls-ab-l { margin: 4px 0 0; }
+
+/* Карточка */
+.tw-what { margin: 0 0 6px; padding-left: 18px; font-size: 14px; line-height: 1.55; color: #16191f; }
+.tw-what li { margin-bottom: 4px; }
+.tw-kids { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin: 4px 0 10px; }
+.tw-kid { font: inherit; text-align: left; border: 1px solid #d5dbe5; border-left: 5px solid #0f7a55; background: #fff; border-radius: 12px; padding: 10px 14px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
+.tw-kid:hover { border-color: #1c5cab; box-shadow: 0 4px 14px rgba(28,92,171,.12); }
+.tw-kid b { font-size: 14px; } .tw-kid span { font-size: 12px; line-height: 1.4; color: #5b6472; }
+.tw-kid.t-mod { border-left-color: #1c5cab; } .tw-kid.t-mod.k-ext { border-left-color: #b9bfca; }
+.tw-kid.t-proc { border-left-color: #b45309; } .tw-kid.t-step { border-left-color: #6b3fa0; }
+.tw-ima { display: flex; align-items: stretch; gap: 8px; margin: 4px 0 6px; }
+.tw-ima > i { align-self: center; font-style: normal; font-size: 18px; color: #8a93a6; }
+.tw-ima button { flex: 1; font: inherit; text-align: left; border: 1px solid #d5dbe5; border-radius: 12px; background: #fff; padding: 9px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; }
+.tw-ima button:hover { border-color: #1c5cab; }
+.tw-ima b { font-size: 13.5px; } .tw-ima span { font-size: 12px; color: #5b6472; } .tw-ima em { font-style: normal; font-size: 12px; color: #164a8a; }
+.tw-val { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.tw-val > div { border: 1px solid #e1e5ec; border-radius: 10px; padding: 8px 12px; background: #fbfcfd; display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; }
+.tw-val b { font-size: 13px; } .tw-val span { color: #7a8291; }
+.tw-val a { display: inline-block; margin: 2px 8px 0 0; font-size: 12px; color: #1c5cab; text-decoration: none; }
+.tw-road { margin: 4px 0 0; padding-left: 20px; font-size: 13px; line-height: 1.5; }
+.tw-road b { margin-right: 6px; }
+.tw-orgs { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+
+.tw-ll .tw-lh { font-size: 13px; margin-bottom: 2px; }
+.tw-ll .tw-lh i { font-style: normal; color: #7a8291; }
+.tw-ll .tw-ld { border-left: 2px solid #dfe6f0; padding-left: 8px; margin: 3px 0 0; }
+
+/* Ветви обмена на дереве: раскрытые ветви-получатели / источники, плашки систем вне ЦД, стрелки с номерами связей */
+.tr-cv-in path.tgt { stroke: #8fb3e3; stroke-width: 1.8; stroke-dasharray: 5 4; }
+.tr-nd.tgt { opacity: 1; border-color: #2a78d6; border-style: dashed; background: #f6faff; box-shadow: 0 0 0 3px rgba(42,120,214,.12); }
+.tw-pill { position: absolute; box-sizing: border-box; border: 1.5px dashed #d5d9e1; border-radius: 10px; background: #f8f9fb; padding: 4px 10px; display: flex; flex-direction: column; justify-content: center; z-index: 2; }
+.tw-pill span { font-size: 9.5px; text-transform: uppercase; letter-spacing: .3px; color: #8a93a6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tw-pill b { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tw-pill.g-asu, .tw-pill.g-ext { border-color: #ecd497; background: #fffaea; } .tw-pill.g-asu span, .tw-pill.g-ext span { color: #8a5a00; }
+.tw-pill.g-users { border-color: #c4c9d3; background: #f3f4f7; }
+.tr-cv-in svg.tw-xsv { z-index: 3; pointer-events: none; }
+.tw-xp { fill: none; stroke-width: 2; stroke-dasharray: 7 4; opacity: .9; transition: opacity .15s, stroke-width .15s; }
+.tw-xp.k-auto { stroke: #2a78d6; } .tw-xp.k-input { stroke: #0f7a55; } .tw-xp.k-seq { stroke: #6b7383; } .tw-xp.k-manual { stroke: #c2413a; }
+.tw-xp.k-int { stroke: #d08a1e; } .tw-xp.k-pub { stroke: #0e7490; } .tw-xp.k-ima { stroke: #8a93a6; stroke-dasharray: 3 4; }
+.tw-xbs { position: absolute; left: 0; top: 0; z-index: 4; }
+.tw-xn { position: absolute; width: auto; border-radius: 9px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; cursor: pointer; white-space: nowrap; }
+.xfocus .tw-xp:not(.hot) { opacity: .15; }
+.xfocus .tw-xn:not(.hot) { opacity: .3; }
+.tw-xp.hot { stroke-width: 3.2; opacity: 1; }
+.tw-xn.hot { transform: scale(1.2); box-shadow: 0 0 0 3px rgba(42,120,214,.25); }
+/* Когда на дереве есть ветви обмена — линии иерархии бледнее, ветви обмена — главные */
+.tr-cv-in.xon path.new { stroke: #c9d6e8; stroke-width: 1.3; }
+.tr-cv-in.xon path.off { stroke: #dde2ea; }
+.tr-cv-in.xon .tw-xp { stroke-width: 2.2; opacity: 1; }
