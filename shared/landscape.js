@@ -39,7 +39,7 @@ const LS_VIEWS = {
     flow: [
       ['АСУ ТП → MES', 'сбор, верификация, хранение и обработка данных в зоне ДЗО'],
       ['Слой данных', 'потоки данных в КХД + NDP (Nedra Data Platform): ETL, стриминг, озеро данных'],
-      ['Бизнес-модули ЦД', 'ЦД скважины, пласта, добычи и наземной инфраструктуры читают и пишут через слой данных'],
+      ['Бизнес-модули ЦД', 'ЦД пласта, скважины, добычи и наземной инфраструктуры читают и пишут через слой данных'],
       ['Платформа ЦД Актива', 'каталог процессов, BPM, AI-агенты, сквозная аналитика активов'],
       ['Web-доступ', 'КЦ, КМГИ, ЦИО и ДЗО работают в одном контуре; SAP, СЭД, гос. порталы — через интеграции'],
     ],
@@ -70,7 +70,7 @@ function lsValue() {
   return `<div class="ls-value">
     <div class="ls-value-h"><b>Что даёт ЦД</b><span>эффективность ГТМ, добыча, экономика · встреча по ЦД 01.10</span></div>
     <div class="ls-value-c">${LS_VALUE.map(([t, d, ps]) => `<div><b>${t}</b><span>${d}</span><div>${ps.map(([m, p]) => `<a href="${href(m)}#/">${p}</a>`).join('')}</div></div>`).join('')}</div>
-    <div class="ls-note">Пилот ЦД КМГ — Восточный Молдабек (ЭМГ): около 700 сценарных расчётов за 6 дней вместо 38; план — 12 крупнейших месторождений, 90 % добычи (digitalbusiness.kz, 31.08.2026).</div>
+    <div class="ls-note">Пилот ЦД КМГ — Восточный Молдабек (ЭМГ): около 700 сценарных расчётов за 6 дней, раньше — 38; план — 12 крупнейших месторождений, 90 % добычи (digitalbusiness.kz, 31.08.2026).</div>
   </div>`;
 }
 
@@ -124,19 +124,20 @@ function lsCentral(view) {
     </div>${lsExtRow(view)}</div>`;
   }
   const nedra = view === 'nedra';
-  const alt = (t) => (nedra || !t ? '' : `<em class="alt">вместо ${t}</em>`);
-  const A = (s, n, prev) => `<span class="ls-chip k-abai big" data-sys="${lsKey(s)}">${s}${n ? `<small>${n}</small>` : ''}${alt(prev || '')}</span>`;
+  // Заменяемый продукт Nedra — в скобках за названием модуля ABAI (стратсессия, слайд 34)
+  const alt = (t) => (nedra || !t ? '' : ` <em class="alt">(${t})</em>`);
+  const A = (s, n, prev) => `<span class="ls-chip k-abai big" data-sys="${lsKey(s)}"><span>${s}${alt(prev || '')}</span>${n ? `<small>${n}</small>` : ''}</span>`;
   const N = (s, n) => `<span class="ls-chip k-nedra big" data-sys="${lsKey(s)}">${s}${n ? `<small>${n}</small>` : ''}</span>`;
   const E = (s, n) => `<span class="ls-chip k-ext big" data-sys="${lsKey(s)}">${s}${n ? `<small>${n}</small>` : ''}</span>`;
   const twins = nedra
     ? [
-      ['ЦД скважины', N('Nedra.RTM', 'бурение') + N('Nedra.WWO', 'ТКРС')],
       ['ЦД пласта', N('Nedra.NUMEX', 'система разработки') + N('Nedra.NUMEX Optimize', 'заводнение, ГТМ') + A('ABAI ПАЭГТМ') + A('ABAI ЦРНС 2.0') + '<div class="ls-note">в BPMN TO BE Nedra также: ' + ['Nedra.DS', 'Nedra.GCORE', 'Терра', 'Geomate'].map((s) => lsChip(s, 'nedra')).join('') + lsChip('ABAI БД 2.0', 'abai') + '</div>'],
+      ['ЦД скважины', N('Nedra.RTM', 'бурение') + N('Nedra.WWO', 'ТКРС')],
       ['ЦД добычи и наземной инфраструктуры', N('Nedra.DIGITAL TWIN') + N('Nedra.INFRAPLAN', 'наземка · гидравлика · экономика') + N('Nedra.DIGITAL TWIN Pipe', 'предиктивная аналитика отказов') + A('ABAI УЗ 2.0') + A('ABAI ПДИМ 2.0') + A('ABAI ТР 2.0') + A('ABAI ПГНО') + E('Интеллектуальное месторождение')],
     ]
     : [
-      ['ЦД скважины', A('ABAI Цифровое бурение', 'аналог Nedra.RTM', 'Nedra.RTM') + A('ABAI Цифровой мониторинг ТКРС', '', 'Nedra.WWO')],
       ['ЦД пласта', A('ABAI ЦРНС 2.0', 'система разработки', 'Nedra.NUMEX') + A('ABAI УЗ 2.0', 'управление заводнением', 'NUMEX Optimize') + A('ABAI ПАЭГТМ', 'ГТМ и мероприятия')],
+      ['ЦД скважины', A('ABAI Цифровое бурение', 'бурение', 'Nedra.RTM') + A('ABAI Цифровой мониторинг ТКРС', '', 'Nedra.WWO')],
       ['ЦД добычи и наземной инфраструктуры', A('ABAI ПДИМ 2.0', 'план/факт, отклонения', 'Nedra.DIGITAL TWIN') + A('ABAI ПДИМ 2.0 · целостность трубопроводов', '', 'DIGITAL TWIN Pipe') + A('ABAI Наземная инфраструктура', '', 'Nedra.INFRAPLAN') + A('ABAI ТР 2.0', 'режимы') + A('ABAI ПГНО', 'подбор ГНО') + E('Интеллектуальное месторождение')],
     ];
   return `<div class="ls-zone cz ${view}">
@@ -146,12 +147,12 @@ function lsCentral(view) {
           <div class="ls-cols c4">${['BPM — планировщик сквозных процессов (low-code, SLA, аудит)', 'AI-агенты', 'Регистраторы систем и хранилищ · адаптеры (REST / gRPC / Queue / Desktop Agent / Script / Excel)', 'Общие сервисы: уведомления · BI · визуализация'].map((t) => `<div class="ls-cell">${t}</div>`).join('')}</div></div>`, 'plat')
     : lsBox('ЦД Актива на модулях ABAI', `<div class="ls-plat abai">${A('ABAI БД 2.0', 'единая база: скважины, замеры, документы, статусы и уведомления')}<div class="ls-note">Платформенный слой (каталог процессов, BPM, AI-агенты) в стратсессии описан только для Nedra.PLATFORM — для ABAI не детализирован</div></div>`, 'plat')}
       ${lsPipe('вызов модулей и сервисов', { both: true })}
-      ${lsBox('Бизнес-модули и вычислительные системы ЦД' + (nedra ? ' (Nedra · ABAI · инж. ПО)' : ' (ABAI · инж. ПО)'), `<div class="ls-cols c3 twins">${twins.map(([t, b]) => `<div class="ls-twin"><div class="ls-twin-h">${t}</div><div class="ls-twin-b">${b}</div></div>`).join('')}</div>`, 'mods')}
+      ${lsBox('Бизнес-модули и вычислительные системы ЦД' + (nedra ? ' (Nedra · ABAI · инж. ПО)' : ' (ABAI · инж. ПО) <span class="ls-box-n">в скобках — продукт Nedra, который заменяет модуль ABAI (стратсессия, слайд 34)</span>'), `<div class="ls-cols c3 twins">${twins.map(([t, b]) => `<div class="ls-twin"><div class="ls-twin-h">${t}</div><div class="ls-twin-b">${b}</div></div>`).join('')}</div>`, 'mods')}
     </div>
     ${lsPipe('чтение / запись данных', { both: true })}
     <div class="ls-datarow"><div class="ls-zone data ${view}">
       <div class="ls-zone-h">${nedra ? 'Слой данных — КХД + NDP (Nedra Data Platform) · кластер OpenShift / OKD' : 'Слой данных — КХД: слой бизнес-интеграций'} ${lsSrc(nedra ? 'стратсессия, слайд 54' : 'стратсессия, слайды 34 и 54: Nedra.DATA → КХД')}</div>
-      <div class="ls-tech">${nedra ? lsChip('КХД', 'abai') + lsChip('Nedra.DATA', 'nedra', 'NDP') : lsChip('КХД', 'abai', 'вместо Nedra.DATA')}
+      <div class="ls-tech">${nedra ? lsChip('КХД', 'abai') + lsChip('Nedra.DATA', 'nedra', 'NDP') : lsChip('КХД', 'abai', '(Nedra.DATA)')}
         ${['NiFi — ETL', 'Kafka + Debezium — стриминг / CDC', 'Trino — SQL-запросы', 'S3 / MinIO — озеро данных', 'Hive Metastore', 'SQL-СУБД', 'ElasticSearch + Kibana', 'AirFlow — оркестрация ETL', 'Superset — BI', 'Keycloak — SSO'].map((t) => `<span class="ls-t">${t}</span>`).join('')}</div>
       ${nedra ? '' : '<div class="ls-note">Технологический стек слоя данных — со слайда 54 (КХД + NDP); для варианта ABAI стратсессия его отдельно не описывает</div>'}
     </div>${lsExtRow(view)}</div>`;
@@ -564,8 +565,8 @@ function lsSide(root, grid, key, links, view) {
       <div class="ls-center-m">${links.length ? `<button data-cm="path">Путь данных</button><button data-cm="bus">Связи системы <em>${links.length}</em></button>` : ''}${nSteps ? `<button data-cm="story">История по шагам <em>${nSteps}</em></button>` : ''}</div>
       <span class="ls-center-hint"></span>
     </div>
-    <div class="ls-center-b" data-cpane="path" hidden></div>
-    <div class="ls-center-b" data-cpane="bus" hidden>${links.length ? '<div class="ls-center-sub">Все связи системы на схеме ЦД: снизу — кто передаёт ей данные, сверху — кому передаёт она. Справа — их список и все шаги BPMN системы.</div><div class="ls-focus"></div>' : ''}</div>
+    <div class="ls-center-b" data-cpane="path" hidden><div class="ls-pth-host"></div><div class="ls-about"></div></div>
+    <div class="ls-center-b" data-cpane="bus" hidden>${links.length ? '<div class="ls-center-sub">Все связи системы на схеме ЦД: снизу — кто передаёт ей данные, сверху — кому передаёт она. Справа — их список и все шаги BPMN системы.</div><div class="ls-focus"></div>' : ''}<div class="ls-about"></div></div>
     <div class="ls-center-b ls-story" data-cpane="story" hidden></div>`;
   // Схема связей — в натуральную величину: широкая прокручивается, а не сжимается. Рисуется, когда окно видно (подписи меряются по факту)
   let busDone = false, path = null;
@@ -581,15 +582,21 @@ function lsSide(root, grid, key, links, view) {
     el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   };
   const story = lsStoryPane(center.querySelector('[data-cpane="story"]'), grid, key, view, frames, marks, sysChips, syncSide);
+  // Клик по другой системе — её окно
+  const pick = (n) => { const el = [...grid.querySelectorAll('[data-sys]')].find((x) => x.dataset.sys === n); if (el) { lsUnpin(); el.click(); } };
+  // «О системе» — под схемой во всех режимах: что это, откуда и куда данные, по процессам и сценариям, реестр задействованных систем
+  const about = lsAbout(grid, key, view, links, trail);
+  center.querySelectorAll('.ls-about').forEach((el) => {
+    el.innerHTML = about;
+    el.querySelectorAll('[data-pick]').forEach((a) => (a.onclick = (ev) => { ev.preventDefault(); pick(a.dataset.pick); }));
+    el.querySelectorAll('[data-scen]').forEach((a) => (a.onclick = (ev) => { ev.preventDefault(); mode('path'); path.show(a.dataset.scen); center.querySelector('[data-cpane="path"]').scrollTop = 0; }));
+  });
   const mode = (m, k) => {
     center.querySelectorAll('[data-cm]').forEach((x) => x.classList.toggle('on', x.dataset.cm === m));
     center.querySelectorAll('[data-cpane]').forEach((x) => (x.hidden = x.dataset.cpane !== m));
     center.querySelector('.ls-center-hint').textContent = m === 'story' ? '← → — листать шаги · Esc — закрыть' : m === 'path' ? 'клик по системе — её путь данных · Esc — закрыть' : 'наведите на подпись — шаг BPMN связи · Esc — закрыть';
     if (path && m !== 'path') path.stop();
-    if (m === 'path' && !path) path = lsPaths(center.querySelector('[data-cpane="path"]'), grid, key, view, { onPick: (n) => {
-      const el = [...grid.querySelectorAll('[data-sys]')].find((x) => x.dataset.sys === n);
-      if (el) { lsUnpin(); el.click(); }
-    } }) || { stop() {} };
+    if (m === 'path' && !path) path = lsPaths(center.querySelector('[data-cpane="path"] .ls-pth-host'), grid, key, view, { onPick: pick }) || { stop() {}, show() {} };
     center.querySelector('.ls-center-b:not([hidden])').scrollTop = 0;
     if (m === 'bus' && !busDone) { busDone = true; lsBus(center.querySelector('[data-cpane="bus"] .ls-focus'), grid, key, links, view, { full: LS_MODE === 'full' }); }
     if (m === 'story') story.open(k || 0); else { story.close(); side.querySelectorAll('.ls-ts.cur').forEach((x) => x.classList.remove('cur')); }
@@ -615,6 +622,74 @@ function lsSide(root, grid, key, links, view) {
   return true;
 }
 
+// ---------- «О системе»: кратко — что это, откуда и как берёт данные, что отдаёт дальше, по процессам и сценариям, реестр систем ----------
+// Всё из тех же источников: справочники систем модулей (ABAI_SYS_DESC), связи схемы (LS_FLOWS), шаги BPMN (LS_TRAIL).
+function lsAbout(grid, key, view, links, trail) {
+  const V = LS_VIEWS[view];
+  const dataKind = {};
+  LS_MODS.forEach((m) => (((ABAI_LANDSCAPE_DATA[m.id] || {})[V.v] || {}).sys || []).forEach(([n, k]) => (dataKind[lsKey(n)] = k)));
+  const kindOf = (n) => { const a = lsAnchor(grid, n); return a ? (a.classList.contains('ls-chip') ? (a.className.match(/k-(\w+)/) || [])[1] : 'user') : dataKind[n] || 'ext'; };
+  // Система — ссылкой на её окно, если она есть на схеме
+  const sys = (n) => (lsAnchor(grid, n) && n !== key ? `<a href="#" class="ls-ab-s k-${kindOf(n)}" data-pick="${n}">${n}</a>` : `<span class="ls-ab-s k-${kindOf(n)}">${n}</span>`);
+  const plural = (n, a, b, c) => (n % 10 === 1 && n % 100 !== 11 ? a : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? b : c);
+  const short = key.replace(/^(ABAI|SLB)\s+/, '').replace(/\s+2\.0$/, '');
+  // Что это
+  const desc = Object.entries(typeof ABAI_SYS_DESC !== 'undefined' ? ABAI_SYS_DESC : {}).filter(([n]) => lsKey(n) === key).flatMap(([, l]) => l);
+  const uniq = desc.filter((x, i) => desc.findIndex((y) => y[1] === x[1]) === i);
+  const nSteps = trail.reduce((s, x) => s + x.list.length, 0);
+  // Откуда берёт и что отдаёт
+  const inn = links.filter((e) => e.t === key), out = links.filter((e) => e.f === key);
+  const li = (e, other, arrow) => `<li><b class="ar">${arrow}</b>${sys(other)} — ${e.w}<em>${LS_KINDS[e.k]} · ${e.r}</em>${lsRefSlides(view, e.r)}</li>`;
+  // По процессам: что система делает (аннотации шагов о ней, иначе названия шагов) и что процесс отдаёт дальше
+  const procs = trail.map(({ P, list }) => {
+    const st = list.map((i) => P.s[i]);
+    const notes = [...new Set(st.flatMap((s) => s.n.filter((n) => n.includes(short) || n.includes(key))))].slice(0, 3);
+    const what = notes.length ? notes.map((n) => `<q>${n}</q>`).join('') : `<span class="ls-ab-st">${st.slice(0, 3).map((s) => `${s.c} ${s.t}`).join('; ')}${st.length > 3 ? '…' : ''}</span>`;
+    const gives = out.filter((e) => lsRefParts(e.r).some((p) => p.proc === P.p));
+    const gets = inn.filter((e) => lsRefParts(e.r).some((p) => p.proc === P.p));
+    const first = st.find((s) => s.v), anyV = P.s.find((s) => s.v);
+    const roles = [...new Set(st.map((s) => s.r))];
+    return `<li><div class="ls-ab-ph"><b>${P.p}</b> ${P.t}<span>${st.length} ${plural(st.length, 'шаг', 'шага', 'шагов')} · ${roles.slice(0, 4).join(', ')}${roles.length > 4 ? '…' : ''}</span>
+        ${anyV ? `<a class="ls-slide" href="${lsModHref(P.m, 'v2')}index.html#${anyV.v[0]}/1/all" target="_blank">презентация ↗</a>` : ''}${first ? `<a class="ls-slide" href="${lsSlideHref(P, first)}" target="_blank">первый шаг на слайде ↗</a>` : ''}<a class="ls-slide" href="${lsProtoHref(P, st[0])}" target="_blank">прототип ↗</a></div>
+      <div class="ls-ab-pw"><i>что делает</i><div>${what}</div></div>
+      ${gets.length ? `<div class="ls-ab-pw"><i>получает</i><div>${gets.map((e) => `${sys(e.f)} — ${e.w}`).join('; ')}</div></div>` : ''}
+      ${gives.length ? `<div class="ls-ab-pw"><i>отдаёт дальше</i><div>${gives.map((e) => `${sys(e.t)} — ${e.w}`).join('; ')}</div></div>` : ''}</li>`;
+  });
+  // По сценариям: что даёт сценарий (его описание) и роль системы в нём
+  const scen = (LS_FLOWS[view] || []).filter((f) => f.e.some((e) => e[0] === key || e[1] === key)).map((f) => `<li>
+      <div class="ls-ab-ph"><a href="#" data-scen="${f.id}">${f.name}</a><span>${f.mods}</span></div>
+      <div class="ls-ab-pw"><i>что даёт</i><div>${f.note}</div></div>
+      <div class="ls-ab-pw"><i>здесь</i><div>${f.e.filter((e) => e[0] === key || e[1] === key).map((e) => (e[1] === key ? `получает от ${sys(e[0])}: ${e[2]}` : `передаёт в ${sys(e[1])}: ${e[2]}`)).join('; ')}</div></div></li>`);
+  // Реестр задействованных систем и инструментов: в общих шагах BPMN и в связях схемы
+  const reg = new Map();
+  const r = (n) => { if (!reg.has(n)) reg.set(n, { n, steps: 0, procs: new Set(), inn: [], out: [] }); return reg.get(n); };
+  trail.forEach(({ P, list }) => list.forEach((i) => P.s[i].s.forEach((x) => { const k = lsKey(x); if (k === key) return; const q = r(k); q.steps++; q.procs.add(P.p); })));
+  inn.forEach((e) => r(e.f).inn.push(e));
+  out.forEach((e) => r(e.t).out.push(e));
+  const KINDS = [['abai', 'ABAI и КХД'], ['nedra', 'Nedra'], ['ext', 'Инженерное ПО, промысловые и внешние системы'], ['manual', 'Ручная работа'], ['user', 'Пользователи']];
+  const rows = [...reg.values()].map((q) => Object.assign(q, { kind: kindOf(q.n) })).sort((a, b) => b.steps + 3 * (b.inn.length + b.out.length) - a.steps - 3 * (a.inn.length + a.out.length));
+  const regHTML = KINDS.map(([k, t]) => {
+    const list = rows.filter((q) => (KINDS.some(([x]) => x === q.kind) ? q.kind : 'ext') === k);
+    return list.length ? `<tbody><tr class="ls-ab-g"><td colspan="3">${t} <em>${list.length}</em></td></tr>${list.map((q) => `<tr>
+      <td>${sys(q.n)}</td>
+      <td>${q.steps ? `в ${q.steps} ${plural(q.steps, 'общем шаге', 'общих шагах', 'общих шагах')}<span>${[...q.procs].join(', ')}</span>` : '<span>—</span>'}</td>
+      <td>${q.inn.map((e) => `<div>← передаёт сюда: ${e.w}</div>`).join('')}${q.out.map((e) => `<div>→ получает отсюда: ${e.w}</div>`).join('')}${q.inn.length + q.out.length ? '' : '<span>—</span>'}</td></tr>`).join('')}</tbody>` : '';
+  }).join('');
+  return `<div class="ls-ab">
+    <h3>О системе «${key}» · ${V.name}</h3>
+    <div class="ls-ab-lead">${uniq.length ? uniq.map(([m, d]) => `<div><b>${LS_MOD_NAME[m] || m}:</b> ${d}</div>`).join('') : ''}
+      <div class="ls-ab-k">в BPMN — ${nSteps} ${plural(nSteps, 'шаг', 'шага', 'шагов')} в ${trail.length} ${plural(trail.length, 'процессе', 'процессах', 'процессах')}; на схеме — получает ${inn.length}, передаёт ${out.length} ${plural(out.length, 'связь', 'связи', 'связей')}; задействовано ${reg.size} ${plural(reg.size, 'система', 'системы', 'систем')}</div></div>
+    <div class="ls-ab-c2">
+      <div><h4>Откуда и как берёт данные <em>${inn.length}</em></h4>${inn.length ? `<ul class="ls-ab-l">${inn.map((e) => li(e, e.f, '←')).join('')}</ul>` : '<p class="ls-ab-n">На схеме данные в систему не приходят — она источник или в потоках не участвует.</p>'}</div>
+      <div><h4>Что отдаёт дальше <em>${out.length}</em></h4>${out.length ? `<ul class="ls-ab-l">${out.map((e) => li(e, e.t, '→')).join('')}</ul>` : '<p class="ls-ab-n">На схеме система данные дальше не передаёт.</p>'}</div>
+    </div>
+    ${procs.length ? `<h4>По процессам BPMN <em>${procs.length}</em></h4><ul class="ls-ab-p">${procs.join('')}</ul>` : ''}
+    ${scen.length ? `<h4>По сценариям потоков <em>${scen.length}</em> <span>клик — путь данных сценария</span></h4><ul class="ls-ab-p">${scen.join('')}</ul>` : ''}
+    ${reg.size ? `<h4>Реестр задействованных систем и инструментов <em>${reg.size}</em> <span>с кем система в одних шагах BPMN и в связях схемы · клик — окно системы</span></h4>
+      <table class="ls-ab-t"><thead><tr><th>Система</th><th>В шагах BPMN вместе</th><th>Связь на схеме</th></tr></thead>${regHTML}</table>` : ''}
+  </div>`;
+}
+
 // ---------- Путь данных: откуда данные приходят в систему и куда уходят дальше — через промежуточные системы ----------
 // По сценариям потоков (landscape-flows.js): сценарий — связная история («Суточная добыча», «Строительство скважины»),
 // в нём — цепочки до системы и после неё. «Все сценарии» — связи всех сценариев, но не дальше двух передач в каждую сторону
@@ -631,7 +706,7 @@ function lsPaths(host, grid, key, view, o = {}) {
   };
   host.querySelectorAll('[data-pt]').forEach((b) => (b.onclick = () => show(+b.dataset.pt)));
   show(0);
-  return { stop: () => cur && cur.stop() };
+  return { stop: () => cur && cur.stop(), show: (id) => { const i = tabs.findIndex((t) => t.id === id); if (i >= 0) show(i); } };
 }
 function lsLineage(host, grid, key, view, o = {}) {
   const NH = 46, HG = 26, VG = 92, VW = 14, BR = 9;
@@ -822,7 +897,7 @@ function lsLineage(host, grid, key, view, o = {}) {
 // вверху — куда дальше: следующий шаг BPMN и связи, по которым система передаёт данные. На большой схеме подсвечены системы шага.
 function lsStoryPane(pane, grid, key, view, frames, marks, sysChips, onFrame) {
   let cur = 0, timer = null;
-  pane.innerHTML = '<div class="ls-st-main"></div><div class="ls-st-view"></div><div class="ls-st-navw"></div>';
+  pane.innerHTML = '<div class="ls-st-main"></div><div class="ls-st-view"></div><div class="ls-about"></div><div class="ls-st-navw"></div>';
   const main = pane.querySelector('.ls-st-main'), viewEl = pane.querySelector('.ls-st-view'), navw = pane.querySelector('.ls-st-navw');
   // «Как выглядит в ABAI»: слайд презентации, открытый на действии этого шага. Синхронно в обе стороны:
   // шаг сверху → слайд переходит на его действие (меняется только якорь адреса — без перезагрузки);

@@ -39,7 +39,7 @@
     .arch h2 { font-size: 28px; margin: 0 0 6px; letter-spacing: -.2px; }
     .arch .sub { color: var(--ink-2); font-size: 15px; margin: 0 0 18px; line-height: 1.5; max-width: 1100px; }
   </style>
-  <link rel="stylesheet" href="shared/landscape.css?v=20261005r">
+  <link rel="stylesheet" href="shared/landscape.css?v=20261006b">
 </head>
 <body>
   <div class="mock-banner">Мокапы для обсуждения · демо-данные</div>
@@ -65,10 +65,10 @@
     <div class="ls" id="landscape"></div>
   </section>
   <script src="shared/modules.js" data-root="./"></script>
-  <script src="shared/landscape-data.js?v=20261005r"></script>
-  <script src="shared/landscape-flows.js?v=20261005r"></script>
-  <script src="shared/landscape-steps.js?v=20261005r"></script>
-  <script src="shared/landscape.js?v=20261005r"></script>
+  <script src="shared/landscape-data.js?v=20261006b"></script>
+  <script src="shared/landscape-flows.js?v=20261006b"></script>
+  <script src="shared/landscape-steps.js?v=20261006b"></script>
+  <script src="shared/landscape.js?v=20261006b"></script>
   <script>
     const plural = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'процесс' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'процесса' : 'процессов');
     document.getElementById('mods').innerHTML = ABAI_MODULES.map((m) => `
