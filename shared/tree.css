@@ -1,0 +1,184 @@
+/* Дерево ЦД: последовательный показ от слоёв к шагам. Стили узлов схем и блоков — из landscape.css */
+html, body { height: 100%; }
+body { margin: 0; font-family: "Segoe UI", "PT Sans", Roboto, Arial, sans-serif; color: #16191f; background: #f4f6fa; display: flex; flex-direction: column; }
+.mock-banner { background: #fff5de; color: #8a5a00; font-size: 12px; text-align: center; padding: 4px 12px; border-bottom: 1px solid #f0dca8; }
+.tr-top { display: flex; align-items: center; gap: 14px; padding: 10px 18px; background: #fff; border-bottom: 1px solid #e1e5ec; }
+.tr-logo { display: flex; align-items: center; gap: 9px; font-weight: 700; color: #16191f; text-decoration: none; }
+.tr-logo svg { width: 30px; height: 30px; }
+.tr-logo small { display: block; font-size: 11px; font-weight: 400; color: #7a8291; }
+.tr-views { display: flex; background: #f1f3f7; border-radius: 9px; padding: 3px; }
+.tr-views button { font: inherit; border: 0; background: none; border-radius: 7px; padding: 5px 12px; cursor: pointer; text-align: left; }
+.tr-views button b { display: block; font-size: 13px; } .tr-views button span { font-size: 11px; color: #7a8291; }
+.tr-views button.on { background: #fff; box-shadow: 0 1px 4px rgba(16,24,40,.12); } .tr-views button.on b { color: #1c5cab; }
+.spacer { flex: 1; }
+#trDepth { font: inherit; font-size: 13px; border: 1px solid #d5dbe5; border-radius: 8px; padding: 6px 8px; background: #fff; }
+.tr-navb { display: flex; gap: 6px; }
+.tr-navb button { font: inherit; font-size: 13px; border: 1px solid #d5dbe5; background: #fff; border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+.tr-navb button.next { background: #1c5cab; border-color: #1c5cab; color: #fff; }
+.tr-navb button:disabled { opacity: .4; cursor: default; }
+.tr-back { font-size: 13px; color: #1c5cab; text-decoration: none; }
+.tr-body { flex: 1; display: flex; min-height: 0; }
+.tr-nav { width: 330px; flex: none; overflow: auto; background: #fff; border-right: 1px solid #e1e5ec; padding: 10px 8px 30px; }
+.tr-nav-h { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #7a8291; padding: 4px 8px 8px; }
+.tr-ni { display: flex; align-items: center; gap: 6px; padding: 5px 8px 5px calc(8px + var(--d) * 14px); border-radius: 7px; font-size: 12.5px; cursor: pointer; line-height: 1.3; color: #2e3440; }
+.tr-ni:hover { background: #f3f6fb; }
+.tr-ni.path { font-weight: 600; }
+.tr-ni.on { background: #eef4fc; color: #164a8a; box-shadow: inset 3px 0 0 #1c5cab; }
+.tr-ni .ls-stage { width: 18px; height: 18px; font-size: 10px; margin-right: 2px; box-shadow: none; }
+.tr-ni.t-proc span, .tr-ni.t-step span { color: #4d5563; }
+.tr-dot { width: 7px; height: 7px; border-radius: 50%; background: #b9bfca; flex: none; }
+.tr-dot.k-abai { background: #1c5cab; } .tr-dot.k-nedra { background: #7a4fb5; } .tr-dot.k-manual { background: #c2413a; } .tr-dot.k-user { background: #4a5568; }
+.tr-main { flex: 1; overflow: auto; padding: 16px 28px 60px; }
+.tr-crumbs { font-size: 12.5px; color: #7a8291; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+.tr-crumbs a { color: #1c5cab; text-decoration: none; } .tr-crumbs a:hover { text-decoration: underline; } .tr-crumbs i { font-style: normal; color: #b9bfca; }
+.tr-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+.tr-head h1 { margin: 0; font-size: 26px; letter-spacing: -.2px; display: flex; align-items: center; }
+.tr-head h1 .ls-stage { width: 28px; height: 28px; font-size: 14px; margin-right: 10px; }
+.tr-type { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #fff; background: #4a5568; border-radius: 6px; padding: 2px 8px; }
+.tr-type.t-layer { background: #1c5cab; } .tr-type.t-block { background: #0f7a55; } .tr-type.t-sys { background: #164a8a; } .tr-type.t-proc { background: #b45309; } .tr-type.t-step { background: #6b3fa0; }
+.tr-pos { margin-left: auto; font-size: 12px; color: #9aa1ad; }
+.tr-content { background: #fff; border: 1px solid #e1e5ec; border-radius: 14px; padding: 16px 20px 18px; font-size: 13.5px; color: #2e3440; }
+.tr-content h3 { margin: 18px 0 8px; font-size: 12.5px; text-transform: uppercase; letter-spacing: .4px; color: #4d5563; }
+.tr-content h3:first-child { margin-top: 0; }
+.tr-content h3 span { margin-left: 8px; font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0; color: #9aa1ad; }
+.tr-lead { margin: 0 0 6px; font-size: 14px; line-height: 1.5; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.tr-n { color: #9aa1ad; font-size: 12.5px; }
+.tr-c2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
+.tr-s { font-weight: 600; color: #16191f; text-decoration: none; border-bottom: 1px dashed currentColor; }
+.tr-s.k-abai { color: #164a8a; } .tr-s.k-nedra { color: #4b2f78; } .tr-s.k-manual { color: #a63a32; }
+.tr-s:hover { color: #1c5cab; }
+.tr-org { margin: 0 0 8px; border-left: 3px solid #6b3fa0; padding-left: 10px; font-size: 12.5px; }
+.tr-org b { display: block; margin-bottom: 2px; }
+.tr-org span { display: inline-block; margin: 0 10px 2px 0; color: #2e3440; }
+.tr-org em, .tr-pl em { font-style: normal; font-size: 11px; color: #7a8291; }
+.tr-pl { list-style: none; margin: 0; padding: 0; font-size: 12.5px; }
+.tr-pl li { padding: 3px 0; border-bottom: 1px dashed #eef1f5; } .tr-pl li b { color: #1c5cab; margin-right: 4px; } .tr-pl li em { display: block; }
+/* Корень: слои снизу вверх */
+.tr-stack-w { margin-top: 6px; }
+.tr-stack { flex: 1; display: flex; flex-direction: column; gap: 0; }
+.tr-layer { font: inherit; text-align: left; display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: center; border: 1px solid #d5dbe5; background: #fff; border-radius: 12px; padding: 10px 14px; cursor: pointer; }
+.tr-layer:hover { border-color: #1c5cab; box-shadow: 0 4px 14px rgba(28,92,171,.12); }
+.tr-layer .ls-stage { grid-row: span 3; width: 28px; height: 28px; font-size: 14px; }
+.tr-layer b { font-size: 15px; } .tr-layer span { font-size: 12.5px; color: #4d5563; } .tr-layer em { font-style: normal; font-size: 11.5px; color: #7a8291; }
+.tr-up { text-align: center; color: #2a78d6; font-weight: 700; line-height: 22px; }
+/* Карточки «внутри» */
+.tr-kids-h { margin: 22px 0 10px; font-size: 15px; }
+.tr-kids-h span { margin-left: 8px; font-size: 12px; font-weight: 400; color: #7a8291; }
+.tr-kids { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 10px; }
+.tr-kid { font: inherit; text-align: left; border: 1px solid #d5dbe5; border-top: 3px solid #9aa1ad; background: #fff; border-radius: 10px; padding: 9px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; }
+.tr-kid:hover { border-color: #1c5cab; box-shadow: 0 4px 14px rgba(28,92,171,.14); }
+.tr-kid b { font-size: 13.5px; display: flex; align-items: center; } .tr-kid span { font-size: 12px; color: #4d5563; line-height: 1.35; } .tr-kid em { font-style: normal; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #9aa1ad; margin-top: auto; }
+.tr-kid.t-layer { border-top-color: #1c5cab; } .tr-kid.t-block { border-top-color: #0f7a55; } .tr-kid.t-proc { border-top-color: #b45309; } .tr-kid.t-step { border-top-color: #6b3fa0; }
+.tr-kid.t-sys.k-abai { border-top-color: #1c5cab; } .tr-kid.t-sys.k-nedra { border-top-color: #7a4fb5; } .tr-kid.t-sys.k-manual { border-top-color: #c2413a; }
+.tr-kid .ls-stage { width: 20px; height: 20px; }
+/* Процесс: полная цепочка шагов */
+.tr-chain { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px 4px; }
+.tr-ch { font: inherit; text-align: left; width: 190px; border: 1px solid #c9d2df; background: #fff; border-radius: 9px; padding: 6px 9px; display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
+.tr-ch:hover { border-color: #1c5cab; }
+.tr-ch.other { background: #f8f9fb; border-color: #e1e5ec; }
+.tr-ch.me { border: 2px solid #f2b705; background: #fffdf3; }
+.tr-ch b { font-size: 12px; color: #1c5cab; } .tr-ch span { font-size: 12px; line-height: 1.3; color: #16191f; } .tr-ch em { font-style: normal; font-size: 10.5px; color: #7a8291; line-height: 1.3; }
+.tr-ch.other span { color: #4d5563; }
+.tr-ar { font-style: normal; align-self: center; color: #9aa1ad; font-weight: 700; }
+/* Шаг */
+.tr-step { display: flex; flex-direction: column-reverse; gap: 10px; }
+.tr-sw { display: flex; gap: 10px; } .tr-sw > i { flex: none; width: 54px; font-style: normal; font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: #9aa1ad; padding-top: 6px; text-align: right; }
+.tr-sw > div { flex: 1; display: flex; gap: 8px; flex-wrap: wrap; }
+.tr-nb { border: 1px solid #d5dbe5; border-radius: 9px; padding: 6px 10px; font-size: 12.5px; background: #fff; max-width: 360px; }
+.tr-nb b { color: #4d5563; } .tr-nb span { display: block; font-size: 11.5px; color: #7a8291; } .tr-nb q { display: block; font-size: 11.5px; font-style: italic; color: #5b6472; quotes: "«" "»"; }
+.tr-nb.ev { color: #7a8291; border-style: dashed; background: #f6f7f9; }
+.tr-scur { margin-left: 64px; border: 2px solid #1c5cab; border-radius: 14px; padding: 12px 16px; box-shadow: 0 8px 24px rgba(28,92,171,.12); }
+.tr-scur-r { font-size: 12px; font-weight: 600; color: #6b3fa0; }
+.tr-scur-t { font-size: 16px; font-weight: 600; margin: 3px 0 10px; } .tr-scur-t b { color: #1c5cab; margin-right: 8px; }
+.tr-scur > q { display: block; margin-top: 5px; font-size: 12px; color: #5b6472; font-style: italic; quotes: "«" "»"; }
+.tr-links { margin: 0 0 8px; }
+.tr-content .ls-st-frame { max-width: 1100px; }
+.tr-path { margin-bottom: 12px; }
+.tr-about .ls-ab h3 { display: none; }
+#tr-hidden { position: absolute; left: -100000px; top: 0; width: 1500px; visibility: hidden; pointer-events: none; }
+
+/* ---------- Дерево схемой ---------- */
+.tr-main { flex: 1; overflow: auto; padding: 0 0 60px; }
+.tr-cv { position: relative; max-height: 52vh; overflow: auto; background: #eef2f7 radial-gradient(#d9dfe8 1px, transparent 1px) 0 0 / 20px 20px; border-bottom: 1px solid #d5dbe5; box-shadow: 0 6px 18px rgba(16,24,40,.08); }
+.tr-cv-in { position: relative; min-width: 100%; }
+.tr-cv-in svg { position: absolute; left: 0; top: 0; pointer-events: none; }
+.tr-cv-in path { fill: none; stroke-width: 2; }
+.tr-cv-in path.on { stroke: #1c5cab; stroke-width: 3; }
+.tr-cv-in path.new { stroke: #8fb3e3; stroke-width: 1.8; }
+.tr-cv-in path.off { stroke: #c9d0da; stroke-width: 1.4; }
+.tr-cv-l span { position: absolute; top: 6px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #7a8291; }
+.tr-nd { position: absolute; font: inherit; text-align: left; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 7px; align-content: center; padding: 5px 10px; background: #fff; border: 1px solid #c9d2df; border-left: 4px solid #9aa1ad; border-radius: 9px; cursor: pointer; transition: box-shadow .15s, border-color .15s, opacity .15s; overflow: hidden; }
+.tr-nd > i { grid-row: span 2; align-self: center; }
+.tr-nd b { font-size: 12.5px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tr-nd span { font-size: 10.5px; color: #7a8291; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-nd:hover { border-color: #1c5cab; box-shadow: 0 4px 12px rgba(28,92,171,.18); opacity: 1; }
+.tr-nd.dim { opacity: .55; }
+.tr-nd.sel { border-color: #1c5cab; background: #f3f7fd; }
+.tr-nd.cur { border: 2px solid #f2b705; border-left-width: 5px; box-shadow: 0 0 0 4px rgba(242,183,5,.22), 0 6px 16px rgba(16,24,40,.14); }
+.tr-nd.new { animation: trIn .35s ease both; }
+@keyframes trIn { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+.tr-nd.t-view { border-left-color: #16191f; } .tr-nd.t-layer { border-left-color: #1c5cab; } .tr-nd.t-block, .tr-nd.t-mods, .tr-nd.t-mod { border-left-color: #0f7a55; }
+.tr-nd.t-proc { border-left-color: #b45309; } .tr-nd.t-step { border-left-color: #6b3fa0; }
+.tr-nd.t-sys.k-abai { border-left-color: #1c5cab; } .tr-nd.t-sys.k-nedra { border-left-color: #7a4fb5; } .tr-nd.t-sys.k-manual { border-left-color: #c2413a; } .tr-nd.t-sys.k-user { border-left-color: #4a5568; }
+.tr-nd .ls-stage { width: 22px; height: 22px; margin: 0; }
+.tr-nd .tr-dot { width: 9px; height: 9px; }
+.tr-detail { padding: 14px 28px 0; }
+.tr-hint { margin: 12px 2px 0; font-size: 12.5px; color: #7a8291; }
+/* Карточка узла — схемами */
+.tr-what p { margin: 0 0 8px; font-size: 15px; line-height: 1.55; color: #16191f; }
+.tr-pair { gap: 12px; margin: 8px 0 4px; }
+.tr-box { border-radius: 10px; padding: 9px 12px; font-size: 13px; line-height: 1.45; }
+.tr-box b { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; }
+.tr-box p { margin: 0; }
+.tr-box.asis { background: #fdf3f2; border: 1px solid #f2cfcc; } .tr-box.asis b { color: #a63a32; }
+.tr-box.use { background: #ecf7f1; border: 1px solid #b9e0c9; } .tr-box.use b { color: #0f7a55; }
+.tr-fs { margin: 6px 0 4px; overflow: auto; }
+.tr-fs .ls-focus { display: flex; }
+.tr-fs .ls-focus > .ls-fcanvas { margin: 0 auto; }
+.tr-more { margin-top: 12px; border: 1px solid #e1e5ec; border-radius: 10px; padding: 0 12px; background: #fbfcfd; }
+.tr-more > summary { cursor: pointer; padding: 9px 0; font-size: 12.5px; font-weight: 600; color: #1c5cab; }
+.tr-more[open] { padding-bottom: 12px; }
+.tr-orgs { display: grid; gap: 8px; }
+.tr-org { border-left: 3px solid #6b3fa0; padding-left: 10px; font-size: 12.5px; }
+.tr-org span { display: inline-block; margin: 2px 6px 2px 0; padding: 1px 8px; border-radius: 10px; background: #f3effa; color: #4b2f78; }
+.tr-bars { display: grid; gap: 4px; }
+.tr-bars > div { display: grid; grid-template-columns: 52px 1fr 34px; grid-template-rows: auto 6px; column-gap: 8px; align-items: center; font-size: 12px; }
+.tr-bars b { grid-row: span 2; color: #1c5cab; }
+.tr-bars span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #2e3440; }
+.tr-bars i { grid-column: 2; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #2a78d6, #8fb3e3); }
+.tr-bars em { grid-row: 1 / span 2; grid-column: 3; font-style: normal; font-weight: 700; color: #4d5563; text-align: right; }
+.tr-nd:not(:has(> i)) { grid-template-columns: 1fr; }
+/* Ветки «Откуда данные / Куда данные» и кликабельные системы на схемах карточки */
+.tr-nd.t-in { border-left-color: #0f7a55; background: #f4fbf7; } .tr-nd.t-out { border-left-color: #b45309; background: #fdf8f1; }
+.tr-nd.t-in b { color: #0b6b3a; } .tr-nd.t-out b { color: #8a4a06; }
+.tr-type.t-in { background: #0f7a55; } .tr-type.t-out { background: #b45309; }
+.tr-click { cursor: pointer; transition: box-shadow .15s, border-color .15s; }
+.tr-click:hover { border-color: #1c5cab !important; box-shadow: 0 0 0 3px rgba(28,92,171,.18); }
+/* Схема блока / слоя: стрелка — прямо в систему внутри блока */
+.tr-bs .tr-bf { position: absolute; border: 2px dashed #8fb3e3; border-radius: 14px; background: rgba(238,244,252,.55); z-index: 0; }
+.tr-bs .tr-bf > span { position: absolute; left: 12px; top: 5px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #164a8a; }
+.tr-bs .ls-fnode { flex-direction: column; justify-content: center; padding: 3px 9px; }
+.tr-bs .ls-fnode span { font-size: 9px; text-transform: uppercase; letter-spacing: .3px; color: #8a93a6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-bs .ls-fnode b { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-bs .ls-fnode.tr-inn { border-width: 2px; box-shadow: 0 2px 8px rgba(28,92,171,.14); }
+.tr-bls { position: absolute; left: 0; top: 0; z-index: 3; }
+.tr-bl { position: absolute; box-sizing: border-box; background: #fff; border: 1px solid #9cbde8; border-radius: 8px; padding: 5px 8px; font-size: 11.5px; line-height: 1.35; color: #2e3440; box-shadow: 0 2px 6px rgba(16,24,40,.08); }
+.tr-bl > i { display: block; font-style: normal; font-size: 11px; color: #164a8a; margin-bottom: 2px; }
+.tr-bl > i b { font-weight: 700; }
+.tr-bl > i small { display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: .3px; color: #8a93a6; }
+.tr-bl > span { display: block; }
+.tr-bl > em { display: block; font-style: normal; font-size: 10.5px; color: #8a93a6; margin-top: 2px; }
+.tr-bl > em.ls-who { color: #6b3fa0; }
+.tr-bl.k-manual { border-color: #eab0aa; } .tr-bl.k-seq { border-color: #c3c9d3; } .tr-bl.k-input { border-color: #a9d8ba; } .tr-bl.k-int { border-color: #f0cf96; } .tr-bl.k-pub { border-color: #9fd3dd; }
+.ls-ssys.from { border-style: dashed; }
+.tr-from { display: block; font-style: normal; font-size: 11px; color: #b45309; font-weight: 600; margin-top: 2px; }
+/* Дальше по процессу / конец процесса */
+.tr-nd.t-next { border-left-color: #0e7490; background: #f0f9fb; } .tr-nd.t-next b { color: #0b5d72; }
+.tr-nd.t-end { border-left-color: #4a5568; background: #f3f4f7; border-style: dashed; }
+.tr-type.t-next { background: #0e7490; } .tr-type.t-end { background: #4a5568; }
+.tr-nexts { display: flex; flex-wrap: wrap; gap: 10px; }
+.tr-nx { font: inherit; text-align: left; width: 300px; border: 1px solid #c9d2df; border-left: 4px solid #6b3fa0; border-radius: 10px; background: #fff; padding: 8px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.tr-nx:hover { border-color: #1c5cab; }
+.tr-nx.t-proc { border-left-color: #b45309; } .tr-nx.t-end { border-left-color: #4a5568; border-style: dashed; background: #f6f7f9; }
+.tr-nx i { font-style: normal; font-size: 11px; font-weight: 700; color: #0e7490; }
+.tr-nx b { font-size: 13px; } .tr-nx span { font-size: 11.5px; color: #7a8291; }

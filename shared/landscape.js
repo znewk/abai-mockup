@@ -26,33 +26,33 @@ const LS_VIEWS = {
     name: 'AS IS', sub: 'как сейчас', v: 'asis',
     lead: 'Единого цифрового двойника нет: у каждой функции свои системы, данные между ними переносятся вручную — через Excel и Word, почту, рабочий чат и СЭД.',
     flow: [
-      ['Замеры и датчики', 'SCADA, СДМО / СДМС, АГЗУ, ИСУ — данные остаются в промысловых системах'],
-      ['Сводки в файлах', 'рапорты и сводки собираются в MS Office: в «Добыче» 111 привязок шагов к MS Office'],
-      ['Пересылка', 'почта, рабочий чат, СЭД, сетевые папки'],
-      ['Ручной ввод', 'перенос в текущие модули ABAI и инженерное ПО — Petrel, tNavigator, COMPASS'],
-      ['Отчётность', 'руководству ДЗО, КМГИ и КЦ — снова файлы'],
+      ['Замеры и датчики', 'SCADA, СДМО / СДМС, АГЗУ, ИСУ — данные остаются в промысловых системах', '.ls-box.asu > .ls-box-h'],
+      ['Сводки в файлах', 'рапорты и сводки собираются в MS Office: в «Добыче» 111 привязок шагов к MS Office', '.ls-manual'],
+      ['Пересылка', 'почта, рабочий чат, СЭД, сетевые папки', '.ls-zone.data > .ls-zone-h'],
+      ['Ручной ввод', 'перенос в текущие модули ABAI и инженерное ПО — Petrel, tNavigator, COMPASS', '.ls-zone.asis:not(.data) > .ls-zone-h'],
+      ['Отчётность', 'руководству ДЗО, КМГИ и КЦ — снова файлы', '.ls-box.users > .ls-box-h'],
     ],
   },
   nedra: {
     name: 'TO BE Nedra', sub: 'ЦД на Nedra.PLATFORM', v: 'nedra',
     lead: 'Целевое видение стратсессии: ЦД Актива — единая платформа на базе Nedra.PLATFORM над слоем данных КХД + NDP. Данные АСУ ТП собирает MES, внешние системы подключаются через адаптеры.',
     flow: [
-      ['АСУ ТП → MES', 'сбор, верификация, хранение и обработка данных в зоне ДЗО'],
-      ['Слой данных', 'потоки данных в КХД + NDP (Nedra Data Platform): ETL, стриминг, озеро данных'],
-      ['Бизнес-модули ЦД', 'ЦД пласта, скважины, добычи и наземной инфраструктуры читают и пишут через слой данных'],
-      ['Платформа ЦД Актива', 'каталог процессов, BPM, AI-агенты, сквозная аналитика активов'],
-      ['Web-доступ', 'КЦ, КМГИ, ЦИО и ДЗО работают в одном контуре; SAP, СЭД, гос. порталы — через интеграции'],
+      ['АСУ ТП → MES', 'сбор, верификация, хранение и обработка данных в зоне ДЗО', '.ls-box.mes > .ls-box-h'],
+      ['Слой данных', 'потоки данных в КХД + NDP (Nedra Data Platform): ETL, стриминг, озеро данных', '.ls-zone.data > .ls-zone-h'],
+      ['Бизнес-модули ЦД', 'ЦД пласта, скважины, добычи и наземной инфраструктуры читают и пишут через слой данных', '.ls-box.mods > .ls-box-h'],
+      ['Платформа ЦД Актива', 'каталог процессов, BPM, AI-агенты, сквозная аналитика активов', '.ls-box.plat > .ls-box-h'],
+      ['Web-доступ', 'КЦ, КМГИ, ЦИО и ДЗО работают в одном контуре; SAP, СЭД, гос. порталы — через интеграции', '.ls-box.users > .ls-box-h'],
     ],
   },
   dream: {
     name: 'Dream TO BE', sub: 'ЦД на ABAI', v: 'dream',
     lead: 'Наш вариант: та же архитектура ЦД, но бизнес-модули — продукты ABAI (соответствие Nedra ↔ ABAI — стратсессия, слайд 34), единая база — ABAI БД 2.0, слой бизнес-интеграций — КХД.',
     flow: [
-      ['АСУ ТП → сбор', 'SCADA, СДМО / СДМС, ИСУ, АСКУЭ / АСТУЭ — данные поступают автоматически'],
-      ['КХД', 'слой бизнес-интеграций: собирает данные промысла и обменивается с SAP, СЭД, гос. порталами'],
-      ['ABAI БД 2.0', 'единая база: скважины, замеры, документы, статусы и уведомления'],
-      ['ЦД на модулях ABAI', 'ЦРНС 2.0, УЗ 2.0, ПДИМ 2.0, ТР 2.0, ПГНО, ПАЭГТМ, Цифровое бурение, мониторинг ТКРС'],
-      ['Решения по ролям', 'КЦ, КМГИ, ЦИО и ДЗО видят одни данные; MS Office, почта и рабочий чат в шагах Dream TO BE не используются'],
+      ['АСУ ТП → сбор', 'SCADA, СДМО / СДМС, ИСУ, АСКУЭ / АСТУЭ — данные поступают автоматически', '.ls-box.asu > .ls-box-h'],
+      ['КХД', 'слой бизнес-интеграций: собирает данные промысла и обменивается с SAP, СЭД, гос. порталами', '.ls-zone.data > .ls-zone-h'],
+      ['ABAI БД 2.0', 'единая база: скважины, замеры, документы, статусы и уведомления', '.ls-box.plat > .ls-box-h'],
+      ['ЦД на базе ABAI', 'ЦРНС 2.0, УЗ 2.0, ПДИМ 2.0, ТР 2.0, ПГНО, ПАЭГТМ, Цифровое бурение, мониторинг ТКРС', '.ls-box.mods > .ls-box-h'],
+      ['Решения по ролям', 'КЦ, КМГИ, ЦИО и ДЗО видят одни данные', '.ls-box.users > .ls-box-h'],
     ],
   },
 };
@@ -258,6 +258,16 @@ function lsDetail(e, view) {
   </div>`;
 }
 
+// Связи системы во всех сценариях вида; одинаковые «откуда → куда» объединены (refs — все ссылки на шаги)
+function lsLinksOf(view, key) {
+  const seen = new Map();
+  (LS_FLOWS[view] || []).forEach((x) => x.e.forEach(([f, t, w, r, k]) => {
+    if (f !== key && t !== key) return;
+    const id = f + '|' + t;
+    if (seen.has(id)) { const e = seen.get(id); if (!e.w.includes(w)) { e.w += '; ' + w; e.r += ' · ' + r; e.refs.push(r); } } else seen.set(id, { f, t, w, r, k, refs: [r] });
+  }));
+  return [...seen.values()];
+}
 function abaiLandscape(root, view = 'dream', flow) {
   LS_CUR = view;
   lsUnpin();
@@ -322,7 +332,7 @@ function abaiLandscape(root, view = 'dream', flow) {
         ${lsDzo(view)}
         <svg class="ls-svg"></svg><div class="ls-lbls"></div>
     </div></div>
-    <ol class="ls-flow">${V.flow.map(([t, d], i) => `<li><b>${i + 1}. ${t}</b><span>${d}</span></li>`).join('')}</ol>`;
+    <ol class="ls-flow">${V.flow.map(([t, d], i) => `<li><b><i class="ls-stage">${i + 1}</i>${t}</b><span>${d}</span></li>`).join('')}</ol>`;
   root.querySelectorAll('[data-ls]').forEach((b) => (b.onclick = () => { abaiLandscape(root, b.dataset.ls); history.replaceState(null, '', '#' + b.dataset.ls); }));
   root.querySelectorAll('[data-fl]').forEach((b) => (b.onclick = () => abaiLandscape(root, view, b.dataset.fl || null)));
   root.querySelectorAll('[data-mode]').forEach((b) => (b.onclick = () => {
@@ -331,6 +341,18 @@ function abaiLandscape(root, view = 'dream', flow) {
     abaiLandscape(root, view, fl ? fl.id : null);
   }));
   const grid = root.querySelector('.ls-grid');
+  // Номера этапов — те же, что в плашке под схемой, на блоках схемы
+  V.flow.forEach(([t, , sel], i) => { const el = sel && grid.querySelector(sel); if (el) el.insertAdjacentHTML('afterbegin', `<i class="ls-stage" title="Этап ${i + 1}: ${t}">${i + 1}</i>`); });
+  // Заголовки верхнего уровня (ЦД пласта, слой данных, зона ДЗО …) — клик: что это такое
+  grid.querySelectorAll('.ls-twin-h, .ls-box > .ls-box-h, .ls-zone > .ls-zone-h').forEach((h) => {
+    const B = lsBlockOf(h);
+    // В AS IS слой данных — «хранение разрозненно»: описание целевого слоя из стратсессии к нему не относится
+    if (!B || !LS_BLOCKS[B.id] || (view === 'asis' && B.id === 'data')) return;
+    h.classList.add('ls-hq');
+    const note = h.querySelector('.ls-box-n');
+    (note || h).insertAdjacentHTML(note ? 'beforebegin' : 'beforeend', '<i class="ls-hq-i">что это?</i>');
+    h.onclick = (ev) => { ev.stopPropagation(); lsUnpin(); lsBlockInfo(root, grid, h, view); };
+  });
   const base = fl ? fl.e.map(([f, t, w, r, k, refs], i) => ({ f, t, w, r, k, refs, n: i + 1 })) : [];
   const focus = root.querySelector('.ls-focus');
   const mark = () => {
@@ -349,15 +371,7 @@ function abaiLandscape(root, view = 'dream', flow) {
   const drawFocus = (o) => focus && (isAll ? (o && o.hot !== undefined ? focus._hot(o.hot) : lsNet(focus, grid, base, view, { onPick: pick })) : lsFocus(focus, grid, base, view, o));
   draw(base); drawFocus();
   // Наведение на систему: её потоки во всех сценариях вида; клик — закрепить окно (его можно прокрутить и прочитать)
-  const linksOf = (key) => {
-    const seen = new Map();
-    flows.forEach((x) => x.e.forEach(([f, t, w, r, k]) => {
-      if (f !== key && t !== key) return;
-      const id = f + '|' + t;
-      if (seen.has(id)) { const e = seen.get(id); if (!e.w.includes(w)) { e.w += '; ' + w; e.r += ' · ' + r; e.refs.push(r); } } else seen.set(id, { f, t, w, r, k, refs: [r] });
-    }));
-    return [...seen.values()];
-  };
+  const linksOf = (key) => lsLinksOf(view, key);
   const lit = (key, list) => {
     root.classList.add('hl');
     root.querySelectorAll(`.ls-chip[data-sys="${CSS.escape(key)}"]`).forEach((x) => x.classList.add('on'));
@@ -439,6 +453,122 @@ document.addEventListener('keydown', (e) => {
   if (LS_STORY && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { e.preventDefault(); LS_STORY.step(e.key === 'ArrowRight' ? 1 : -1); }
 });
 
+// ---------- Верхний уровень схемы: что такое блок (ЦД пласта, слой данных, зона ДЗО …) — по стратсессии ----------
+// Каждое утверждение — со слайдом стратсессии 18.09.2026; расшифровки сокращений — общепринятые термины.
+const LS_BLOCKS = {
+  'ЦД пласта': {
+    what: [
+      ['Цифровая модель пласта в интегрированной модели актива: давление, насыщенность, закачка; приток, пластовое давление, обводнённость. Модели пласта, скважины и инфраструктуры синхронизируются с автоматическим пересчётом сценариев при изменениях', 'сл. 14'],
+      ['Основа — оперативная постоянно действующая геолого-гидродинамическая модель (ПДГГДМ): отражает текущее состояние пласта и становится обязательным расчётным инструментом для ключевых решений, единым контуром управления «данные → модель → сценарии → решение → эффект», а не расчётом «по запросу»', 'сл. 6'],
+    ],
+    asis: [['Сейчас ГДМ строится под проектные документы, обновляется редко и не является рабочим инструментом ДЗО; операционные решения часто принимаются без модели', 'сл. 6']],
+    use: [['Прогноз добычи и дебитов; эффекты ГТМ / ЗБС / ГРП; оптимизация ППД; варианты бурения; анализ план / факт', 'сл. 6']],
+    cycle: [['Сбор факта', 'добыча, закачка, режимы, ГИС / ГДИС — ДЗО'], ['QC данных', 'проверка полноты и качества данных'], ['Обновление', 'актуализация ПДГГДМ'], ['Сценарии', 'ГТМ, ППД, ЗБС, ГРП, бурение — ДЗО'], ['Решение', 'выбор варианта с учётом экономики — ДЗО'], ['Эффект', 'фактический эффект возвращается в модель — ДЗО и КМГИ']],
+    cycleSrc: 'сл. 6',
+    roles: [['КМГ', 'требования и контроль внедрения'], ['КМГИ', 'методология, поддержка сложных моделей по контракту'], ['ДЗО', 'владелец модели, обновление модели, расчёты']],
+    rolesSrc: 'сл. 6',
+    mods: [
+      ['ABAI ЦРНС 2.0 (Nedra.NUMEX)', 'работа с существующими 3D ГМ / ГДМ из tNavigator, Petrel / Eclipse; подбор размещения и заканчивания скважин; автоадаптация на историю — «сокращает время актуализации ГДМ»; размещение фонда по картам результатов ГДМ', 'сл. 24–28, 34'],
+      ['ABAI УЗ 2.0 (Nedra.NUMEX Optimize)', 'автоматический подбор режимов скважин на гидродинамической модели; пересчёт ГГДМ; оптимизация закачки (многовариантные расчёты на актуализированной ГДМ)', 'сл. 29–31, 34'],
+    ],
+    deploy: [['Восточный Молдабек: адаптация системы под оставшиеся пласты с учётом ГДМ; настройка и создание проектов', 'сл. 55']],
+    terms: [['ГМ', 'геологическая модель'], ['ГДМ', 'гидродинамическая модель'], ['ГГДМ', 'геолого-гидродинамическая модель'], ['ПДГГДМ', 'постоянно действующая ГГДМ'], ['ППД', 'поддержание пластового давления'], ['ГТМ', 'геолого-технические мероприятия'], ['ЗБС', 'зарезка боковых стволов'], ['ГРП', 'гидроразрыв пласта'], ['ГИС / ГДИС', 'геофизические / гидродинамические исследования скважин']],
+  },
+  'ЦД скважины': {
+    what: [['Цифровая модель скважины в интегрированной модели актива: конструкция скважины, режимы работы; режимы, дебиты, ограничения ГНО', 'сл. 14']],
+    mods: [
+      ['ABAI Цифровое бурение (Nedra.RTM)', 'модули «Сводки» и «Онлайн-мониторинг» (офис и буровая), WITSML-сервер и клиент, данные реального времени', 'сл. 34, 55'],
+      ['ABAI Цифровой мониторинг ТКРС (Nedra.WWO)', 'адаптация коробочного решения (нормы времени, КР / ТР, ПЗ / ПР), ролевая модель согласования наряд-заказов и планов работ', 'сл. 34, 55'],
+    ],
+    deploy: [['Восточный Молдабек: внедрение ABAI Цифровое бурение и Цифровой мониторинг ТКРС', 'сл. 55']],
+    terms: [['ГНО', 'глубинно-насосное оборудование'], ['ТКРС', 'текущий и капитальный ремонт скважин'], ['КР / ТР', 'капитальный / текущий ремонт'], ['WITSML', 'стандарт передачи данных бурения']],
+  },
+  'ЦД добычи и наземной инфраструктуры': {
+    what: [['Модель инфраструктуры в интегрированной модели актива: наземные объекты, сбор, транспортировка, сдача; пропускная способность, мощности, возможности сдачи. Потенциал ищется на всех элементах и узлах производственной цепочки; ИМА и модель ограничений рассчитывают локальные решения с учётом влияния на смежные узлы', 'сл. 14']],
+    use: [['Работа с потенциалом: выявление ограничений → сценарная оценка вариантов → ранжирование и программа мероприятий → подтверждение эффекта и пересчёт потенциала', 'сл. 14']],
+    mods: [
+      ['ABAI ПДИМ 2.0 (Nedra.DIGITAL TWIN)', 'конфигурация технологических и сопутствующих расчётов, структур данных, пользовательских экранов', 'сл. 34, 55'],
+      ['ABAI ПДИМ 2.0 · целостность трубопроводов (Nedra.DIGITAL TWIN Pipe)', 'обучение ML-моделей', 'сл. 34, 56'],
+      ['ABAI Наземная инфраструктура (Nedra.INFRAPLAN)', 'построение моделей инфраструктуры, расчёт технологических и экономических кейсов', 'сл. 34, 55'],
+    ],
+    deploy: [['Восточный Молдабек: внедрение ПДИМ 2.0, Наземной инфраструктуры и целостности трубопроводов', 'сл. 55–56']],
+    terms: [['ИМА', 'интегрированная модель актива'], ['ГНО', 'глубинно-насосное оборудование']],
+  },
+  plat: {
+    title: 'ЦД Актива',
+    what: [['Единая платформа централизованной зоны, в которую входят цифровые двойники и слой данных', 'сл. 54'], ['Сквозной слой: внедрение единого ЦД Актива и слоя данных', 'сл. 56'], ['Интегрированная модель актива: пласт, скважина, инфраструктура синхронизированы, сценарии пересчитываются автоматически', 'сл. 14']],
+    deploy: [['Восточный Молдабек: внедрение Цифрового двойника Актива', 'сл. 56']],
+    terms: [['ИМА', 'интегрированная модель актива']],
+  },
+  cz: { title: 'Централизованная зона', what: [['Единая платформа, включающая в себя цифровые двойники и слой данных', 'сл. 54']] },
+  mods: { title: 'Бизнес-модули и вычислительные системы ЦД', what: [['ЦД пласта, скважины, добычи и наземной инфраструктуры — продукты, внедряемые в ЦД; соответствие продуктов Nedra и ABAI', 'сл. 34, 55–56']] },
+  data: {
+    title: 'Слой данных',
+    what: [['Обеспечивает хранение и обработку данных для аналитики и цифровых продуктов', 'сл. 54'], ['КХД — слой бизнес-интеграций (в варианте Nedra — Nedra.DATA)', 'сл. 34'], ['КХД — собственная разработка КМГ; единый слой хранения, обработки и аналитики данных (дата-платформа) для автоматизированного обмена данными', 'сл. 3']],
+    deploy: [['Восточный Молдабек: слой данных ЦД — внедрение NDP; интеграции', 'сл. 56']],
+    terms: [['КХД', 'корпоративное хранилище данных'], ['NDP', 'Nedra Data Platform']],
+  },
+  dzo: { title: 'Зона ДЗО', what: [['Промысловые и производственные системы, системы хранения и данные АСУ ТП', 'сл. 54']], terms: [['ДЗО', 'дочерние и зависимые организации'], ['АСУ ТП', 'автоматизированная система управления технологическим процессом'], ['MES', 'система управления производством']] },
+  ext: { title: 'Внешние системы', what: [['Интеграции обеспечивают бесшовный обмен данными между централизованными сервисами, внешними системами (SAP, СЭД) и производственными площадками', 'сл. 54']], terms: [['СЭД', 'система электронного документооборота']] },
+  users: { title: 'Пользователи и уровни управления', what: [['Поддержка принятия решения от операционного (ДЗО) до стратегического (КЦ) уровня', 'сл. 54']], terms: [['КЦ', 'корпоративный центр'], ['КМГИ', 'КМГ Инжиниринг'], ['ЦИО', 'центр интегрированных операций']] },
+};
+// Блок по заголовку на схеме
+function lsBlockOf(h) {
+  if (h.classList.contains('ls-twin-h')) return { id: lsHText(h), box: h.closest('.ls-twin') };
+  const pairs = [['.ls-box.plat', 'plat'], ['.ls-box.mods', 'mods'], ['.ls-box.users', 'users'], ['.ls-box.ext', 'ext'], ['.ls-zone.data', 'data'], ['.ls-zone.dzo', 'dzo'], ['.ls-zone.cz', 'cz']];
+  for (const [sel, id] of pairs) { const b = h.parentElement; if (b && b.matches(sel)) return { id, box: b }; }
+  return null;
+}
+function lsBlockInfo(root, grid, h, view) {
+  const B = lsBlockOf(h);
+  if (!B || !LS_BLOCKS[B.id]) return;
+  const D = LS_BLOCKS[B.id], V = LS_VIEWS[view];
+  const title = D.title || B.id;
+  const src = (s) => (s ? `<em class="ls-bk-src">${s}</em>` : '');
+  const keys = [...new Set([...B.box.querySelectorAll('[data-sys]')].map((x) => x.dataset.sys))];
+  const kindOf = (n) => { const a = lsAnchor(grid, n); return a && a.classList.contains('ls-chip') ? (a.className.match(/k-(\w+)/) || [])[1] : 'user'; };
+  const steps = (n) => LS_MODS.reduce((s, m) => s + (((ABAI_LANDSCAPE_DATA[m.id] || {})[V.v] || {}).sys || []).filter(([x]) => lsKey(x) === n).reduce((a, x) => a + x[2], 0), 0);
+  const descOf = (n) => { const d = Object.entries(typeof ABAI_SYS_DESC !== 'undefined' ? ABAI_SYS_DESC : {}).filter(([x]) => lsKey(x) === n).flatMap(([, l]) => l); return d.length ? d[0][1] : ''; };
+  // Связи блока с остальной схемой (все сценарии вида; одинаковые «откуда → куда» — один раз)
+  const all = new Map();
+  (LS_FLOWS[view] || []).forEach((f) => f.e.forEach(([a, z, w, r, k]) => { const id = a + '|' + z; if (!all.has(id)) all.set(id, { f: a, t: z, w, r, k }); }));
+  const inB = (n) => keys.includes(n);
+  const E = [...all.values()];
+  const ein = E.filter((e) => !inB(e.f) && inB(e.t)), eout = E.filter((e) => inB(e.f) && !inB(e.t)), eins = E.filter((e) => inB(e.f) && inB(e.t));
+  const sysA = (n) => (lsAnchor(grid, n) ? `<a href="#" class="ls-ab-s k-${kindOf(n)}" data-pick="${n}">${n}</a>` : `<span class="ls-ab-s">${n}</span>`);
+  const eli = (e) => `<li>${sysA(e.f)} → ${sysA(e.t)} — ${e.w}<em>${LS_KINDS[e.k]} · ${e.r}</em></li>`;
+  const list = (t, l, s) => (l && l.length ? `<h4>${t}${src(s)}</h4><ul class="ls-bk-l">${l.map(([x, y]) => `<li>${x}${y ? src(y) : ''}</li>`).join('')}</ul>` : '');
+  let center = document.querySelector('.ls-center');
+  if (!center) { center = document.createElement('section'); center.className = 'ls ls-center'; document.body.appendChild(center); }
+  const side = document.querySelector('.ls-side'); if (side) side.classList.remove('open');
+  center.classList.add('solo');
+  center.innerHTML = `
+    <div class="ls-center-h"><b>${title}</b><span class="ls-bk-v">${V.name} · что это и что входит</span><span class="ls-center-hint">клик по системе — её окно · Esc — закрыть</span><button class="ls-pop-x" title="Закрыть (Esc)">×</button></div>
+    <div class="ls-center-b"><div class="ls-bk">
+      ${list('Что это', D.what)}
+      ${list('Как сейчас (AS IS)', D.asis)}
+      ${list('Где применяется', D.use)}
+      ${D.cycle ? `<h4>Цикл работы с моделью${src(D.cycleSrc)}</h4><ol class="ls-bk-cy">${D.cycle.map(([t, d]) => `<li><b>${t}</b><span>${d}</span></li>`).join('')}</ol>` : ''}
+      ${D.roles ? `<h4>Роли${src(D.rolesSrc)}</h4><div class="ls-bk-r">${D.roles.map(([t, d]) => `<div><b>${t}</b><span>${d}</span></div>`).join('')}</div>` : ''}
+      ${D.mods ? `<h4>Модули ABAI и что они делают</h4><ul class="ls-bk-l">${D.mods.map(([t, d, s]) => `<li><b>${t}</b> — ${d}${src(s)}</li>`).join('')}</ul>` : ''}
+      ${list('Внедрение', D.deploy)}
+      ${keys.length ? `<h4>Системы в блоке на схеме · ${V.name} <em class="ls-bk-n">${keys.length}</em></h4>
+        <table class="ls-ab-t"><thead><tr><th>Система</th><th>Что это</th><th>Шагов BPMN</th><th>Связей на схеме</th></tr></thead><tbody>${keys.map((n) => `<tr><td>${sysA(n)}</td><td>${descOf(n) || '<span>—</span>'}</td><td>${steps(n) || '<span>—</span>'}</td><td>${E.filter((e) => e.f === n || e.t === n).length || '<span>—</span>'}</td></tr>`).join('')}</tbody></table>` : ''}
+      ${ein.length || eout.length ? `<div class="ls-ab-c2"><div><h4>Что приходит в блок <em class="ls-bk-n">${ein.length}</em></h4><ul class="ls-ab-l ls-bk-e">${ein.map(eli).join('') || '<li>—</li>'}</ul></div>
+        <div><h4>Что уходит из блока <em class="ls-bk-n">${eout.length}</em></h4><ul class="ls-ab-l ls-bk-e">${eout.map(eli).join('') || '<li>—</li>'}</ul></div></div>` : ''}
+      ${eins.length ? `<h4>Связи внутри блока <em class="ls-bk-n">${eins.length}</em></h4><ul class="ls-ab-l ls-bk-e">${eins.map(eli).join('')}</ul>` : ''}
+      ${D.terms ? `<h4>Сокращения</h4><dl class="ls-bk-t">${D.terms.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join('')}</dl>` : ''}
+      <p class="ls-bk-f">Источник — стратсессия 18.09.2026 (номера слайдов у каждого пункта); системы и связи — схема портала и BPMN модулей.</p>
+    </div></div>`;
+  center.querySelector('.ls-pop-x').onclick = lsUnpin;
+  center.querySelectorAll('[data-pick]').forEach((a) => (a.onclick = (ev) => { ev.preventDefault(); const el = [...grid.querySelectorAll('[data-sys]')].find((x) => x.dataset.sys === a.dataset.pick); if (el) { lsUnpin(); el.click(); } }));
+  let bg = document.querySelector('.ls-pop-bg');
+  if (!bg) { bg = document.createElement('div'); bg.className = 'ls-pop-bg'; document.body.appendChild(bg); }
+  bg.style.display = 'block'; bg.onclick = lsUnpin;
+  LS_PIN = LS_PIN || (() => {});
+  requestAnimationFrame(() => center.classList.add('open'));
+}
+
 // ---------- История системы: центральное окно (схема связей / история по шагам) и сайдбар справа (списки шагов BPMN и связей) ----------
 // Шаги — shared/landscape-trail.js (генерирует tools/build_landscape.js), подгружается при первом открытии.
 let LS_TRAIL_WAIT = null;
@@ -462,7 +592,8 @@ function lsTrailOf(view, key) {
 }
 const LS_MOD_NAME = { geologiya: 'Геология', razrabotka: 'Разработка', burenie: 'Бурение', dobycha: 'Добыча' };
 // Слайд презентации (v — из landscape-trail.js, только Dream TO BE: презентации построены по нему) и экран шага в прототипе
-const lsModHref = (m, k) => { const x = typeof ABAI_MODULES !== 'undefined' && ABAI_MODULES.find((y) => y.id === m); return x ? x[k] : m + '/' + (k === 'v2' ? 'v2/' : ''); };
+// Адрес модуля от корня сайта (ABAI_ROOT из modules.js: на портале «./», на странице в подпапке «../»)
+const lsModHref = (m, k) => { const x = typeof ABAI_MODULES !== 'undefined' && ABAI_MODULES.find((y) => y.id === m); return (typeof ABAI_ROOT !== 'undefined' ? ABAI_ROOT : '') + (x ? x[k] : m + '/' + (k === 'v2' ? 'v2/' : '')); };
 // Явно index.html: при открытии сайта с диска ссылка на папку показывает список файлов
 const lsSlideHref = (P, s) => (s.v ? `${lsModHref(P.m, 'v2')}index.html#${s.v[0]}/${s.v[1]}/all/a${s.v[3] || 1}` : '');
 const lsProtoHref = (P, s) => `${lsModHref(P.m, 'v1')}index.html#/p/${P.n}/flow/${s.id}`;
@@ -549,6 +680,7 @@ function lsSide(root, grid, key, links, view) {
   let side = document.querySelector('.ls-side'), center = document.querySelector('.ls-center');
   if (!side) { side = document.createElement('aside'); side.className = 'ls ls-side'; document.body.appendChild(side); }
   if (!center) { center = document.createElement('section'); center.className = 'ls ls-center'; document.body.appendChild(center); }
+  center.classList.remove('solo');
   const tab0 = nSteps ? 'hist' : 'links';
   side.innerHTML = `
     <div class="ls-side-h">
@@ -1029,14 +1161,16 @@ function lsRail(el) {
 
 // ---------- Компактная схема сценария: только участвующие системы, снизу вверх по направлению потока (как на большой схеме) ----------
 // Группа системы на компактной схеме: в какой ЦД / слой она входит на большой схеме
+// Текст заголовка без номера этапа, значка «что это?» и подписи источника
+const lsHText = (h) => [...h.childNodes].filter((n) => !(n.nodeType === 1 && n.matches('.ls-stage, .ls-hq-i, .ls-src'))).map((n) => n.textContent).join('').trim();
 function lsGroup(el, view) {
   if (!el) return { key: 'other', title: 'Прочее', type: 'eng' };
-  const box = el.closest('.ls-box'), boxT = box && box.querySelector('.ls-box-h') ? box.querySelector('.ls-box-h').textContent.trim() : '';
+  const box = el.closest('.ls-box'), boxT = box && box.querySelector('.ls-box-h') ? lsHText(box.querySelector('.ls-box-h')) : '';
   if (el.closest('.ls-box.users')) return { key: 'users', title: 'Пользователи и уровни управления', type: 'users' };
   if (el.closest('.ls-box.ext')) return { key: 'ext', title: 'Внешние системы', type: 'ext' };
   if (el.closest('.ls-twin')) {
     if (el.closest('.ls-note') && el.classList.contains('k-abai')) return { key: 'abai-bpmn', title: 'ИС ABAI (по BPMN TO BE Nedra)', type: 'cd' };
-    const t = el.closest('.ls-twin').querySelector('.ls-twin-h').textContent.trim();
+    const t = lsHText(el.closest('.ls-twin').querySelector('.ls-twin-h'));
     return { key: t, title: t, type: 'cd' };
   }
   if (el.closest('.ls-box.plat')) return { key: 'plat', title: view === 'dream' ? 'ЦД актива — единая база' : boxT, type: 'cd' };

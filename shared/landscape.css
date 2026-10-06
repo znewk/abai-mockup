@@ -619,3 +619,38 @@ a.ls-ab-s:hover { color: #1c5cab; }
 .ls-ab-t td span { display: block; font-size: 11px; color: #9aa1ad; }
 .ls-ab-t tr.ls-ab-g td { padding-top: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #4d5563; border-bottom: 1px solid #e1e5ec; }
 .ls-ab-t td:first-child { width: 30%; } .ls-ab-t td:nth-child(2) { width: 22%; }
+
+/* Номера этапов на схеме и в плашке под ней */
+.ls-stage { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #1c5cab; color: #fff; font-size: 11px; font-weight: 700; font-style: normal; margin-right: 7px; vertical-align: 1px; box-shadow: 0 0 0 3px rgba(28,92,171,.15); flex: none; text-transform: none; letter-spacing: 0; }
+.ls-manual > .ls-stage { margin-right: 4px; }
+.ls-flow li b { display: flex; align-items: center; }
+/* Заголовки верхнего уровня — клик: что это */
+.ls-hq { cursor: pointer; }
+.ls-hq:hover { color: #1c5cab; }
+.ls-hq-i { font-style: normal; font-size: 10.5px; font-weight: 600; text-transform: none; letter-spacing: 0; color: #1c5cab; border: 1px solid #c9dbf3; background: #fff; border-radius: 9px; padding: 0 7px; margin-left: 8px; vertical-align: 1px; white-space: nowrap; opacity: .75; }
+.ls-hq:hover .ls-hq-i { opacity: 1; border-color: #1c5cab; }
+/* Окно «что это» — на всю ширину, без сайдбара */
+.ls-center.solo { right: 20px; }
+.ls-center.solo .ls-center-h .ls-pop-x { margin-left: 8px; }
+.ls-bk-v { font-size: 12.5px; color: #7a8291; }
+.ls-bk { max-width: 1100px; margin: 0 auto; padding-bottom: 24px; font-size: 13.5px; color: #2e3440; }
+.ls-bk h4 { margin: 18px 0 8px; font-size: 12.5px; text-transform: uppercase; letter-spacing: .4px; color: #4d5563; }
+.ls-bk-src { font-style: normal; font-size: 10.5px; font-weight: 600; color: #7a4fb5; background: #f3effa; border-radius: 6px; padding: 0 6px; margin-left: 6px; text-transform: none; letter-spacing: 0; white-space: nowrap; }
+.ls-bk-n { font-style: normal; font-size: 11px; background: #eef1f5; color: #4d5563; border-radius: 9px; padding: 0 7px; margin-left: 3px; }
+.ls-bk-l { margin: 0; padding-left: 18px; line-height: 1.5; }
+.ls-bk-l li { margin: 3px 0; }
+.ls-bk-cy { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; counter-reset: c; }
+.ls-bk-cy li { counter-increment: c; background: #f6f8fb; border: 1px solid #e1e5ec; border-radius: 10px; padding: 8px 10px; position: relative; }
+.ls-bk-cy li::before { content: "0" counter(c); display: block; font-size: 11px; font-weight: 700; color: #1c5cab; }
+.ls-bk-cy li:not(:last-child)::after { content: "→"; position: absolute; right: -8px; top: 50%; transform: translateY(-50%); color: #9aa1ad; font-weight: 700; }
+.ls-bk-cy b { display: block; font-size: 13px; }
+.ls-bk-cy span { font-size: 11.5px; color: #4d5563; line-height: 1.35; }
+.ls-bk-r { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ls-bk-r > div { border-left: 3px solid #6b3fa0; padding: 2px 10px; }
+.ls-bk-r b { display: block; } .ls-bk-r span { font-size: 12.5px; color: #4d5563; }
+.ls-bk-t { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 18px; margin: 0; }
+.ls-bk-t > div { display: flex; gap: 8px; font-size: 12.5px; }
+.ls-bk-t dt { font-weight: 700; min-width: 74px; color: #164a8a; } .ls-bk-t dd { margin: 0; color: #2e3440; }
+.ls-bk-e li { font-size: 12.5px; }
+.ls-bk-f { margin-top: 18px; font-size: 11.5px; color: #9aa1ad; }
+.ls-bk .ls-ab-t td:nth-child(2) { width: auto; color: #4d5563; } .ls-bk .ls-ab-t td:first-child { width: 26%; } .ls-bk .ls-ab-t td:nth-child(3), .ls-bk .ls-ab-t td:nth-child(4) { width: 110px; }

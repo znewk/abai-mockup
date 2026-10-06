@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABAI · Дерево ЦД — от слоёв к шагам</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231c5cab'/%3E%3Cpath d='M6 23 13 9l4 8 3-5 6 11z' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="../shared/landscape.css?v=20261006p">
+  <link rel="stylesheet" href="../shared/tree.css?v=20261006p">
+</head>
+<body>
+  <div class="mock-banner">Мокапы для обсуждения · демо-данные</div>
+  <header class="tr-top">
+    <a class="tr-logo" href="../index.html#arch"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#1c5cab"/><path d="M6 23 13 9l4 8 3-5 6 11z" fill="#fff"/><circle cx="23" cy="9" r="2.5" fill="#86b6ef"/></svg><div>ABAI<small>Дерево ЦД</small></div></a>
+    <div class="tr-views"></div>
+    <div class="spacer"></div>
+    <select id="trDepth" title="До какого уровня идёт показ «Далее»"></select>
+    <div class="tr-navb"><button data-nav="-1" title="Назад (←)">◀ Назад</button><button data-nav="1" class="next" title="Далее (→)">Далее ▶</button></div>
+    <a class="tr-back" href="../index.html#arch">Схема ЦД на портале</a>
+  </header>
+  <main class="tr-main ls"></main>
+  <!-- Скрытая большая схема портала: принадлежность систем к блокам и их вид -->
+  <div id="tr-hidden" class="ls" aria-hidden="true"></div>
+  <script src="../shared/modules.js" data-root="../"></script>
+  <script src="../shared/landscape-data.js?v=20261006p"></script>
+  <script src="../shared/landscape-flows.js?v=20261006p"></script>
+  <script src="../shared/landscape-steps.js?v=20261006p"></script>
+  <script src="../shared/landscape.js?v=20261006p"></script>
+  <script src="../shared/tree.js?v=20261006p"></script>
+</body>
+</html>
