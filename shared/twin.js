@@ -543,11 +543,13 @@ function twCanvas(host, n, X) {
     const groups = [];
     col.forEach((x) => { const g = groups[groups.length - 1]; if (g && g.p === x.parent) g.l.push(x); else groups.push({ p: x.parent, l: [x] }); });
     groups.forEach((g) => {
-      const hs = g.l.map(hOf), gh = hs.reduce((s, v) => s + v, 0) + G * (g.l.length - 1);
+      // Шаги процесса — с промежутком под стрелку последовательности
+      const gap = g.l[0].type === 'ps' || g.l[0].type === 'step' ? 24 : G;
+      const hs = g.l.map(hOf), gh = hs.reduce((s, v) => s + v, 0) + gap * (g.l.length - 1);
       let top = g.p ? pos.get(g.p).y + pos.get(g.p).h / 2 - gh / 2 : 0;
       if (top < bottom + GG) top = bottom + GG;
       let y = top;
-      g.l.forEach((x, j) => { pos.set(x, { y, h: hs[j], d }); y += hs[j] + G; });
+      g.l.forEach((x, j) => { pos.set(x, { y, h: hs[j], d, j }); y += hs[j] + gap; });
       bottom = top + gh;
     });
   });
@@ -613,13 +615,31 @@ function twCanvas(host, n, X) {
   pp.forEach((q) => (q.x = pxX));
   const CW = (pp.size || ntr.get(maxD) ? pxX + (pp.size ? PW : 0) : colX[maxD] + W) + P + 40 + (ntr.get(maxD + 1) ? 30 + ntr.get(maxD + 1) * TS : 0);
   const CH = Math.max(...all.map((q) => q.y + q.h)) + P;
+  // ---- Последовательность шагов по BPMN (s.nx): стрелки между видимыми шагами одного процесса ----
+  const isStep = (x) => x.type === 'ps' || x.type === 'step';
+  const byParent = new Map();
+  V.forEach((x) => { if (isStep(x) && pos.has(x)) { if (!byParent.has(x.parent)) byParent.set(x.parent, new Map()); byParent.get(x.parent).set(x.P.s.indexOf(x.s), x); } });
+  const seq = [], hasPred = new Set();
+  byParent.forEach((m) => m.forEach((x) => (x.s.nx || []).forEach(([t, cond]) => { const y = typeof t === 'number' && m.get(t); if (y && y !== x) { seq.push({ a: x, b: y, cond }); hasPred.add(y); } })));
+  // Дорожки дуг: длинные переходы — дальше от колонки, чтобы не сливались
+  seq.forEach((q) => { const A = pos.get(q.a), B = pos.get(q.b); q.y1 = A.y + A.h - 14; q.y2 = B.y + 14; q.l = Math.min(q.y1, q.y2); q.h = Math.max(q.y1, q.y2); });
+  const lanesSq = [];
+  seq.filter((q) => pos.get(q.b).j !== pos.get(q.a).j + 1).sort((p, q) => (p.h - p.l) - (q.h - q.l)).forEach((q) => { let k = lanesSq.findIndex((L) => L.every((o) => q.l > o.h + 4 || o.l > q.h + 4)); if (k < 0) { k = lanesSq.length; lanesSq.push([]); } lanesSq[k].push(q); q.k = k; });
+  let sqPaths = '';
+  seq.forEach((q) => {
+    const A = pos.get(q.a), B = pos.get(q.b);
+    // Соседний шаг ниже — прямая стрелка вниз; переход к несоседнему (развилка, возврат) — дуга слева
+    if (B.j === A.j + 1) { const x = A.x + 34; sqPaths += `<path class="sq${q.cond ? ' br' : ''}" d="M${x},${A.y + A.h} L${x},${B.y}" marker-end="url(#twSqA)"/>`; return; }
+    const x0 = A.x, bulge = Math.min(14 + q.k * 7, 52);
+    sqPaths += `<path class="sq${q.cond ? ' br' : ''}" d="M${x0},${q.y1} C${x0 - bulge},${q.y1} ${x0 - bulge},${q.y2} ${x0},${q.y2}" marker-end="url(#twSqA)"/>`;
+  });
   // ---- Иерархия ----
   let lines = '', nodes = '';
   V.forEach((x) => {
     const q = pos.get(x);
     if (!q) return;
     const on = chain.includes(x), isNew = x.parent === n, tg = tgt.has(x);
-    if (x.parent && pos.has(x.parent)) {
+    if (x.parent && pos.has(x.parent) && !(hasPred.has(x) && !on)) {
       const pq = pos.get(x.parent), x0 = pq.x + W, y0 = pq.y + pq.h / 2, x1 = q.x, y1 = q.y + q.h / 2, c = (x1 - x0) / 2;
       lines += `<path class="${on ? 'on' : isNew ? 'new' : tg ? 'tgt' : 'off'}" d="M${x0},${y0} C${x0 + c},${y0} ${x1 - c},${y1} ${x1},${y1}"/>`;
     }
@@ -668,7 +688,7 @@ function twCanvas(host, n, X) {
   const mk = (k, c) => `<marker id="twX-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:${c}"/></marker>`;
   host.style.width = CW + 'px'; host.style.height = CH + 'px';
   host.classList.toggle('xon', plan.length > 0);
-  host.innerHTML = `<svg width="${CW}" height="${CH}">${lines}</svg>${nodes}${pills}
+  host.innerHTML = `<svg width="${CW}" height="${CH}"><defs><marker id="twSqA" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:#8a6fb5"/></marker></defs>${lines}${sqPaths}</svg>${nodes}${pills}
     <svg class="tw-xs tw-xsv" width="${CW}" height="${CH}"><defs>${Object.entries(TW_KC).map(([k, c]) => mk(k, c)).join('')}</defs>${xp}</svg><div class="tw-xs tw-xbs">${xb}</div>
     <div class="tr-cv-l">${cols.map((col, i) => `<span style="left:${colX[i]}px">${twColLabel(col)}${col.length > 1 ? ` · ${col.length}` : ''}</span>`).join('')}${pp.size ? `<span style="left:${pxX}px">${(X && X.pillLabel) || 'Вне ЦД'} · ${pp.size}</span>` : ''}</div>`;
   host.querySelectorAll('.tw-xn').forEach((b) => {
@@ -739,7 +759,7 @@ function twBpmnFill(n) {
     if (!host.isConnected) return;
     const proc = B && B.find((x) => x.num === P.n), pl = proc && proc.pools.find((x) => x.variant === 'dream');
     if (!pl) { host.innerHTML = '<p class="tr-n">Схема Dream TO BE для этого процесса в файле BPMN не найдена.</p>'; return; }
-    const me = c.me || new Set(c.procNode.list.map((i) => P.s[i].id)), cur = n.type === 'step' ? n.s.id : null;
+    const me = c.me || new Set(c.procNode.list.map((i) => P.s[i].id)), cur = n.type === 'step' || n.type === 'ps' ? n.s.id : null;
     host.innerHTML = twBpmnDraw(pl, me, cur, TW.bpZoom);
     // Клик по шагу схемы — этот шаг в дереве (внутри процесса текущего модуля)
     host.querySelectorAll('[data-bpn]').forEach((g) => (g.onclick = () => {
@@ -1092,6 +1112,10 @@ function twSyncInit(n, w) {
     info.innerHTML = `<b>${twEsc(s.c || '—')}</b> ${twEsc(s.t)} <span>${twEsc(lsRole(s))}${s.s.length ? ' · ' + twEsc(s.s.join(', ')) : ''}</span>
       <button class="tw-sc-go" data-sync-open="${i}">Открыть шаг ↘</button>${s.v ? '' : '<em>экрана этого шага в быстром сценарии презентации нет</em>'}`;
     info.querySelector('[data-sync-open]').onclick = () => { const k = twKids(n)[i]; if (k) twGo(k); };
+    const sn = twKids(n)[i], box = document.querySelector('.tr-cv');
+    document.querySelectorAll('.tr-cv-in .tr-nd.syn').forEach((x) => x.classList.remove('syn'));
+    const btn = sn && document.querySelector(`.tr-cv-in .tr-nd[data-path="${CSS.escape(twKey(sn))}"]`);
+    if (btn && box) { btn.classList.add('syn'); box.scrollTop = Math.max(0, btn.offsetTop - box.clientHeight / 2 + btn.offsetHeight / 2); box.scrollLeft = Math.max(0, btn.offsetLeft + btn.offsetWidth + 260 - box.clientWidth); }
     if (load && s.v) { const u = lsSlideHref(P, s); if (fr.getAttribute('src') !== u) fr.setAttribute('src', u); }
     focus();
   };

@@ -255,3 +255,9 @@ em.alt { font-style: normal; font-weight: 400; color: #7a4fb5; font-size: .82em;
 .tw-ch.k-abai { background: #eef4fc; color: #164a8a; } .tw-ch.k-nedra { background: #f3effa; color: #4b2f78; } .tw-ch.k-manual { background: #fdf0ef; color: #a63a32; }
 .ls-ab-t td span.tw-ch { display: inline-block; font-size: 11px; color: #4d5563; }
 .ls-ab-t td span.tw-ch.k-abai { color: #164a8a; } .ls-ab-t td span.tw-ch.k-nedra { color: #4b2f78; } .ls-ab-t td span.tw-ch.k-manual { color: #a63a32; }
+
+/* Последовательность шагов по BPMN на дереве; шаг, выбранный на синхронной схеме процесса */
+.tr-cv-in path.sq { stroke: #8a6fb5; stroke-width: 1.6; fill: none; }
+.tr-cv-in path.sq.br { stroke-dasharray: 4 3; }
+.tr-nd.syn { opacity: 1; border: 2px solid #e0a800; background: #fffbea; box-shadow: 0 0 0 4px rgba(242,183,5,.25); }
+.tr-cv-in path.sq { stroke-width: 2; }
