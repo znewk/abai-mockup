@@ -1023,6 +1023,7 @@ function twPmBody(n) {
   if (n.type === 'pm') {
     const mm = twModMeta(n.id);
     return `<div class="tw-pm-hub" data-pmfill>Загрузка процессов модуля…</div>
+      <section class="tw-cmp" data-pmcmpm><p class="tr-n">Загрузка сравнения…</p></section>
       <p class="tw-pm-links"><a class="ls-slide" href="${lsModHref(n.id, 'v1')}index.html#/" target="_blank">Прототип модуля ↗</a>${mm.v2 ? `<a class="ls-slide" href="${lsModHref(n.id, 'v2')}index.html" target="_blank">Презентация модуля ↗</a>` : ''}</p>`;
   }
   if (n.type === 'pp') {
@@ -1068,7 +1069,9 @@ function twPmFill(n) {
       // Заголовок, описание и цифры модуля — наверх, под заголовок страницы; карточки процессов — в карточке ниже
       const hero = host.querySelector('.tw-pm-hero');
       if (top && hero) { top.innerHTML = ''; top.appendChild(hero); host.insertAdjacentHTML('afterbegin', '<h3>Процессы модуля <span>клик — погрузиться в процесс</span></h3>'); }
-      host.querySelectorAll('[data-pmkid]').forEach((b) => (b.onclick = () => { const k = twKids(n).find((x) => x.type + ':' + x.id === b.dataset.pmkid); if (k) twGo(k); }));
+      const cm = document.querySelector('[data-pmcmpm]');
+      if (cm) cm.innerHTML = twCmpModHTML(w, n);
+      document.querySelectorAll('[data-pmfill] [data-pmkid], [data-pmcmpm] [data-pmkid]').forEach((b) => (b.onclick = () => { const k = twKids(n).find((x) => x.type + ':' + x.id === b.dataset.pmkid); if (k) twGo(k); }));
       return;
     }
     if (n.type !== 'pp') return;
@@ -1097,6 +1100,22 @@ function twCmpHTML(w, num, metricAbai) {
       <div class="tw-cmp-t"><table class="ls-ab-t"><thead><tr><th>Шаг</th><th>Роль</th>${vs.map((k) => `<th class="${k === bv ? 'base' : ''}">${twEsc(V[k].name)}</th>`).join('')}</tr></thead><tbody>
       ${rows.map((r) => `<tr><td><b>${twEsc(r.code || '—')}</b> ${twEsc(r.title)}${r.only ? ` <span class="tw-ch">только в ${twEsc((V[r.only] || {}).name || r.only)}</span>` : ''}</td><td>${twEsc(r.lane || '')}</td>${vs.map((k) => `<td>${chips(r[k])}${r[k] && r[k].code && r[k].code !== r.code ? ` <span class="tr-n">(${twEsc(r[k].code)})</span>` : ''}</td>`).join('')}</tr>`).join('')}
       </tbody></table></div></details>`;
+}
+// Сравнение схем на уровне модуля: варианты BPMN по всем процессам модуля (в том числе тем, где нет Dream TO BE) и шаги по процессам
+function twCmpModHTML(w, n) {
+  const V = twEv(w, 'VARIANTS') || {}, B = twEv(w, 'BPMN') || [], pool = twEv(w, 'pool'), stats = twEv(w, 'variantStats');
+  if (!pool || !stats || !B.length) return '';
+  const vs = Object.keys(V).filter((k) => B.some((p) => pool(p.num, k))), bv = vs.includes('dream') ? 'dream' : 'asis';
+  const rows = B.map((p) => ({ p, k: twKids(n).find((x) => x.P.n === p.num), st: Object.fromEntries(vs.map((v) => [v, pool(p.num, v) ? stats(p.num, v) : null])) }));
+  const tot = (v, f) => rows.reduce((t, r) => t + (r.st[v] ? f(r.st[v]) : 0), 0), cnt = (v) => rows.filter((r) => r.st[v]).length;
+  const cell = (x) => (x ? `<b>${x.steps}</b> <small class="tw-cmp-s">· в ABAI ${x.abaiSteps}${x.manual ? ` · вручную ${x.manual}` : ''}</small>` : '<small class="tw-cmp-s">нет в BPMN</small>');
+  return `<h3>Сравнение схем: ${vs.map((k) => twEsc(V[k].name)).join(' → ')} <span>все процессы модуля · шаги BPMN по вариантам, как в прототипе · клик по процессу — сравнение по шагам</span></h3>
+    <div class="tw-cmp-v">${vs.map((k) => `<div class="tw-cmp-c t-${V[k].tone || ''}${k === bv ? ' base' : ''}"><em>${twEsc(V[k].sub || '')}</em><b>${twEsc(V[k].name)}</b>
+      <div class="tw-pm-k sm"><div><b>${cnt(k)}</b><span>процессов</span></div><div><b>${tot(k, (x) => x.steps)}</b><span>шагов</span></div><div><b>${tot(k, (x) => x.abaiSteps)}</b><span>шагов в ABAI</span></div><div><b class="${tot(k, (x) => x.manual) ? 'bad' : ''}">${tot(k, (x) => x.manual)}</b><span>ручная работа</span></div></div></div>`).join('')}</div>
+    <div class="tw-cmp-t"><table class="ls-ab-t"><thead><tr><th>Процесс</th>${vs.map((k) => `<th class="${k === bv ? 'base' : ''}">${twEsc(V[k].name)}</th>`).join('')}</tr></thead><tbody>
+    ${rows.map((r) => `<tr${r.k ? ` class="tw-cmp-go" data-pmkid="${twEsc(r.k.type + ':' + r.k.id)}"` : ''}><td><b>${twEsc(r.k ? r.k.P.p : r.p.code || r.p.num)}</b> ${twEsc(r.p.title)}</td>${vs.map((k) => `<td>${cell(r.st[k])}</td>`).join('')}</tr>`).join('')}
+    <tr class="tw-cmp-sum"><td><b>Итого по модулю</b></td>${vs.map((k) => `<td><b>${tot(k, (x) => x.steps)}</b> <small class="tw-cmp-s">· в ABAI ${tot(k, (x) => x.abaiSteps)}${tot(k, (x) => x.manual) ? ` · вручную ${tot(k, (x) => x.manual)}` : ''}</small></td>`).join('')}</tr>
+    </tbody></table></div>`;
 }
 // Схема BPMN ⇄ экраны ABAI: выбранный шаг подсвечен на схеме, его экран — ниже; карта сценария и экран сообщают, какой шаг на экране
 function twSyncInit(n, w) {
@@ -1136,6 +1155,10 @@ function twSyncInit(n, w) {
   select(sel, true);
 }
 window.addEventListener('message', (e) => { const m = e.data && e.data.abaiSlide; if (m && TW.syncMsg && TW.mode === 'pm') TW.syncMsg(m, e.source); });
+// Клик по узлу дерева и крошкам — переход в режиме процессов (после перерисовки дерева со стрелками назначается заново)
+function twPmBind(root) {
+  root.querySelectorAll('[data-pmpath], .tr-cv-in [data-path]').forEach((a) => (a.onclick = (ev) => { ev.preventDefault(); const k = a.dataset.pmpath ?? a.dataset.path; twGo(twPFind(k ? k.split('/').map(decodeURIComponent) : [])); }));
+}
 function twRenderPm() {
   const n = TW.node;
   TW.syncMsg = null;
@@ -1160,7 +1183,7 @@ function twRenderPm() {
   twPassFill(n);
   if (n.type === 'ps') twBpmnFill(n);
   document.querySelectorAll('[data-pmkid]').forEach((b) => (b.onclick = () => { const k = twKids(n).find((x) => x.type + ':' + x.id === b.dataset.pmkid); if (k) twGo(k); }));
-  document.querySelectorAll('[data-pmpath], .tr-cv-in [data-path]').forEach((a) => (a.onclick = (ev) => { ev.preventDefault(); const k = a.dataset.pmpath ?? a.dataset.path; twGo(twPFind(k ? k.split('/').map(decodeURIComponent) : [])); }));
+  twPmBind(document);
   document.querySelectorAll('.tr-content [data-go-sys]').forEach((a) => (a.onclick = (ev) => { ev.preventDefault(); twGo(twModNode(a.dataset.goSys)); }));
   const nx = twNext(n), pv = twPrev(n);
   const bN = document.querySelector('[data-nav="1"]'), bP = document.querySelector('[data-nav="-1"]');
@@ -1369,7 +1392,7 @@ function twPassFill(n) {
     host.querySelectorAll('[data-pp]').forEach((b) => (b.onclick = () => { const P = G.procs.get(b.dataset.pp); const m = twKids(twPRoot()).find((x) => x.id === P.m); const k = m && twKids(m).find((x) => x.P.p === P.p); if (k) twGo(k); }));
     host.querySelectorAll('[data-bl]').forEach((li) => { const no = +li.dataset.bl; li.onmouseenter = () => twXHot(no, true); li.onmouseleave = () => twXHot(no, false); });
     // Дерево: ветви потока между процессами
-    if (TW.net) twCanvas(document.querySelector('.tr-cv-in'), n, { root: twPRoot(), pillLabel: 'Смежные процессы и модули', XA: twBizXA(n, G, L) });
+    if (TW.net) { const cv = document.querySelector('.tr-cv-in'); twCanvas(cv, n, { root: twPRoot(), pillLabel: 'Смежные процессы и модули', XA: twBizXA(n, G, L) }); twPmBind(cv); }
     if (n.type === 'pmr') twPMap(host.querySelector('.tw-pmap'), G, L);
   });
 }

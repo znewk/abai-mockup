@@ -1,0 +1,63 @@
+/* Презентация «Процессы Upstream: AS IS → Dream TO BE». Шапка — из tree.css, вкладки и кнопки — как у дерева ЦД Актива */
+.tr-navb button { display: flex; flex-direction: column; align-items: center; line-height: 1.2; max-width: 220px; }
+.tr-navb button small { font-size: 10.5px; opacity: .8; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr-tabs { display: flex; background: #f1f3f7; border-radius: 9px; padding: 3px; margin-left: 18px; }
+.pr-tabs button { font: inherit; font-size: 13px; border: 0; background: none; border-radius: 7px; padding: 6px 14px; cursor: pointer; color: #4d5563; }
+.pr-tabs button.on { background: #fff; color: #1c5cab; font-weight: 600; box-shadow: 0 1px 4px rgba(16,24,40,.12); }
+
+.pr-main { flex: 1; overflow: auto; background: #f4f6fa radial-gradient(#dfe4ec 1px, transparent 1px) 0 0 / 22px 22px; }
+.pr-load { text-align: center; color: #7a8291; margin-top: 80px; }
+.pr-slide { max-width: 1400px; margin: 0 auto; padding: 28px 32px 50px; }
+.pr-h span { font-size: 12px; font-weight: 700; letter-spacing: .5px; color: #1c5cab; }
+.pr-h h1 { margin: 4px 0 6px; font-size: 32px; letter-spacing: -.3px; }
+.pr-h p { margin: 0 0 22px; font-size: 16px; color: #4d5563; max-width: 1000px; line-height: 1.5; }
+
+/* Слайд 1: три уровня */
+.pr-lv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.pr-lv-c { background: #fff; border: 1px solid #e1e5ec; border-radius: 16px; padding: 18px 22px 16px; box-shadow: 0 10px 30px rgba(16,24,40,.06); display: flex; flex-direction: column; gap: 10px; }
+.pr-lv-h { display: flex; align-items: center; gap: 10px; }
+.pr-lv-h i { font-style: normal; width: 28px; height: 28px; border-radius: 50%; background: #1c5cab; color: #fff; font-weight: 700; display: grid; place-items: center; font-size: 14px; }
+.pr-lv-h b { font-size: 15px; }
+.pr-lv-n { display: flex; align-items: flex-end; gap: 14px; }
+.pr-lv-n div span { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #7a8291; }
+.pr-lv-n div b { font-size: 46px; line-height: 1.05; letter-spacing: -1px; color: #4d5563; }
+.pr-lv-n .d span { color: #0f7a55; } .pr-lv-n .d b { color: #0f7a55; }
+.pr-lv-n .arr { font-size: 26px; color: #b9bfca; padding-bottom: 6px; }
+.pr-lv-d em, .pr-t em { font-style: normal; font-size: 13px; font-weight: 600; color: #7a8291; }
+.pr-lv-d em.up, .pr-t em.up { color: #0f7a55; } .pr-lv-d em.dn, .pr-t em.dn { color: #b45309; }
+.pr-lv-ex { margin-top: auto; border-top: 1px dashed #e1e5ec; padding-top: 10px; font-size: 13.5px; color: #2e3440; line-height: 1.4; }
+.pr-lv-ex span { display: block; font-size: 11px; color: #9aa1ad; }
+
+.pr-t { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 22px; background: #fff; border: 1px solid #e1e5ec; border-radius: 14px; overflow: hidden; font-size: 15px; }
+.pr-t th { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #7a8291; background: #f6f8fb; padding: 9px 14px; text-align: center; border-bottom: 1px solid #e1e5ec; }
+.pr-t th:first-child { text-align: left; }
+.pr-t th.d, .pr-t td.d { color: #0f7a55; }
+.pr-t td { padding: 11px 14px; border-bottom: 1px solid #eef1f5; text-align: center; font-size: 20px; font-weight: 600; color: #4d5563; }
+.pr-t td.d { font-weight: 700; }
+.pr-t td:first-child { text-align: left; font-size: 15px; font-weight: 400; color: #16191f; }
+.pr-t td:first-child b { font-size: 16px; }
+.pr-t td small { display: block; font-size: 12px; color: #7a8291; margin: 2px 0 0 18px; }
+.pr-t tr.sum td { background: #f6f8fb; border-bottom: 0; border-top: 2px solid #d5dbe5; }
+.pr-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+.pr-src { font-size: 12.5px; color: #7a8291; line-height: 1.5; margin: 14px 0 0; max-width: 1200px; }
+
+/* Слайд 2: борд направлений */
+.pr-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.pr-dir { display: flex; flex-direction: column; gap: 12px; background: #fff; border: 1px solid #e1e5ec; border-top: 6px solid var(--c); border-radius: 16px; padding: 18px 20px; color: #16191f; text-decoration: none; box-shadow: 0 10px 30px rgba(16,24,40,.06); transition: box-shadow .15s, transform .15s; }
+.pr-dir:hover { box-shadow: 0 14px 34px rgba(16,24,40,.14); transform: translateY(-2px); }
+.pr-dir-h em { display: block; font-style: normal; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--c); }
+.pr-dir-h b { display: block; font-size: 24px; margin: 2px 0; }
+.pr-dir-h span { font-size: 13px; color: #7a8291; }
+.pr-dir-k { display: grid; gap: 6px; }
+.pr-dir-k div { display: flex; align-items: baseline; gap: 10px; border: 1px solid #e1e5ec; border-radius: 10px; padding: 6px 10px; background: #fbfcfd; }
+.pr-dir-k b { font-size: 19px; color: #4d5563; white-space: nowrap; } .pr-dir-k b u { text-decoration: none; color: #0f7a55; }
+.pr-dir-k span { font-size: 12px; color: #7a8291; }
+.pr-dir-kh { margin: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #7a8291; } .pr-dir-kh u { text-decoration: none; color: #0f7a55; }
+.pr-dir-p { display: flex; flex-direction: column; gap: 4px; }
+.pr-pc { font-size: 12.5px; color: #2e3440; line-height: 1.3; padding: 4px 8px; border-radius: 7px; cursor: pointer; }
+.pr-pc b { color: var(--c); } .pr-pc:hover { background: #f1f6fd; color: #1c5cab; }
+.pr-pc.off { cursor: default; color: #9aa1ad; } .pr-pc.off:hover { background: none; color: #9aa1ad; } .pr-pc.off b { color: #9aa1ad; }
+.pr-dir-in { margin-top: auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; border-top: 1px dashed #e1e5ec; padding-top: 10px; }
+.pr-dir-in span { width: 100%; font-size: 11px; color: #9aa1ad; }
+.pr-dir-in i { font-style: normal; font-size: 12px; border: 1px solid #d5dbe5; border-radius: 20px; padding: 3px 10px; color: #4d5563; }
+.pr-dir-go { font-weight: 600; font-size: 14px; color: #1c5cab; }

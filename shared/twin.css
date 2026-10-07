@@ -251,6 +251,9 @@ em.alt { font-style: normal; font-weight: 400; color: #7a4fb5; font-size: .82em;
 .tw-cmp-c > b { font-size: 15px; } .tw-cmp-c small { display: block; color: #b45309; font-size: 11px; }
 .tw-cmp-t { overflow: auto; max-height: 560px; }
 .tw-cmp-t th.base { color: #0f7a55; }
+.tw-cmp-t tr.tw-cmp-go { cursor: pointer; } .tw-cmp-t tr.tw-cmp-go:hover td { background: #f1f6fd; }
+.tw-cmp-t small.tw-cmp-s { font-size: 11.5px; color: #7a8291; white-space: nowrap; }
+.tw-cmp-t tr.tw-cmp-sum td { background: #f6f8fb; border-top: 2px solid #d5dbe5; }
 .tw-ch { display: inline-block; margin: 1px 2px 1px 0; font-size: 11px; border-radius: 10px; padding: 1px 7px; background: #f1f3f7; color: #4d5563; }
 .tw-ch.k-abai { background: #eef4fc; color: #164a8a; } .tw-ch.k-nedra { background: #f3effa; color: #4b2f78; } .tw-ch.k-manual { background: #fdf0ef; color: #a63a32; }
 .ls-ab-t td span.tw-ch { display: inline-block; font-size: 11px; color: #4d5563; }
