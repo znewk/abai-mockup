@@ -333,8 +333,8 @@ function abaiLandscape(root, view = 'dream', flow) {
         <svg class="ls-svg"></svg><div class="ls-lbls"></div>
     </div></div>
     <ol class="ls-flow">${V.flow.map(([t, d], i) => `<li><b><i class="ls-stage">${i + 1}</i>${t}</b><span>${d}</span></li>`).join('')}</ol>
-    <details class="ls-pf-d"><summary>${LS_PF_SVG.desk}${LS_PF_SVG.web} Десктоп или веб: как работают с системами схемы <span>значок у системы на схеме · только то, что сказано в источнике</span></summary>
-      ${lsPfTable()}<p class="ls-note">Для модулей ABAI, кроме УЗ 2.0, и для остальных продуктов Nedra в стратсессии и открытых источниках не указано, десктоп это или веб, — значка у них нет.</p></details>`;
+    <details class="ls-pf-d"><summary>${LS_PF_SVG.desk}${LS_PF_SVG.web} Десктоп или веб: как работают с системами схемы <span>значок у системы на схеме</span></summary>
+      ${lsPfTable()}</details>`;
   root.querySelectorAll('[data-ls]').forEach((b) => (b.onclick = () => { abaiLandscape(root, b.dataset.ls); history.replaceState(null, '', '#' + b.dataset.ls); }));
   root.querySelectorAll('[data-fl]').forEach((b) => (b.onclick = () => abaiLandscape(root, view, b.dataset.fl || null)));
   root.querySelectorAll('[data-mode]').forEach((b) => (b.onclick = () => {
@@ -1173,10 +1173,10 @@ function lsPfIcon(key) {
   const p = lsPf(key);
   if (!p) return '';
   const svg = p[0] === 'both' ? LS_PF_SVG.desk + LS_PF_SVG.web : LS_PF_SVG[p[0]];
-  return `<i class="ls-pf pf-${p[0]}" title="${LS_PF_T[p[0]][0].toUpperCase() + LS_PF_T[p[0]].slice(1)}: ${p[1].replace(/"/g, '&quot;')} · ${p[2]}">${svg}</i>`;
+  return `<i class="ls-pf pf-${p[0]}" title="${LS_PF_T[p[0]][0].toUpperCase() + LS_PF_T[p[0]].slice(1)}: ${p[1].replace(/"/g, '&quot;')}${p[2] ? ' · ' + p[2] : ''}">${svg}</i>`;
 }
 // Строка «как работают» для окна системы и карточек
-const lsPfLine = (key) => { const p = lsPf(key); return p ? `<div class="ls-pf-line"><span class="ls-pf-l pf-${p[0]}">${lsPfIcon(key)}${LS_PF_T[p[0]]}</span> ${p[1]}<em class="ls-bk-src">${p[2]}</em></div>` : ''; };
+const lsPfLine = (key) => { const p = lsPf(key); return p ? `<div class="ls-pf-line"><span class="ls-pf-l pf-${p[0]}">${lsPfIcon(key)}${LS_PF_T[p[0]]}</span> ${p[1]}${p[2] ? `<em class="ls-bk-src">${p[2]}</em>` : ''}</div>` : ''; };
 // Значки на всех системах схемы
 function lsPfMarks(grid) {
   grid.querySelectorAll('[data-sys]').forEach((el) => {
@@ -1185,12 +1185,11 @@ function lsPfMarks(grid) {
     if (ic) el.insertAdjacentHTML('beforeend', ic);
   });
 }
-// Таблица: системы → десктоп / веб, что именно, источник; keys — какие системы (по умолчанию — весь справочник)
+// Таблица: системы → десктоп / веб и что именно; keys — какие системы (по умолчанию — весь справочник), выводятся только системы из справочника
 function lsPfTable(keys, o = {}) {
-  const list = (keys || Object.keys(LS_PLATFORM)).map((k) => [k, lsPf(k)]);
-  const rows = list.filter(([, p]) => p || o.all);
-  return `<table class="ls-ab-t ls-pf-t"><thead><tr><th>Система</th><th>Как работают</th><th>Что именно</th><th>Источник</th></tr></thead><tbody>
-    ${rows.map(([k, p]) => `<tr><td>${o.link ? o.link(k) : k}</td><td>${p ? `<span class="ls-pf-l pf-${p[0]}">${lsPfIcon(k)}${LS_PF_T[p[0]]}</span>` : '<span class="ls-pf-l pf-no">не указано</span>'}</td><td>${p ? p[1] : 'в стратсессии и открытых источниках не указано'}</td><td>${p ? p[2] : '—'}</td></tr>`).join('')}</tbody></table>`;
+  const rows = [...new Set(keys || Object.keys(LS_PLATFORM))].map((k) => [k, lsPf(k)]).filter(([, p]) => p);
+  return `<table class="ls-ab-t ls-pf-t"><thead><tr><th>Система</th><th>Как работают</th><th>Что именно</th></tr></thead><tbody>
+    ${rows.map(([k, p]) => `<tr><td>${o.link ? o.link(k) : k}</td><td><span class="ls-pf-l pf-${p[0]}">${lsPfIcon(k)}${LS_PF_T[p[0]]}</span></td><td>${p[1]}</td></tr>`).join('')}</tbody></table>`;
 }
 
 // ---------- Компактная схема сценария: только участвующие системы, снизу вверх по направлению потока (как на большой схеме) ----------
