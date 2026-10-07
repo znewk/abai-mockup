@@ -7,7 +7,6 @@
 
 const TW_V = 'dream';
 const TW = { node: null, root: null, grid: null, net: (() => { try { return localStorage.getItem('abai-tw-net') !== 'off'; } catch (e) { return true; } })() };
-const TW_MAXSHOW = 2; // «Далее» идёт по частям и модулям; процессы и шаги — по клику
 const twEsc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const twPlural = (n, a, b, c) => (n % 10 === 1 && n % 100 !== 11 ? a : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? b : c);
 const twSrc = (s) => (s ? `<em class="ls-bk-src">${s}</em>` : '');
@@ -19,7 +18,7 @@ const TW_DEF = {
   t: 'ЦД Актива на базе ABAI',
   what: [
     ['Единая платформа централизованной зоны, в которую входят цифровые двойники и слой данных; поддержка принятия решений от операционного уровня (ДЗО) до стратегического (КЦ)', 'сл. 54'],
-    ['Наш вариант: та же архитектура, бизнес-модули — продукты ABAI, единая база — ABAI БД 2.0, слой бизнес-интеграций — КХД', 'сл. 34, 54'],
+    ['Целевой вариант на ABAI: та же архитектура, бизнес-модули — продукты ABAI, единая база — ABAI БД 2.0, слой бизнес-интеграций — КХД', 'сл. 34, 54'],
   ],
   parts: [
     { id: 'data', t: 'Единые данные ЦД', sub: 'КХД → ABAI БД 2.0 · сквозной слой', block: 'data',
@@ -78,7 +77,21 @@ const TW_DEF = {
 const TW_IX = new Map();
 TW_DEF.parts.forEach((p) => p.mods.forEach((m) => TW_IX.set(m.sys, { p, m })));
 const TW_PART = (id) => TW_DEF.parts.find((p) => p.id === id);
-const TW_LEVELS = ['ЦД Актива', 'Части ЦД', 'Модули и системы', 'Процессы BPMN', 'Шаги BPMN'];
+// Уровни погружения: ЦД Актива → единые данные → двойники → модули и системы → процессы → шаги
+const TW_LEVELS = ['ЦД Актива', 'Единые данные', 'Системы данных и двойники', 'Модули и системы', 'Процессы BPMN', 'Шаги BPMN'];
+const twLevel = (n) => (n.type === 'akt' ? 0 : n.type === 'part' ? (n.id === 'data' ? 1 : 2) : n.type === 'mod' ? 3 : n.type === 'proc' ? 4 : 5);
+// Подробность связей: 0 — ЦД Актива, 1 — часть, 2 — модуль и глубже
+const twGrain = (n) => (n.type === 'akt' ? 0 : n.type === 'part' ? 1 : 2);
+// Подпись колонки дерева — по типам узлов в ней
+const TW_COLT = { akt: 'ЦД Актива', part: 'Части ЦД', mod: 'Модули и системы', proc: 'Процессы BPMN', step: 'Шаги BPMN' };
+const twColLabel = (col) => {
+  if (col.length === 1 && col[0].type === 'part' && col[0].id === 'data') return 'Единые данные';
+  if (col.some((x) => x.id === 'dsys')) return 'Системы данных · двойники';
+  const tw = col.filter((x) => x.type === 'part'), md = col.filter((x) => x.type === 'mod');
+  if (tw.length && md.length) return 'Системы данных · двойники';
+  const cnt = {}; col.forEach((x) => (cnt[x.type] = (cnt[x.type] || 0) + 1));
+  return Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]).map((t) => (t === 'part' ? 'Двойники' : TW_COLT[t])).join(' · ');
+};
 const TW_TYPES = { akt: 'ЦД Актива', part: 'Часть ЦД', mod: 'Модуль', proc: 'Процесс BPMN', step: 'Шаг BPMN' };
 
 // ---------- Узлы ----------
@@ -91,7 +104,11 @@ function twRoot() { if (!TW.root) TW.root = twNode(null, 'akt', 'akt', TW_DEF.t)
 function twKids(n) {
   if (n.kids) return n.kids;
   let k = [];
-  if (n.type === 'akt') k = TW_DEF.parts.map((p) => twNode(n, 'part', p.id, p.t, { def: p }));
+  // Двойники стоят на единых данных: ЦД Актива → единые данные (КХД, ABAI БД 2.0) → ЦД пласта, скважины, добычи
+  if (n.type === 'akt') k = [twNode(n, 'part', 'data', TW_PART('data').t, { def: TW_PART('data') })];
+  // Внутри единых данных: системы слоя (КХД, ABAI БД 2.0) — узлом рядом с двойниками, чтобы колонки были одного уровня
+  else if (n.type === 'part' && n.id === 'data') k = [twNode(n, 'part', 'dsys', 'КХД и ABAI БД 2.0', { def: n.def, sub: 'системы единых данных: сбор, интеграции, единая база' })]
+    .concat(TW_DEF.parts.filter((p) => p.id !== 'data').map((p) => twNode(n, 'part', p.id, p.t, { def: p })));
   else if (n.type === 'part') k = n.def.mods.map((m) => twNode(n, 'mod', m.sys, m.sys, { def: m, part: n.def }));
   else if (n.type === 'mod') k = lsTrailOf(TW_V, n.id).map(({ P, list }) => twNode(n, 'proc', P.p, `${P.p} ${P.t}`, { P, list }));
   else if (n.type === 'proc') k = n.list.map((i) => { const s = n.P.s[i]; return twNode(n, 'step', s.c || 'i' + i, `${s.c || 'без номера'} ${s.t}`, { P: n.P, s }); });
@@ -100,14 +117,23 @@ function twKids(n) {
 }
 function twFind(path) {
   let n = twRoot();
-  for (const seg of path) { const kid = twKids(n).find((k) => k.type + ':' + k.id === seg); if (!kid) break; n = kid; }
+  for (const seg of path) {
+    let kid = twKids(n).find((k) => k.type + ':' + k.id === seg);
+    // Старые адреса (#part:plast/…, #part:data/mod:КХД): узел теперь на уровень глубже
+    if (!kid && (n.type === 'akt' || n.id === 'data')) for (const c of twKids(n)) { kid = twKids(c).find((k) => k.type + ':' + k.id === seg); if (kid) break; }
+    if (!kid) break;
+    n = kid;
+  }
   return n;
 }
-const twModNode = (sys) => { const h = TW_IX.get(sys); return h ? twFind(['part:' + h.p.id, 'mod:' + sys]) : null; };
-const twPartNode = (id) => twFind(['part:' + id]);
+const twPartPath = (id) => (id === 'data' ? ['part:data'] : ['part:data', 'part:' + id]);
+const twModNode = (sys) => { const h = TW_IX.get(sys); return h ? twFind(twPartPath(h.p.id === 'data' ? 'dsys' : h.p.id).concat('mod:' + sys)) : null; };
+const twPartNode = (id) => twFind(twPartPath(id));
+// «Далее» раскрывает ЦД Актива и части до модулей; процессы и шаги — по клику
+const twOpen = (x) => x.type === 'akt' || x.type === 'part';
 // Последовательный показ: обход по порядку до модулей; глубже «Далее» идёт по соседям
 function twNext(n) {
-  const kids = n.depth < TW_MAXSHOW ? twKids(n) : [];
+  const kids = twOpen(n) ? twKids(n) : [];
   if (kids.length) return kids[0];
   for (let x = n; x.parent; x = x.parent) { const sib = twKids(x.parent); const i = sib.indexOf(x); if (i < sib.length - 1) return sib[i + 1]; }
   return null;
@@ -117,7 +143,7 @@ function twPrev(n) {
   const sib = twKids(n.parent), i = sib.indexOf(n);
   if (i === 0) return n.parent;
   let x = sib[i - 1];
-  for (;;) { const k = x.depth < TW_MAXSHOW ? twKids(x) : []; if (!k.length) return x; x = k[k.length - 1]; }
+  for (;;) { const k = twOpen(x) ? twKids(x) : []; if (!k.length) return x; x = k[k.length - 1]; }
 }
 
 // ---------- Системы: вид и место вне ЦД (по скрытой большой схеме) ----------
@@ -181,7 +207,7 @@ function twRaw(n) {
 // Связи на уровне узла: концы — узлы схемы этого уровня (twUnit); связи внутри одного свёрнутого узла — в счётчике «внутри».
 // На верхних уровнях (ЦД Актива, часть) «туда» и «обратно» между двумя узлами — одна двусторонняя ветвь; глубже — каждое направление отдельно.
 function twLinks(n) {
-  const lvl = { depth: Math.min(n.depth, 2), part: n.type === 'part' ? n.id : null };
+  const lvl = { depth: twGrain(n), part: n.type === 'part' ? n.id : null };
   const merge = lvl.depth <= 1;
   const units = new Map(), m = new Map(), inside = new Map();
   const add = (a, b, e) => {
@@ -243,7 +269,7 @@ function twScene(n, X) {
   const { L, units, inside } = X;
   const host = sec.querySelector('.tw-net'), list = sec.querySelector('.tw-links');
   if (!L.length) {
-    host.innerHTML = `<p class="tr-n">${n.type === 'mod' ? `В шагах BPMN Dream TO BE обмен данными «${twEsc(n.label)}» с другими системами не записан — в схеме связей не рисуем (ничего не выдумываем).` : n.type === 'step' ? 'На этом шаге передача данных между системами в BPMN не записана.' : n.type === 'proc' ? 'В этом процессе связи модуля с другими системами в BPMN не записаны.' : 'На этом уровне связей схемы нет.'}</p>`;
+    host.innerHTML = `<p class="tr-n">${n.type === 'mod' ? `В шагах BPMN Dream TO BE обмен данными «${twEsc(n.label)}» с другими системами не описан, поэтому связи на схеме не показаны.` : n.type === 'step' ? 'На этом шаге передача данных между системами в BPMN не записана.' : n.type === 'proc' ? 'В этом процессе связи модуля с другими системами в BPMN не записаны.' : 'На этом уровне связей схемы нет.'}</p>`;
     list.innerHTML = '';
     return;
   }
@@ -291,14 +317,14 @@ function twBlockHTML(D, skip = []) {
     ${(D.what || []).filter((x) => !skip.includes(x[1])).length ? `<details class="tr-more"><summary>Подробнее по стратсессии</summary><ul class="ls-bk-l">${twList(D.what)}</ul>${D.deploy ? `<h3>Внедрение</h3><ul class="ls-bk-l">${twList(D.deploy)}</ul>` : ''}${D.terms ? `<h3>Сокращения</h3><dl class="ls-bk-t">${D.terms.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join('')}</dl>` : ''}</details>` : ''}`;
 }
 // Карточки детей: клик — погрузиться
-function twKidCards(n, sub) {
-  return `<div class="tw-kids">${twKids(n).map((k) => `<button class="tw-kid t-${k.type} k-${k.type === 'mod' ? twKind(k.id) : ''}" data-kid="${twEsc(k.type + ':' + k.id)}">
+function twKidCards(n, sub, only) {
+  return `<div class="tw-kids">${twKids(n).filter((k) => !only || (k.type === only && k.id !== 'dsys')).map((k) => `<button class="tw-kid t-${k.type} k-${k.type === 'mod' ? twKind(k.id) : ''}" data-kid="${twEsc(k.type + ':' + k.id)}">
     <b>${twEsc(k.label)}${k.def && k.def.alt ? ` <em class="alt">(${twEsc(k.def.alt)})</em>` : ''}${k.type === 'mod' ? lsPfIcon(k.id) : ''}</b><span>${twEsc(sub(k))}</span></button>`).join('')}</div>`;
 }
 function twStepsCount(sys) { const st = lsTrailOf(TW_V, sys); return { n: st.reduce((s, x) => s + x.list.length, 0), p: st.length }; }
 function twSub(k) {
   if (k.type === 'akt') return 'единые данные · ЦД пласта · ЦД скважины · ЦД добычи';
-  if (k.type === 'part') return k.def.sub || k.def.mods.map((m) => twShort(m.sys)).join(' · ');
+  if (k.type === 'part') return k.sub || k.def.sub || k.def.mods.map((m) => twShort(m.sys)).join(' · ');
   if (k.type === 'mod') { const c = twStepsCount(k.id); return `${k.def && k.def.alt ? '(' + k.def.alt + ') · ' : ''}${c.n ? `${c.n} ${twPlural(c.n, 'шаг', 'шага', 'шагов')} BPMN · ${c.p} ${twPlural(c.p, 'процесс', 'процесса', 'процессов')}` : 'в шагах BPMN нет'}`; }
   if (k.type === 'proc') return `${LS_MOD_NAME[k.P.m]} · ${k.list.length} ${twPlural(k.list.length, 'шаг', 'шага', 'шагов')} с ${twShort(k.parent.id)}`;
   if (k.type === 'step') return lsRole(k.s);
@@ -321,8 +347,8 @@ function twUsageHTML(key) {
 function twBody(n) {
   if (n.type === 'akt') {
     return `<ul class="tw-what">${twList(TW_DEF.what)}</ul>
-      <h3>Из чего состоит <span>сверху — общий слой данных, ниже — двойники по ходу производства · клик — погрузиться</span></h3>
-      ${twKidCards(n, (k) => k.def.lead)}
+      <h3>Из чего состоит <span>основа — единые данные, на них стоят двойники по ходу производства · клик — погрузиться</span></h3>
+      <div class="tw-kids">${TW_DEF.parts.map((p) => twPartNode(p.id)).map((k, i) => `<button class="tw-kid t-part${i ? '' : ' p-data'}" data-path="${twEsc(twKey(k))}"><b>${i ? '↳ ' : ''}${twEsc(k.label)}</b><span>${twEsc(k.def.lead)}</span></button>`).join('')}</div>
       <h3>Интегрированная модель актива ${twSrc('сл. 14')}</h3>
       <div class="tw-ima">${[['Пласт', 'давление, насыщенность, закачка', 'приток, пластовое давление, обводнённость', 'plast'], ['Скважина', 'конструкция скважины, режимы работы', 'режимы, дебиты, ограничения ГНО', 'skv'], ['Инфраструктура', 'наземные объекты, сбор, транспортировка, сдача', 'пропускная способность, мощности, возможности сдачи', 'dob']].map(([t, a, b, id]) => `<button data-kid="part:${id}"><b>${t}</b><span>${a}</span><em>${b}</em></button>`).join('<i>⇄</i>')}</div>
       <p class="tr-n">Модели пласта, скважины и инфраструктуры синхронизируются с автоматическим пересчётом сценариев при изменениях; потенциал ищется на всех элементах производственной цепочки, решения считаются с учётом влияния на смежные узлы (сл. 14).</p>
@@ -337,7 +363,8 @@ function twBody(n) {
     const D = LS_BLOCKS[n.def.block];
     return `<p class="tr-lead">${twEsc(n.def.lead)}</p>
       <h3>${n.id === 'data' ? 'Системы слоя' : 'Модули ABAI'} <span>в скобках — продукт Nedra, который заменяет модуль (сл. 34) · клик — погрузиться</span></h3>
-      ${twKidCards(n, (k) => twSub(k).replace(/^\(.*?\) · /, ''))}
+      ${n.id === 'data' ? twKidCards(twKids(n)[0], (k) => twSub(k).replace(/^\(.*?\) · /, ''), 'mod') : twKidCards(n, (k) => twSub(k).replace(/^\(.*?\) · /, ''), 'mod')}
+      ${n.id === 'data' ? `<h3>Двойники на единых данных <span>читают и пишут через КХД и ABAI БД 2.0 · клик — погрузиться</span></h3>${twKidCards(n, (k) => k.def.lead, 'part')}` : ''}
       ${n.id === 'data' ? `<ul class="tw-what">${twList(D.what)}</ul>` : `<ul class="tw-what">${twList(D.what.slice(0, 1))}</ul>`}
       ${twBlockHTML(n.id === 'data' ? Object.assign({}, D, { what: [] }) : D)}`;
   }
@@ -390,7 +417,7 @@ function twStepHTML(n) {
 // Конец связи на дереве: система вне ЦД — плашка справа («Вне ЦД»); система ЦД — узел дерева: часть (у ЦД Актива), модуль (у части и модуля),
 // тот же процесс в ветке другого модуля (у процесса), шаг этого процесса, на котором система отдаёт / принимает данные (у шага).
 function twTreeLinks(n, X) {
-  const lvl = { depth: Math.min(n.depth, 2), part: n.type === 'part' ? n.id : null };
+  const lvl = { depth: twGrain(n), part: n.type === 'part' ? n.id : null };
   const keys = twKeysOf(n) || [];
   // Шаг процесса pr, на котором система отдаёт (side 'f') / принимает ('t') данные: «Р1 1.10 → 1.11» — отдаёт на 1.10, принимает на 1.11
   const stepIn = (pr, e, side) => {
@@ -400,14 +427,14 @@ function twTreeLinks(n, X) {
   const end = (k, e, side) => {
     const u = twUnit(k, lvl);
     if (!u.nav) return { pill: u.k, u };
-    if (n.depth >= 2 && keys.includes(k)) {
+    if (twGrain(n) >= 2 && keys.includes(k)) {
       // Своя система: у модуля — тот его процесс, где записан обмен; у процесса — тот шаг
       if (e && n.type === 'mod') { const procs = lsRefParts(e.r).map((p) => p.proc).filter(Boolean); const pr = twKids(n).find((x) => procs.includes(x.P.p)); if (pr) return { node: pr }; }
       if (e && n.type === 'proc') { const st = stepIn(n, e, side); if (st) return { node: st }; }
       return { node: n };
     }
     let t = u.nav();
-    if (t && n.depth >= 3 && t.type === 'mod') {
+    if (t && (n.type === 'proc' || n.type === 'step') && t.type === 'mod') {
       const pr = twKids(t).find((x) => x.P.p === n.P.p);
       if (pr) { t = pr; const st = e && stepIn(pr, e, side); if (st) t = st; }
     }
@@ -478,7 +505,11 @@ function twCanvas(host, n, X) {
       a.type = N.d === maxD ? 'pill' : 'lane'; a.N = N; a.Pl = Pl;
       a.side[N.key] = 'r'; a.side[Pl.key] = 'l';
     } else if (S.d === T.d) { a.type = 'same'; a.side[S.key] = 'r'; a.side[T.key] = 'r'; }
-    else { const L = S.d < T.d ? S : T, R = L === S ? T : S; a.type = 'x'; a.side[L.key] = 'r'; a.side[R.key] = 'l'; a.gap = R.d - 1; }
+    else {
+      // Через колонку и дальше — по дорожке над деревом (xlane), чтобы не идти поперёк узлов промежуточной колонки
+      const L = S.d < T.d ? S : T, R = L === S ? T : S;
+      a.type = R.d - L.d > 1 ? 'xlane' : 'x'; a.L = L; a.R = R; a.side[L.key] = 'r'; a.side[R.key] = 'l'; a.gap = R.d - 1;
+    }
     plan.push(a);
   });
   // Точки крепления: у каждой стрелки своя, узел с множеством связей — выше
@@ -511,7 +542,7 @@ function twCanvas(host, n, X) {
   let pb = -1e9;
   [...XA.pills.keys()].map((k) => ({ k, h: pillH(k), y: pillY(k) - pillH(k) / 2 })).sort((a, b) => a.y - b.y)
     .forEach((q) => { const y = Math.max(q.y, pb + G); pp.set(q.k, { y, h: q.h, pill: true }); pb = y + q.h; });
-  const lanes = plan.filter((a) => a.type === 'lane');
+  const lanes = plan.filter((a) => a.type === 'lane' || a.type === 'xlane');
   lanes.forEach((a, j) => (a.lane = j));
   const LS = lanes.length ? 16 + lanes.length * 10 : 0;
   const all = [...pos.values(), ...pp.values()], minY = Math.min(...all.map((q) => q.y));
@@ -523,7 +554,8 @@ function twCanvas(host, n, X) {
   ports.forEach((list, k) => {
     const key = k.slice(0, -1), r = list[0].S.key === key ? rect(list[0].S) : rect(list[0].T);
     const other = (a) => (a.S.key === key ? a.T : a.S);
-    list.sort((p, q) => (p.type === 'lane' ? -1e6 : cy(other(p))) - (q.type === 'lane' ? -1e6 : cy(other(q))));
+    const up = (a) => a.type === 'lane' || a.type === 'xlane';
+    list.sort((p, q) => (up(p) ? -1e6 + p.lane : cy(other(p))) - (up(q) ? -1e6 + q.lane : cy(other(q))));
     const step = Math.min(12, (r.h - 12) / list.length);
     list.forEach((a, j) => { a.py = a.py || {}; a.py[k] = r.y + r.h / 2 + (j - (list.length - 1) / 2) * step; });
   });
@@ -535,13 +567,14 @@ function twCanvas(host, n, X) {
     if (a.type === 'x') use(a.gap, a, py(a, a.S), py(a, a.T), 'v');
     else if (a.type === 'same') use(a.S.d, a, py(a, a.S), py(a, a.T), 'v');
     else if (a.type === 'pill') use(maxD, a, py(a, a.N), py(a, a.Pl), 'v');
+    else if (a.type === 'xlane') { use(a.L.d, a, laneY(a.lane), py(a, a.L), 'up'); use(a.R.d - 1, a, laneY(a.lane), py(a, a.R), 'down'); }
     else { use(a.N.d, a, laneY(a.lane), py(a, a.N), 'up'); use(maxD, a, laneY(a.lane), py(a, a.Pl), 'down'); }
   });
   const ntr = new Map();
   gaps.forEach((list, g) => {
     const tracks = [];
     // Ближе к узлам — связи внутри колонки и между колонками, дальше — к плашкам «Вне ЦД»; внутри группы — короткие ближе
-    const rank = (it) => ({ same: 0, x: 1, pill: 2, lane: 2 })[it.a.type];
+    const rank = (it) => ({ same: 0, x: 1, xlane: 2, pill: 2, lane: 2 })[it.a.type];
     list.sort((p, q) => rank(p) - rank(q) || (p.h - p.l) - (q.h - q.l)).forEach((it) => {
       let k = tracks.findIndex((tr, i) => i >= (it.min || 0) && tr.every((o) => it.l > o.h + 34 || o.l > it.h + 34));
       if (k < 0) { k = tracks.length; tracks.push([]); }
@@ -591,11 +624,12 @@ function twCanvas(host, n, X) {
     const { q, S, T } = a;
     const sx = edgeX(S, a.side[S.key]), sy = py(a, S), tx = edgeX(T, a.side[T.key]), ty = py(a, T);
     let pts, vx, v0, v1;
-    if (a.type === 'lane') {
+    if (a.type === 'lane' || a.type === 'xlane') {
+      const A0 = a.type === 'lane' ? a.N : a.L, B0 = a.type === 'lane' ? a.Pl : a.R;
       const ly = laneY(a.lane), x1 = trOf(a, 'up'), x2 = trOf(a, 'down');
-      const nx = edgeX(a.N, 'r'), ny = py(a, a.N), px = edgeX(a.Pl, 'l'), pyy = py(a, a.Pl);
+      const nx = edgeX(A0, 'r'), ny = py(a, A0), px = edgeX(B0, 'l'), pyy = py(a, B0);
       pts = [[nx, ny], [x1, ny], [x1, ly], [x2, ly], [x2, pyy], [px, pyy]];
-      if (a.Pl === S) pts.reverse();
+      if (B0 === S) pts.reverse();
       vx = null; v0 = x1; v1 = x2;
     } else {
       vx = trOf(a);
@@ -616,7 +650,7 @@ function twCanvas(host, n, X) {
   host.classList.toggle('xon', plan.length > 0);
   host.innerHTML = `<svg width="${CW}" height="${CH}">${lines}</svg>${nodes}${pills}
     <svg class="tw-xs tw-xsv" width="${CW}" height="${CH}"><defs>${Object.entries(TW_KC).map(([k, c]) => mk(k, c)).join('')}</defs>${xp}</svg><div class="tw-xs tw-xbs">${xb}</div>
-    <div class="tr-cv-l">${cols.map((col, i) => `<span style="left:${colX[i]}px">${TW_LEVELS[i]}${col.length > 1 ? ` · ${col.length}` : ''}</span>`).join('')}${pp.size ? `<span style="left:${pxX}px">Вне ЦД · ${pp.size}</span>` : ''}</div>`;
+    <div class="tr-cv-l">${cols.map((col, i) => `<span style="left:${colX[i]}px">${twColLabel(col)}${col.length > 1 ? ` · ${col.length}` : ''}</span>`).join('')}${pp.size ? `<span style="left:${pxX}px">Вне ЦД · ${pp.size}</span>` : ''}</div>`;
   host.querySelectorAll('.tw-xn').forEach((b) => {
     const ns = b.dataset.ns.split(' ').map(Number);
     b.onmouseenter = () => ns.forEach((no) => twXHot(no, true));
@@ -637,7 +671,7 @@ function twRender() {
   document.querySelector('.tr-main').innerHTML = `
     <div class="tr-cv"><div class="tr-cv-in"></div></div>
     <div class="tr-detail">
-      <div class="tw-depth">${TW_LEVELS.map((t, i) => `<span class="${i < n.depth ? 'was' : i === n.depth ? 'on' : ''}">${i ? '<i>›</i>' : ''}${t}</span>`).join('')}<em>уровень погружения ${n.depth + 1} из ${TW_LEVELS.length}</em></div>
+      <div class="tw-depth">${TW_LEVELS.map((t, i) => `<span class="${i < twLevel(n) ? 'was' : i === twLevel(n) ? 'on' : ''}">${i ? '<i>›</i>' : ''}${t}</span>`).join('')}<em>уровень погружения ${twLevel(n) + 1} из ${TW_LEVELS.length}</em></div>
       <div class="tr-crumbs">${chain.map((x, i) => `${i ? '<i>›</i>' : ''}<a href="#" data-path="${twEsc(twKey(x))}">${twEsc(x.label)}</a>`).join('')}</div>
       <div class="tr-head"><span class="tr-type tw-t-${n.type}">${twEsc(typeT)}</span>
         <h1>${twEsc(n.label)}${n.def && n.def.alt ? ` <em class="alt">(${twEsc(n.def.alt)})</em>` : ''}</h1></div>

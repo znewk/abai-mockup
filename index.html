@@ -42,7 +42,7 @@
     .tree-link:hover { filter: brightness(1.08); }
     .tree-link.sub { margin-left: 10px; background: #fff; color: var(--brand); border: 1px solid #c9d2df; font-weight: 500; font-size: 13px; }
   </style>
-  <link rel="stylesheet" href="shared/landscape.css?v=20261007a">
+  <link rel="stylesheet" href="shared/landscape.css?v=20261007b">
 </head>
 <body>
   <div class="mock-banner">Мокапы для обсуждения · демо-данные</div>
@@ -51,7 +51,7 @@
       <div class="logo"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#1c5cab"/><path d="M6 23 13 9l4 8 3-5 6 11z" fill="#fff"/><circle cx="23" cy="9" r="2.5" fill="#86b6ef"/></svg>ABAI</div>
       <h1>Процессы Upstream в ABAI</h1>
       <p class="lead">Кликабельные прототипы и пошаговые презентации целевых процессов. Для каждого процесса — три варианта из BPMN и экраны, которые видит каждая роль.</p>
-      <div class="variants"><span>AS IS — как сейчас</span><span>TO BE Nedra — с продуктами Nedra</span><span><b>Dream TO BE</b> — наш вариант на ABAI</span></div>
+      <div class="variants"><span>AS IS — как сейчас</span><span>TO BE Nedra — с продуктами Nedra</span><span><b>Dream TO BE</b> — целевой вариант на ABAI</span></div>
     </div>
   </header>
   <main class="wrap">
@@ -69,10 +69,10 @@
     <div class="ls" id="landscape"></div>
   </section>
   <script src="shared/modules.js" data-root="./"></script>
-  <script src="shared/landscape-data.js?v=20261007a"></script>
-  <script src="shared/landscape-flows.js?v=20261007a"></script>
-  <script src="shared/landscape-steps.js?v=20261007a"></script>
-  <script src="shared/landscape.js?v=20261007a"></script>
+  <script src="shared/landscape-data.js?v=20261007b"></script>
+  <script src="shared/landscape-flows.js?v=20261007b"></script>
+  <script src="shared/landscape-steps.js?v=20261007b"></script>
+  <script src="shared/landscape.js?v=20261007b"></script>
   <script>
     const plural = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'процесс' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'процесса' : 'процессов');
     document.getElementById('mods').innerHTML = ABAI_MODULES.map((m) => `

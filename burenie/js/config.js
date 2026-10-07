@@ -16,7 +16,7 @@ const VARIANTS = {
   asisn: { name: 'AS IS Nedra', sub: 'Как сейчас — в описании Nedra', tone: 'asis' },
   asis:  { name: 'AS IS', sub: 'Как сейчас — детально (as is KMGD)', tone: 'asis' },
   nedra: { name: 'TO BE Nedra', sub: 'С продуктами Nedra', tone: 'nedra' },
-  dream: { name: 'Dream TO BE', sub: 'Наш вариант на ABAI', tone: 'dream' },
+  dream: { name: 'Dream TO BE', sub: 'Целевой вариант на ABAI', tone: 'dream' },
 };
 
 // Системы: kind — abai | nedra | ext (отраслевые и корпоративные) | manual (ручной труд)

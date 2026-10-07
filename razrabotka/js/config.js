@@ -14,7 +14,7 @@ const MODULE = {
 const VARIANTS = {
   asis:  { name: 'AS IS', sub: 'Как сейчас — фактическое использование модулей ABAI', tone: 'asis' },
   nedra: { name: 'TO BE Недра', sub: 'С продуктами Nedra', tone: 'nedra' },
-  dream: { name: 'Dream TO BE', sub: 'Наш вариант на ABAI', tone: 'dream' },
+  dream: { name: 'Dream TO BE', sub: 'Целевой вариант на ABAI', tone: 'dream' },
 };
 
 // Системы: kind — abai | nedra | ext (отраслевые и корпоративные) | manual (ручной труд)
