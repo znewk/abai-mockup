@@ -294,7 +294,7 @@ function abaiLandscape(root, view = 'dream', flow) {
   root.innerHTML = `
     <div class="ls-top">
       <div class="ls-tabs">${Object.entries(LS_VIEWS).map(([k, x]) => `<button data-ls="${k}" class="${k === view ? 'on' : ''} t-${k}"><b>${x.name}</b><span>${x.sub}</span></button>`).join('')}</div>
-      <div class="ls-legend"><span class="k-abai">ABAI и КХД</span><span class="k-nedra">Nedra</span><span class="k-ext">промысловые, инженерные, внешние</span><span class="k-manual">ручная работа</span><span class="lg-flow">поток данных</span>${view === 'asis' ? '<span class="lg-man">ручной перенос</span>' : ''}</div>
+      <div class="ls-legend"><span class="k-abai">ABAI и КХД</span><span class="k-nedra">Nedra</span><span class="k-ext">промысловые, инженерные, внешние</span><span class="k-manual">ручная работа</span><span class="lg-flow">поток данных</span><span class="lg-pf">${LS_PF_SVG.desk}десктоп</span><span class="lg-pf">${LS_PF_SVG.web}веб</span>${view === 'asis' ? '<span class="lg-man">ручной перенос</span>' : ''}</div>
     </div>
     <p class="ls-lead">${V.lead}</p>
     <div class="ls-kpis">
@@ -332,7 +332,9 @@ function abaiLandscape(root, view = 'dream', flow) {
         ${lsDzo(view)}
         <svg class="ls-svg"></svg><div class="ls-lbls"></div>
     </div></div>
-    <ol class="ls-flow">${V.flow.map(([t, d], i) => `<li><b><i class="ls-stage">${i + 1}</i>${t}</b><span>${d}</span></li>`).join('')}</ol>`;
+    <ol class="ls-flow">${V.flow.map(([t, d], i) => `<li><b><i class="ls-stage">${i + 1}</i>${t}</b><span>${d}</span></li>`).join('')}</ol>
+    <details class="ls-pf-d"><summary>${LS_PF_SVG.desk}${LS_PF_SVG.web} Десктоп или веб: как работают с системами схемы <span>значок у системы на схеме · только то, что сказано в источнике</span></summary>
+      ${lsPfTable()}<p class="ls-note">Для модулей ABAI, кроме УЗ 2.0, и для остальных продуктов Nedra в стратсессии и открытых источниках не указано, десктоп это или веб, — значка у них нет.</p></details>`;
   root.querySelectorAll('[data-ls]').forEach((b) => (b.onclick = () => { abaiLandscape(root, b.dataset.ls); history.replaceState(null, '', '#' + b.dataset.ls); }));
   root.querySelectorAll('[data-fl]').forEach((b) => (b.onclick = () => abaiLandscape(root, view, b.dataset.fl || null)));
   root.querySelectorAll('[data-mode]').forEach((b) => (b.onclick = () => {
@@ -341,6 +343,7 @@ function abaiLandscape(root, view = 'dream', flow) {
     abaiLandscape(root, view, fl ? fl.id : null);
   }));
   const grid = root.querySelector('.ls-grid');
+  lsPfMarks(grid);
   // Номера этапов — те же, что в плашке под схемой, на блоках схемы
   V.flow.forEach(([t, , sel], i) => { const el = sel && grid.querySelector(sel); if (el) el.insertAdjacentHTML('afterbegin', `<i class="ls-stage" title="Этап ${i + 1}: ${t}">${i + 1}</i>`); });
   // Заголовки верхнего уровня (ЦД пласта, слой данных, зона ДЗО …) — клик: что это такое
@@ -809,7 +812,7 @@ function lsAbout(grid, key, view, links, trail) {
   }).join('');
   return `<div class="ls-ab">
     <h3>О системе «${key}» · ${V.name}</h3>
-    <div class="ls-ab-lead">${uniq.length ? uniq.map(([m, d]) => `<div><b>${LS_MOD_NAME[m] || m}:</b> ${d}</div>`).join('') : ''}
+    <div class="ls-ab-lead">${uniq.length ? uniq.map(([m, d]) => `<div><b>${LS_MOD_NAME[m] || m}:</b> ${d}</div>`).join('') : ''}${lsPfLine(key)}
       <div class="ls-ab-k">в BPMN — ${nSteps} ${plural(nSteps, 'шаг', 'шага', 'шагов')} в ${trail.length} ${plural(trail.length, 'процессе', 'процессах', 'процессах')}; на схеме — получает ${inn.length}, передаёт ${out.length} ${plural(out.length, 'связь', 'связи', 'связей')}; задействовано ${reg.size} ${plural(reg.size, 'система', 'системы', 'систем')}</div></div>
     <div class="ls-ab-c2">
       <div><h4>Откуда и как берёт данные <em>${inn.length}</em></h4>${inn.length ? `<ul class="ls-ab-l">${inn.map((e) => li(e, e.f, '←')).join('')}</ul>` : '<p class="ls-ab-n">На схеме данные в систему не приходят — она источник или в потоках не участвует.</p>'}</div>
@@ -1157,6 +1160,37 @@ function lsRail(el) {
   if (!el || el.querySelector(':scope > .ls-rail')) return;
   el.classList.add('ls-railed');
   el.insertAdjacentHTML('afterbegin', '<div class="ls-rail" title="Схема читается снизу вверх: внизу — откуда данные приходят, вверху — куда уходят"><span>куда</span><i></i><span>откуда</span></div>');
+}
+
+
+// ---------- Десктоп или веб: значок у системы и таблица (справочник LS_PLATFORM — landscape-flows.js) ----------
+const LS_PF_SVG = {
+  desk: '<svg viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="8.5" rx="1.3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 14h5M8 11v3" stroke="currentColor" stroke-width="1.6"/></svg>',
+  web: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M1.8 8h12.4M8 1.8c2.2 2.2 2.2 10.2 0 12.4M8 1.8c-2.2 2.2-2.2 10.2 0 12.4" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>',
+};
+const lsPf = (key) => (typeof LS_PLATFORM !== 'undefined' && LS_PLATFORM[key]) || null;
+function lsPfIcon(key) {
+  const p = lsPf(key);
+  if (!p) return '';
+  const svg = p[0] === 'both' ? LS_PF_SVG.desk + LS_PF_SVG.web : LS_PF_SVG[p[0]];
+  return `<i class="ls-pf pf-${p[0]}" title="${LS_PF_T[p[0]][0].toUpperCase() + LS_PF_T[p[0]].slice(1)}: ${p[1].replace(/"/g, '&quot;')} · ${p[2]}">${svg}</i>`;
+}
+// Строка «как работают» для окна системы и карточек
+const lsPfLine = (key) => { const p = lsPf(key); return p ? `<div class="ls-pf-line"><span class="ls-pf-l pf-${p[0]}">${lsPfIcon(key)}${LS_PF_T[p[0]]}</span> ${p[1]}<em class="ls-bk-src">${p[2]}</em></div>` : ''; };
+// Значки на всех системах схемы
+function lsPfMarks(grid) {
+  grid.querySelectorAll('[data-sys]').forEach((el) => {
+    if (el.querySelector(':scope > .ls-pf')) return;
+    const ic = lsPfIcon(el.dataset.sys);
+    if (ic) el.insertAdjacentHTML('beforeend', ic);
+  });
+}
+// Таблица: системы → десктоп / веб, что именно, источник; keys — какие системы (по умолчанию — весь справочник)
+function lsPfTable(keys, o = {}) {
+  const list = (keys || Object.keys(LS_PLATFORM)).map((k) => [k, lsPf(k)]);
+  const rows = list.filter(([, p]) => p || o.all);
+  return `<table class="ls-ab-t ls-pf-t"><thead><tr><th>Система</th><th>Как работают</th><th>Что именно</th><th>Источник</th></tr></thead><tbody>
+    ${rows.map(([k, p]) => `<tr><td>${o.link ? o.link(k) : k}</td><td>${p ? `<span class="ls-pf-l pf-${p[0]}">${lsPfIcon(k)}${LS_PF_T[p[0]]}</span>` : '<span class="ls-pf-l pf-no">не указано</span>'}</td><td>${p ? p[1] : 'в стратсессии и открытых источниках не указано'}</td><td>${p ? p[2] : '—'}</td></tr>`).join('')}</tbody></table>`;
 }
 
 // ---------- Компактная схема сценария: только участвующие системы, снизу вверх по направлению потока (как на большой схеме) ----------

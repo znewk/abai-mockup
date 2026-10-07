@@ -293,7 +293,7 @@ function twBlockHTML(D, skip = []) {
 // Карточки детей: клик — погрузиться
 function twKidCards(n, sub) {
   return `<div class="tw-kids">${twKids(n).map((k) => `<button class="tw-kid t-${k.type} k-${k.type === 'mod' ? twKind(k.id) : ''}" data-kid="${twEsc(k.type + ':' + k.id)}">
-    <b>${twEsc(k.label)}${k.def && k.def.alt ? ` <em class="alt">(${twEsc(k.def.alt)})</em>` : ''}</b><span>${twEsc(sub(k))}</span></button>`).join('')}</div>`;
+    <b>${twEsc(k.label)}${k.def && k.def.alt ? ` <em class="alt">(${twEsc(k.def.alt)})</em>` : ''}${k.type === 'mod' ? lsPfIcon(k.id) : ''}</b><span>${twEsc(sub(k))}</span></button>`).join('')}</div>`;
 }
 function twStepsCount(sys) { const st = lsTrailOf(TW_V, sys); return { n: st.reduce((s, x) => s + x.list.length, 0), p: st.length }; }
 function twSub(k) {
@@ -326,6 +326,8 @@ function twBody(n) {
       <h3>Интегрированная модель актива ${twSrc('сл. 14')}</h3>
       <div class="tw-ima">${[['Пласт', 'давление, насыщенность, закачка', 'приток, пластовое давление, обводнённость', 'plast'], ['Скважина', 'конструкция скважины, режимы работы', 'режимы, дебиты, ограничения ГНО', 'skv'], ['Инфраструктура', 'наземные объекты, сбор, транспортировка, сдача', 'пропускная способность, мощности, возможности сдачи', 'dob']].map(([t, a, b, id]) => `<button data-kid="part:${id}"><b>${t}</b><span>${a}</span><em>${b}</em></button>`).join('<i>⇄</i>')}</div>
       <p class="tr-n">Модели пласта, скважины и инфраструктуры синхронизируются с автоматическим пересчётом сценариев при изменениях; потенциал ищется на всех элементах производственной цепочки, решения считаются с учётом влияния на смежные узлы (сл. 14).</p>
+      <h3>Десктоп или веб <span>как работают с системами ЦД и инженерным ПО · значок — и на дереве · только то, что сказано в источнике</span></h3>
+      ${lsPfTable(TW_DEF.parts.flatMap((p) => p.mods.map((m) => m.sys)).concat(Object.keys(LS_PLATFORM).filter((k) => !TW_IX.has(k))), { all: true, link: (k) => (TW_IX.has(k) ? `<a href="#" class="tr-s k-${twKind(k)}" data-go-sys="${twEsc(k)}">${twEsc(k)}</a>${TW_IX.get(k).m.alt ? ` <em class="alt">(${twEsc(TW_IX.get(k).m.alt)})</em>` : ''}` : twEsc(k)) })}
       <h3>Что даёт ЦД <span>встреча по ЦД 01.10 · клик — процесс в мокапе</span></h3>
       <div class="tw-val">${LS_VALUE.map(([t, d, ps]) => `<div><b>${t}</b><span>${d}</span><div>${ps.map(([m, p]) => `<a href="${lsModHref(m, 'v1')}index.html#/" target="_blank">${p}</a>`).join('')}</div></div>`).join('')}</div>
       <h3>Дорожная карта внедрения — Восточный Молдабек, октябрь 2026 – январь 2027</h3>
@@ -342,7 +344,10 @@ function twBody(n) {
   if (n.type === 'mod') {
     const m = n.def, desc = Object.entries(typeof ABAI_SYS_DESC !== 'undefined' ? ABAI_SYS_DESC : {}).filter(([x]) => lsKey(x) === n.id).flatMap(([, l]) => l);
     const P = twKids(n);
-    return `${m.f ? `<h3>Что делает</h3><ul class="tw-what">${twList(m.f)}</ul>` : ''}
+    const pf = lsPf(n.id), alt = m.alt && lsPf(m.alt);
+    return `<h3>Как с ним работают <span>десктоп или веб · только по источнику</span></h3>
+      ${pf ? lsPfLine(n.id) : '<p class="tr-n">В стратсессии и открытых источниках не указано, десктоп это или веб.</p>'}${alt ? `<div class="tw-pf-alt">Заменяемый продукт ${twEsc(m.alt)}: ${lsPfLine(m.alt)}</div>` : ''}
+      ${m.f ? `<h3>Что делает</h3><ul class="tw-what">${twList(m.f)}</ul>` : ''}
       ${desc.length ? `<h3>Что делает в процессах <span>справочники систем модулей мокапа · по BPMN Dream TO BE</span></h3><ul class="tw-what">${[...new Map(desc.map((d) => [d[1], d])).values()].map(([mm, d]) => `<li><b>${LS_MOD_NAME[mm] || mm}:</b> ${twEsc(d)}</li>`).join('')}</ul>` : ''}
       ${P.length ? `<h3>Где используется <span>процессы BPMN · клик — погрузиться в процесс</span></h3>${twKidCards(n, twSub)}${twUsageHTML(n.id)}`
     : '<p class="tr-n">В шагах BPMN Dream TO BE модуль не указан — процессов и шагов нет. Описание — по стратсессии.</p>'}`;
@@ -567,9 +572,9 @@ function twCanvas(host, n, X) {
     }
     const kind = x.type === 'mod' ? ` k-${twKind(x.id)}` : '';
     nodes += `<button class="tr-nd tw-nd t-${x.type}${x.type === 'part' ? ' p-' + x.id : ''}${kind}${x === n ? ' cur' : on ? ' sel' : isNew ? ' new' : tg ? ' tgt' : ' dim'}" style="left:${q.x}px;top:${q.y}px;width:${W}px;height:${q.h}px" data-path="${twEsc(twKey(x))}" title="${twEsc(x.label)}">
-      ${x.type === 'mod' ? `<i class="tr-dot k-${twKind(x.id)}"></i>` : ''}<b>${twEsc(x.label)}</b><span>${twEsc(twSub(x))}</span></button>`;
+      ${x.type === 'mod' ? `<i class="tr-dot k-${twKind(x.id)}"></i>` : ''}<b>${twEsc(x.label)}</b>${x.type === 'mod' ? lsPfIcon(x.id).replace('class="ls-pf ', 'class="ls-pf tw-pfc ') : ''}<span>${twEsc(twSub(x))}</span></button>`;
   });
-  const pills = [...pp].map(([k, q]) => { const u = XA.pills.get(k); return `<div class="tw-pill g-${u.g.type}" style="left:${q.x}px;top:${q.y}px;width:${PW}px;height:${q.h}px" title="${twEsc(u.g.title)}"><span>${twEsc(u.g.title)}</span><b>${twEsc(k)}</b></div>`; }).join('');
+  const pills = [...pp].map(([k, q]) => { const u = XA.pills.get(k); return `<div class="tw-pill g-${u.g.type}" style="left:${q.x}px;top:${q.y}px;width:${PW}px;height:${q.h}px" title="${twEsc(u.g.title)}"><span>${twEsc(u.g.title)}</span><b>${twEsc(k)}</b>${lsPfIcon(k).replace('class="ls-pf ', 'class="ls-pf tw-pfc ')}</div>`; }).join('');
   // ---- Стрелки: ортогонально, со скруглением; номер — на вертикальном участке своей дорожки ----
   const poly = (pts) => pts.map((p, i) => {
     if (!i || i === pts.length - 1) return (i ? 'L' : 'M') + p[0] + ',' + p[1];

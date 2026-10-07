@@ -103,3 +103,10 @@ em.alt { font-style: normal; font-weight: 400; color: #7a4fb5; font-size: .82em;
 .tr-cv-in.xon path.new { stroke: #c9d6e8; stroke-width: 1.3; }
 .tr-cv-in.xon path.off { stroke: #dde2ea; }
 .tr-cv-in.xon .tw-xp { stroke-width: 2.2; opacity: 1; }
+
+/* Десктоп или веб в дереве */
+.tw-nd b .ls-pf, .tw-pill b .ls-pf, .tw-kid b .ls-pf { margin-left: 6px; }
+.tw-pf-alt { margin-top: 4px; font-size: 12.5px; color: #5b6472; }
+.tw-pf-alt .ls-pf-line { display: inline; }
+.ls-pf.tw-pfc { position: absolute; right: 8px; top: 6px; margin: 0; }
+.tw-pill { position: absolute; }

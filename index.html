@@ -42,7 +42,7 @@
     .tree-link:hover { filter: brightness(1.08); }
     .tree-link.sub { margin-left: 10px; background: #fff; color: var(--brand); border: 1px solid #c9d2df; font-weight: 500; font-size: 13px; }
   </style>
-  <link rel="stylesheet" href="shared/landscape.css?v=20261006g">
+  <link rel="stylesheet" href="shared/landscape.css?v=20261007a">
 </head>
 <body>
   <div class="mock-banner">Мокапы для обсуждения · демо-данные</div>
@@ -69,10 +69,10 @@
     <div class="ls" id="landscape"></div>
   </section>
   <script src="shared/modules.js" data-root="./"></script>
-  <script src="shared/landscape-data.js?v=20261006g"></script>
-  <script src="shared/landscape-flows.js?v=20261006g"></script>
-  <script src="shared/landscape-steps.js?v=20261006g"></script>
-  <script src="shared/landscape.js?v=20261006g"></script>
+  <script src="shared/landscape-data.js?v=20261007a"></script>
+  <script src="shared/landscape-flows.js?v=20261007a"></script>
+  <script src="shared/landscape-steps.js?v=20261007a"></script>
+  <script src="shared/landscape.js?v=20261007a"></script>
   <script>
     const plural = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'процесс' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'процесса' : 'процессов');
     document.getElementById('mods').innerHTML = ABAI_MODULES.map((m) => `

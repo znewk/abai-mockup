@@ -202,6 +202,33 @@ const LS_KINDS = {
   ima: 'синхронизация моделей ИМА (стратсессия, сл. 14) — способ передачи не описан',
 };
 
+// Как работают с системой: десктоп (устанавливается на рабочее место) или веб (в браузере) — только то, что сказано в источнике.
+// [вид, что именно, источник]; вид: desk — десктоп, web — веб, both — десктоп и веб-версия. Нет в списке — в источниках не указано.
+const LS_PLATFORM = {
+  'ABAI УЗ 2.0': ['desk', 'десктопное приложение (.exe), стек Python, расчётная среда tNavigator, распространение через CSSM', 'стратсессия, сл. 29'],
+  'Nedra.NUMEX': ['both', 'есть веб-версия и десктопная версия; в реестре Минцифры России — DESKTOP-версия', 'nedra.digital/fdp/numex'],
+  'Nedra.RTM': ['web', '«доступ через web-интерфейс», мультиплатформенное решение', 'nedra.digital/drilling/remote-center'],
+  'Nedra.DS': ['web', '«Web-решение… доступное для подключения всем участникам… независимо от ОС»', 'nedra.digital/exploration/ds'],
+  'Geomate': ['web', '«многопользовательское решение… с web-интерфейсом», удалённый доступ с любой ОС', 'nedra.digital/exploration/gm'],
+  'Petrel': ['desk', 'настольное приложение Windows, лицензия через сервер лицензий; есть облачный вариант в SLB Delfi', 'slb.com — Petrel'],
+  'Techlog': ['desk', 'устанавливаемое приложение; есть облачный вариант в SLB Delfi', 'software.slb.com — Techlog'],
+  'Eclipse': ['desk', 'расчётный симулятор на рабочей станции или кластере; облачный запуск — Delfi On Demand Reservoir Simulation', 'slb.com — ECLIPSE'],
+  'Intersect': ['desk', 'расчётный симулятор на рабочей станции или кластере; облачный запуск по подписке — Delfi', 'software.slb.com — INTERSECT'],
+  'PipeSim': ['desk', 'устанавливается на ПК; в Delfi — работа через интернет без установки', 'software.slb.com — PIPESIM'],
+  'tNavigator': ['desk', 'Windows / Linux, на рабочей станции или кластере; облачный вариант — через удалённый рабочий стол', 'rfdyn.com — системные требования'],
+  'Kingdom': ['desk', 'устанавливается на Windows; есть вариант, размещённый в облаке AWS', 'S&P Global — Kingdom'],
+  'UniSim': ['desk', 'UniSim Design — настольное приложение Windows, сетевой сервер лицензий', 'Honeywell — UniSim Design R492'],
+  'AutoCAD': ['both', 'настольное приложение Windows / macOS; в подписку входит AutoCAD Web — в браузере', 'autodesk.com — AutoCAD Web'],
+  'COMPASS': ['desk', 'Landmark Engineer’s Desktop на Windows; облачный вариант — DecisionSpace 365 Well Construction', 'halliburton.com — DecisionSpace 365'],
+  'WellPlan': ['desk', 'Landmark Engineer’s Desktop на Windows; облачный вариант — DecisionSpace 365 Well Construction', 'halliburton.com — WellPlan'],
+  'Sysdrill': ['desk', '«единое приложение Microsoft Windows» (AspenTech)', 'aspentech.com — Aspen Sysdrill'],
+  'StarSteer': ['desk', 'устанавливаемое приложение; есть SaaS-лицензия на виртуальной машине AWS', 'rogii.com — StarSteer'],
+  'Questor': ['desk', '«must be installed on a local PC», Windows', 'S&P Global — QUE$TOR Quick Start Guide'],
+  'Hampson-Russell': ['desk', 'Windows / Linux; с версии 10.5 разворачивается на облачных ВМ AWS / Azure', 'geosoftware.com'],
+  'Interactive Petrophysics': ['desk', 'приложение Windows, локальная или сетевая лицензия', 'geoactive.com — IP'],
+};
+const LS_PF_T = { desk: 'десктоп', web: 'веб', both: 'десктоп + веб' };
+
 // Кто участвует в связи, если у неё нет шагов BPMN (публикации, встреча) — как назван в источнике
 const LS_WHO = {
   'ЦИО / ДЗО|Электронный наряд-допуск': 'начальники цехов, мастера, механики, работники подрядных организаций, бригады (пресс-релиз ОМГ)',
