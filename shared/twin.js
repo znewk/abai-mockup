@@ -261,13 +261,14 @@ function twSceneHTML(n) {
     mod: [`Обмен данными: «${n.label}»`, 'с какими системами, что передаётся и на каком шаге BPMN'],
     proc: [`Обмен данными «${n.parent ? n.parent.label : ''}» в процессе ${n.P ? n.P.p : ''}`, 'связи этого процесса'],
     step: [`Обмен данными на шаге ${n.s ? n.s.c : ''}`, 'связи схемы, записанные на этом шаге BPMN'],
-    pmr: ['Поток данных в процессах модулей', 'все системы, связи которых записаны в шагах BPMN модулей'],
-    pm: [`Поток данных модуля «${n.label}»`, 'все связи систем в процессах модуля · погрузитесь в процесс, чтобы увидеть его поток'],
-    pp: [`Поток данных процесса ${n.P ? n.P.p : ''}`, 'связи систем, записанные в шагах этого процесса'],
-    ps: [`Поток данных на шаге ${n.s ? n.s.c : ''}`, 'связи систем, записанные на этом шаге BPMN'],
+    pmr: ['Обмен между системами в процессах модулей', 'системы, связи которых записаны в шагах BPMN модулей'],
+    pm: [`Обмен между системами: модуль «${n.label}»`, 'какие системы передают данные в процессах модуля'],
+    pp: [`Обмен между системами: процесс ${n.P ? n.P.p : ''}`, 'связи систем, записанные в шагах процесса'],
+    ps: [`Обмен между системами на шаге ${n.s ? n.s.c : ''}`, 'связи систем, записанные на этом шаге BPMN'],
   }[n.type];
   return `<section class="tw-scene${TW.net ? '' : ' off'}">
     <div class="tw-scene-h"><b>⇄ ${twEsc(head[0])}</b><span>${twEsc(head[1])}</span>
+      <span class="tw-lsm" title="Подробно — по каждой связи шаги BPMN: исполнитель, системы, документы и аннотации">${[['simple', 'Простой'], ['full', 'Подробный']].map(([k, t]) => `<button data-lsm="${k}" class="${LS_MODE === k ? 'on' : ''}">${t}</button>`).join('')}</span>
       <button class="tw-net-t" title="Показать / скрыть ветви обмена данными">${TW.net ? 'Скрыть обмен данными' : 'Показать обмен данными'}</button></div>
     <div class="tw-scene-b"><div class="tw-net"></div><div class="tw-links"></div></div>
   </section>`;
@@ -275,6 +276,7 @@ function twSceneHTML(n) {
 function twScene(n, X) {
   const sec = document.querySelector('.tw-scene');
   if (!sec) return;
+  sec.querySelectorAll('[data-lsm]').forEach((b) => (b.onclick = () => { LS_MODE = b.dataset.lsm; try { localStorage.setItem('abai-ls-mode', LS_MODE); } catch (e) {} twRender(); }));
   sec.querySelector('.tw-net-t').onclick = () => { TW.net = !TW.net; try { localStorage.setItem('abai-tw-net', TW.net ? 'on' : 'off'); } catch (e) {} twRender(); };
   if (!TW.net) return;
   const { L, units, inside } = X;
@@ -295,23 +297,25 @@ function twScene(n, X) {
   const ins = [...inside].map(([k, c]) => `<span>внутри «${twEsc(k)}» — ещё ${c} ${twPlural(c, 'связь', 'связи', 'связей')}</span>`);
   const sysA = (x) => (TW_IX.has(x) ? `<a href="#" class="tr-s k-${twKind(x)}" data-go-sys="${twEsc(x)}">${twEsc(x)}</a>` : `<b>${twEsc(x)}</b>`);
   // Направление ветви: что передаётся; если за ним несколько связей систем или концы свёрнуты — раскрывается списком с шагами BPMN
+  const full = LS_MODE === 'full';
   const dirHTML = (d, e) => {
     const same = d.items.length === 1 && d.items[0].f === d.f && d.items[0].t === d.t;
     return `<div class="tw-lt"><span class="tw-u">${twEsc(d.f)}</span> <i>→</i> <span class="tw-u">${twEsc(d.t)}</span> — ${twEsc(d.w)}</div>
       ${!d.items.length ? `<em>${LS_KINDS[e.k]} · ${twEsc(e.r)}</em>`
-    : same ? `<em>${LS_KINDS[d.items[0].k]} · ${twEsc(d.items[0].r)}</em>${lsRefSlides(TW_V, d.items[0].r)}`
-      : `<details><summary>${d.items.length} ${twPlural(d.items.length, 'связь', 'связи', 'связей')} систем · шаги BPMN</summary><ul class="ls-ab-l">${d.items.map((x) => `<li>${sysA(x.f)} → ${sysA(x.t)} — ${twEsc(x.w)}<em>${LS_KINDS[x.k]} · ${twEsc(x.r)}</em>${lsRefSlides(TW_V, x.r)}</li>`).join('')}</ul></details>`}`;
+    : same ? `<em>${LS_KINDS[d.items[0].k]} · ${twEsc(d.items[0].r)}</em>${lsRefSlides(TW_V, d.items[0].r)}${full ? `<div class="tw-det">${lsDetail(d.items[0], TW_V)}</div>` : ''}`
+      : `<details${full ? ' open' : ''}><summary>${d.items.length} ${twPlural(d.items.length, 'связь', 'связи', 'связей')} систем · шаги BPMN</summary><ul class="ls-ab-l">${d.items.map((x) => `<li>${sysA(x.f)} → ${sysA(x.t)} — ${twEsc(x.w)}<em>${LS_KINDS[x.k]} · ${twEsc(x.r)}</em>${lsRefSlides(TW_V, x.r)}${full ? `<div class="tw-det">${lsDetail(x, TW_V)}</div>` : ''}</li>`).join('')}</ul></details>`}`;
   };
   list.innerHTML = `${ins.length ? `<p class="tw-ins">${ins.join('')}<em>— видны при погружении</em></p>` : ''}
     <ol class="tw-ll">${L.map((e, i) => `<li class="k-${e.k}" data-l="${i}"><b class="ls-nb k-${e.k}">${e.n}</b>
       <div>${e.ima ? `<div class="tw-lt"><span class="tw-u">${twEsc(e.f)}</span> <i>⇄</i> <span class="tw-u">${twEsc(e.t)}</span> — ${twEsc(e.w)}</div><em>${LS_KINDS.ima}</em>`
     : e.both ? `<div class="tw-lh"><span class="tw-u">${twEsc(e.f)}</span> <i>⇄</i> <span class="tw-u">${twEsc(e.t)}</span></div>${e.dirs.map((d) => `<div class="tw-ld">${dirHTML(d, e)}</div>`).join('')}`
       : dirHTML(e.dirs[0], e)}</div></li>`).join('')}</ol>`;
-  list.querySelectorAll('[data-l]').forEach((li) => { const no = L[+li.dataset.l].n; li.onmouseenter = () => { if (host._hot) host._hot(+li.dataset.l); twXHot(no, true); }; li.onmouseleave = () => { if (host._hot) host._hot(null); twXHot(no, false); }; });
+  list.querySelectorAll('[data-l]').forEach((li) => { const no = L[+li.dataset.l].n; li.onmouseenter = () => { if (host._hot) host._hot(+li.dataset.l); if (TW.mode !== 'pm') twXHot(no, true); }; li.onmouseleave = () => { if (host._hot) host._hot(null); if (TW.mode !== 'pm') twXHot(no, false); }; });
   list.querySelectorAll('[data-go-sys]').forEach((a) => (a.onclick = (ev) => { ev.preventDefault(); twGo(twModNode(a.dataset.goSys)); }));
 }
 function twPick(i) {
   if (TW.mode === 'scen') return twScenGo(TW.sc, i + 1);
+  if (TW.mode === 'pm') { const li = document.querySelector(`[data-bl="${i + 1}"]`); if (li) { li.scrollIntoView({ behavior: 'smooth', block: 'center' }); li.classList.remove('flash'); void li.offsetWidth; li.classList.add('flash'); } return; }
   const li = document.querySelector(`.tw-ll [data-l="${i}"]`);
   if (!li) return;
   const d = li.querySelector('details'); if (d) d.open = true;
@@ -1023,8 +1027,7 @@ function twPmBody(n) {
   }
   if (n.type === 'pp') {
     const P = n.P, anyV = P.s.find((s) => s.v);
-    return `<div class="tw-pm-idea" data-pmfill>Загрузка описания процесса…</div>
-      ${twProtoLinks(P)}
+    return `${twProtoLinks(P)}
       ${anyV ? `<h3>Карта сценария <span>роли × шаги из презентации · клик по шагу на карте — экран и шаг схемы ниже</span></h3>
         <div class="ls-st-frame tw-map"><iframe class="tw-map-if" src="${lsModHref(P.m, 'v2')}index.html#${anyV.v[0]}/1/all" title="Карта сценария" loading="lazy"></iframe></div>` : ''}
       <section class="tw-sync"><div class="tw-sync-h"><b>Схема BPMN ⇄ экраны ABAI</b><span>синхронно: клик по шагу схемы — его экран; листаете экран — шаг на схеме</span>
@@ -1054,6 +1057,7 @@ function twPmFill(n) {
       if (!host) return;
       const procs = twKids(n), all = procs.map((k) => ({ k, ...mt(k.P.n) }));
       const sum = (f) => all.reduce((s, x) => s + f(x), 0);
+      const top = document.querySelector('[data-pmtop]');
       host.innerHTML = `<div class="tw-pm-hero"><div><h2>${twEsc(MOD ? MOD.hubTitle : `${n.label} в ABAI: ${procs.length} процессов`)}</h2><p>${twEsc(MOD ? MOD.hubLead : 'По итоговым BPMN: AS IS в описании Nedra, AS IS ABAI, TO BE Nedra и Dream TO BE. Для каждого процесса — поток данных, схема BPMN, экраны ABAI и сравнение вариантов.')}</p></div>
         <div class="tw-pm-k"><div><b>${sum((x) => x.b.steps)}</b><span>шагов в Dream TO BE</span></div><div><b>${sum((x) => x.a.abaiSteps)} → ${sum((x) => x.b.abaiSteps)}</b><span>шагов, выполняемых в ABAI</span></div><div><b>${sum((x) => x.a.manual)} → ${sum((x) => x.b.manual)}</b><span>${metricAbai ? 'привязок к ручным инструментам' : 'документов и согласований вручную'}</span></div></div></div>
         <div class="tw-pm-grid">${all.map(({ k, a, b }) => { const pm = meta[k.P.n] || {}; return `<button class="tw-pm-proc" data-pmkid="${twEsc(k.type + ':' + k.id)}">
@@ -1061,12 +1065,15 @@ function twPmFill(n) {
           ${pm.idea ? `<p>${twEsc(pm.idea)}</p>` : ''}
           <div class="tw-pm-sys">${b.systems.filter((s) => sysKind(s) === 'abai').map((s) => `<span class="chip">${twEsc(s)}</span>`).join('')}</div>
           <div class="tw-pm-meta"><span>${b.steps} шагов · ${rolesOf(k.P.n).length} ролей</span><span>${metricAbai ? `шагов в ABAI: ${a.abaiSteps} → <b>${b.abaiSteps}</b>` : `ручной работы: ${a.manual} → <b>${b.manual}</b>`}</span></div></button>`; }).join('')}</div>`;
+      // Заголовок, описание и цифры модуля — наверх, под заголовок страницы; карточки процессов — в карточке ниже
+      const hero = host.querySelector('.tw-pm-hero');
+      if (top && hero) { top.innerHTML = ''; top.appendChild(hero); host.insertAdjacentHTML('afterbegin', '<h3>Процессы модуля <span>клик — погрузиться в процесс</span></h3>'); }
       host.querySelectorAll('[data-pmkid]').forEach((b) => (b.onclick = () => { const k = twKids(n).find((x) => x.type + ':' + x.id === b.dataset.pmkid); if (k) twGo(k); }));
       return;
     }
     if (n.type !== 'pp') return;
     const P = n.P, pm = meta[P.n] || {}, { a, b } = mt(P.n);
-    const idea = document.querySelector('[data-pmfill]');
+    const idea = document.querySelector('[data-pmtop]');
     if (idea) idea.innerHTML = `${pm.idea ? `<div class="bpmn-note"><b>Dream TO BE</b><span>${twEsc(pm.idea)}</span></div>` : ''}
       <div class="tw-pm-k sm"><div><b>${b.steps}</b><span>шагов Dream TO BE</span></div><div><b>${rolesOf(P.n).length}</b><span>ролей</span></div><div><b>${a.abaiSteps} → ${b.abaiSteps}</b><span>шагов в ABAI: AS IS → Dream</span></div><div><b>${a.manual} → ${b.manual}</b><span>ручная работа: AS IS → Dream</span></div></div>`;
     twSyncInit(n, w);
@@ -1140,14 +1147,17 @@ function twRenderPm() {
       <div class="tw-depth">${TW_PM_LV.map((t, i) => `<span class="${i < lv ? 'was' : i === lv ? 'on' : ''}">${i ? '<i>›</i>' : ''}${t}</span>`).join('')}<em>уровень ${lv + 1} из ${TW_PM_LV.length}</em></div>
       <div class="tr-crumbs">${chain.map((x, i) => `${i ? '<i>›</i>' : ''}<a href="#" data-pmpath="${twEsc(twKey(x))}">${twEsc(x.label)}</a>`).join('')}</div>
       <div class="tr-head"><span class="tr-type tw-t-${n.type}">${TW_PM_T[n.type]}${n.type === 'pp' || n.type === 'ps' ? ' · ' + twEsc(LS_MOD_NAME[n.P.m] || '') : ''}</span><h1>${twEsc(n.label)}</h1></div>
+      <div class="tw-pm-top" data-pmtop>${n.type === 'pm' || n.type === 'pp' ? '<p class="tr-n">Загрузка описания…</p>' : ''}</div>
+      <section class="tw-pass" data-pass><p class="tr-n">Анализ по BPMN: связи с другими процессами, роли, документы…</p></section>
       ${twSceneHTML(n)}
       <div class="tr-content tw-pm-body">${twPmBody(n)}</div>
       ${n.type === 'ps' ? twBpmnHTML(n) : ''}
     </div>`;
   const X = TW.net ? twLinks(n) : null;
-  twCanvas(document.querySelector('.tr-cv-in'), n, { root: twPRoot(), pillLabel: 'Системы', XA: X ? twPmLinks(n, X) : { arrows: [], pills: new Map(), nodes: new Set() } });
+  twCanvas(document.querySelector('.tr-cv-in'), n, { root: twPRoot(), XA: { arrows: [], pills: new Map(), nodes: new Set() } });
   twScene(n, X);
   twPmFill(n);
+  twPassFill(n);
   if (n.type === 'ps') twBpmnFill(n);
   document.querySelectorAll('[data-pmkid]').forEach((b) => (b.onclick = () => { const k = twKids(n).find((x) => x.type + ':' + x.id === b.dataset.pmkid); if (k) twGo(k); }));
   document.querySelectorAll('[data-pmpath], .tr-cv-in [data-path]').forEach((a) => (a.onclick = (ev) => { ev.preventDefault(); const k = a.dataset.pmpath ?? a.dataset.path; twGo(twPFind(k ? k.split('/').map(decodeURIComponent) : [])); }));
@@ -1161,6 +1171,220 @@ function twRenderPm() {
   document.querySelector('.tr-main').scrollTop = 0;
 }
 
+// ---------- Анализ процессов Upstream по BPMN: связи между процессами, триггеры и результаты, документы, роли ----------
+// Источники: в BPMN каждого процесса — смежные процессы (входящие / исходящие с данными: «Из Р5 (5.15): Актуальная ГДМ»),
+// дорожки «Входящие / Исходящие» со стрелками к шагам (Геология), переходы шагов в соседние процессы (s.pv / s.nx),
+// стартовое и конечное события, документы шагов. Отраслевая рамка — стратсессия, сл. 3.
+const TW_STAGES = [
+  { t: 'ГРР и перспективное планирование', goal: 'Коэффициент восполнения ресурсной базы', hor: '25+ лет', procs: ['Г1', 'Г3', 'Г3.1', 'Г3.2', 'Г3.3'] },
+  { t: 'Геология и разработка', goal: 'Стратегия разработки с оптимальными NPV и КИН', resp: 'стратегия разработки активов на 3–5 лет', hor: 'до 5 лет', procs: ['Г3.4', 'Р1', 'Р2', 'Р3', 'Р4'] },
+  { t: 'Техническая политика', goal: 'Оптимальное соотношение плана по добыче и CAPEX', resp: 'наземная инфраструктура и проектирование', hor: 'до 3 лет', procs: ['Б1', 'Д8'] },
+  { t: 'Строительство скважины', goal: 'Дополнительная добыча от достижения потенциала ПЦСС', resp: 'скважина, введённая по фонду', hor: 'внутри года', procs: ['Б1', 'Б2', 'Б3', 'Б4', 'Б5'] },
+  { t: 'Управление добычей', goal: 'Максимальное соотношение факта по добыче и OPEX', resp: 'выполнение производственной программы', hor: 'внутри года', procs: ['Д1', 'Д2', 'Д3', 'Д4', 'Д5', 'Д6', 'Д7', 'Д9'] },
+];
+const TW_CROSS = [
+  ['Интегрированное моделирование на уровне ДЗО', 'синхронизация подземной и наземной части (пласт, труба, скважина); цикл от 1 года до 20+ лет', ['Д4']],
+  ['Целостность и надёжность (ЦИН)', 'сквозной процесс на уровне ДЗО', ['Д8']],
+  ['Производственное планирование', 'синхронизация данных для сборки и утверждения бизнес-плана; ежегодно', ['Р2', 'Р3']],
+  ['Инвестиционная политика', 'инвестиционное планирование, мониторинг исполнения и пост-инвест анализ', ['Д5']],
+];
+const TW_MOD_ORDER = ['geologiya', 'razrabotka', 'burenie', 'dobycha'];
+// Разбор записи о смежном процессе: «Из Р5 (5.15): Актуальная ГДМ», «В Р4 (4.1), Б1, КС1: …», «Д2. Мониторинг добычи», «В «Формирование …»: …»
+function twAdjParse(text) {
+  return String(text || '').split(/;\s*/).map((seg) => {
+    seg = seg.trim().replace(/^(из|в)\s+/i, '');
+    const ci = seg.search(/:\s/), head = ci >= 0 ? seg.slice(0, ci) : seg, data = ci >= 0 ? seg.slice(ci + 1).trim() : '';
+    const codes = [];
+    const re = /(^|[^А-Яа-яЁёA-Za-z])([ГРБД]\d+(?:\.\d+)?)(?:\s*\(([\d.,\s]+)\))?/g;
+    let m, rest = head;
+    while ((m = re.exec(head))) { codes.push({ code: m[2], steps: m[3] ? m[3].split(/,\s*/).map((x) => x.trim()).filter(Boolean) : [] }); rest = rest.replace(m[0].slice(m[1].length), ''); }
+    // Названия процессов без кода: «Формирование …» — до запятой между ними; у процесса с кодом остаток названия отбрасываем
+    const ext = codes.length && /^\s*[.\s]/.test(rest) ? [] : rest.split(/,\s*(?=«|[А-ЯA-Z])/).map((x) => x.replace(/^[\s,.]+|[\s,.]+$/g, '').replace(/^«|»$/g, '').trim()).filter((x) => x && !/^[.\s]*$/.test(x));
+    return { codes, ext, data, raw: seg, title: codes.length === 1 && !data ? head.replace(/^.*?[ГРБД]\d+(?:\.\d+)?\.?\s*/, '').trim() : '' };
+  }).filter((x) => x.codes.length || x.ext.length);
+}
+let TW_GRAPH = null;
+function twGraph() {
+  if (TW_GRAPH) return TW_GRAPH;
+  TW_GRAPH = Promise.all(TW_MOD_ORDER.map((m) => twEnv(m).then((w) => ({ m, w, B: twEv(w, 'BPMN') || [] })))).then((all) => {
+    const procs = new Map(twTrail().map((P) => [P.p, P]));
+    const E = new Map(), names = new Map(), events = new Map(), env = new Map(all.map((x) => [x.m, x.w]));
+    const nid = (code) => (procs.has(code) ? code : 'x:' + code);
+    const add = (f, t, data, fs, ts, src) => {
+      if (f === t) return;
+      const k = f + '|' + t;
+      if (!E.has(k)) E.set(k, { f, t, data: [], fSteps: new Set(), tSteps: new Set(), src: new Set() });
+      const e = E.get(k);
+      if (data && !e.data.includes(data)) e.data.push(data);
+      if (fs) e.fSteps.add(fs);
+      if (ts) e.tSteps.add(ts);
+      e.src.add(src);
+    };
+    const seg2 = (seg) => seg.codes.map((c) => ({ id: nid(c.code), step: c.steps[0], name: seg.title })).concat(seg.ext.map((n) => ({ id: 'e:' + n })));
+    all.forEach(({ m, B }) => B.forEach((p) => {
+      const self = p.code || (m === 'dobycha' ? 'Д' + p.num : p.code), S = nid(self);
+      if (!procs.has(self)) names.set(S, `${self} ${p.title}`);
+      const pl = p.pools.find((x) => x.variant === 'dream') || p.pools.find((x) => x.variant === 'asis');
+      // Триггер и результат: стартовое и конечное события Dream TO BE; не подписаны — из других вариантов того же BPMN
+      const order = ['dream', 'asis', 'asisn', 'nedra'].map((v) => p.pools.find((x) => x.variant === v)).filter(Boolean);
+      const st = order.map((x) => x.nodes.find((y) => y.type === 'startEvent' && y.name)).find(Boolean);
+      const en = order.map((x) => x.nodes.filter((y) => y.type === 'endEvent' && y.name)).find((l) => l.length) || [];
+      events.set(self, { start: st ? st.name : '', end: en.map((x) => x.name) });
+      ['in', 'out'].forEach((dir) => ((p.adjacent || {})[dir] || []).forEach((txt) => twAdjParse(txt).forEach((seg) => seg2(seg).forEach((o) => {
+        if (o.id.startsWith('x:') && o.name) names.set(o.id, `${o.id.slice(2)} ${o.name}`);
+        if (dir === 'in') add(o.id, S, seg.data, o.step, null, 'adj'); else add(S, o.id, seg.data, null, o.step, 'adj');
+      }))));
+      // Дорожки «Входящие / Исходящие»: стрелка от смежного процесса к шагу и от шага к смежному процессу, подпись — данные
+      if (pl) {
+        const byId = new Map(pl.nodes.map((x) => [x.id, x]));
+        pl.flows.forEach((f) => {
+          const a = byId.get(f.from), b = byId.get(f.to);
+          if (!a || !b) return;
+          if (a.kind === 'link' && b.kind !== 'link') twAdjParse(a.title || a.name).forEach((seg) => seg2(seg).forEach((o) => add(o.id, S, f.label || '', null, b.code, 'link')));
+          if (b.kind === 'link' && a.kind !== 'link') twAdjParse(b.title || b.name).forEach((seg) => seg2(seg).forEach((o) => add(S, o.id, f.label || '', a.code, null, 'link')));
+        });
+      }
+    }));
+    // Переходы шагов в соседние процессы (Добыча: «Д2. Мониторинг добычи» после шага)
+    twTrail().forEach((P) => P.s.forEach((s) => {
+      (s.pv || []).forEach(([x]) => { if (typeof x === 'string') twAdjParse(x).forEach((seg) => seg.codes.forEach((c) => add(nid(c.code), P.p, '', null, s.c, 'step'))); });
+      (s.nx || []).forEach(([x]) => { if (typeof x === 'string') twAdjParse(x).forEach((seg) => seg.codes.forEach((c) => add(P.p, nid(c.code), '', s.c, null, 'step'))); });
+    }));
+    const name = (id) => (procs.has(id) ? `${id} ${procs.get(id).t}` : names.get(id) || id.replace(/^[xe]:/, ''));
+    const mod = (id) => (procs.has(id) ? procs.get(id).m : null);
+    return { E: [...E.values()], name, mod, procs, events, env };
+  });
+  return TW_GRAPH;
+}
+// Шаг процесса по коду (с ролью, системами и документами)
+const twStepByCode = (P, c) => (c ? P.s.find((s) => s.c === c) || P.s.find((s) => s.c.startsWith(c + '.')) : null);
+const twStepLine = (P, c) => { const s = P && twStepByCode(P, c); return s ? `<span class="tw-ps"><b>${twEsc(s.c)}</b> ${twEsc(s.t)}<em>${twEsc(lsRole(s))}${s.s.length ? ' · ' + twEsc(s.s.join(', ')) : ''}</em>${s.d.length ? `<i>документы: ${twEsc(s.d.join('; '))}</i>` : ''}</span>` : ''; };
+// Связи уровня (модуль, процесс, шаг, все процессы): входы, выходы, внутренние — с номерами для стрелок дерева
+function twBizLinks(n, G) {
+  const P = n.P, inM = (id) => G.mod(id) === n.id;
+  let L = [];
+  if (n.type === 'pmr') L = G.E.map((e) => ({ e, dir: G.mod(e.f) && G.mod(e.t) && G.mod(e.f) === G.mod(e.t) ? 'mid' : 'x' }));
+  else if (n.type === 'pm') L = G.E.filter((e) => inM(e.f) || inM(e.t)).map((e) => ({ e, dir: inM(e.f) && inM(e.t) ? 'mid' : inM(e.t) ? 'in' : 'out' }));
+  else if (n.type === 'pp') L = G.E.filter((e) => e.f === P.p || e.t === P.p).map((e) => ({ e, dir: e.t === P.p ? 'in' : 'out' }));
+  else if (n.type === 'ps') L = G.E.filter((e) => (e.t === P.p && [...e.tSteps].some((c) => n.s.c === c || n.s.c.startsWith(c + '.'))) || (e.f === P.p && [...e.fSteps].some((c) => n.s.c === c || n.s.c.startsWith(c + '.')))).map((e) => ({ e, dir: e.t === P.p ? 'in' : 'out' }));
+  const ord = { in: 0, mid: 1, x: 1, out: 2 };
+  L.sort((a, b) => ord[a.dir] - ord[b.dir]);
+  L.forEach((l, i) => (l.n = i + 1));
+  return L;
+}
+// Ветви на дереве режима процессов: модуль → модуль, процесс → процесс, шаг ← смежный процесс → шаг; остальное — плашки справа
+function twBizXA(n, G, L) {
+  const A = new Map(), pills = new Map(), nodes = new Set();
+  const modName = (m) => (LS_MODS.find((x) => x.id === m) || {}).name || 'Смежные процессы';
+  const pill = (id) => ({ pill: G.name(id), u: { g: { title: G.mod(id) ? modName(G.mod(id)) : 'Смежные процессы ОМГ / КМГ', type: G.mod(id) ? 'cd' : 'ext' } } });
+  const ppNode = (code) => { const P = G.procs.get(code); if (!P) return null; const m = twKids(twPRoot()).find((x) => x.id === P.m); return m && twKids(m).find((x) => x.P.p === code); };
+  const end = (id, steps) => {
+    if (n.type === 'pmr') { const m = G.mod(id); return m ? { node: twKids(n).find((x) => x.id === m) } : pill(id); }
+    if (n.type === 'pm') return G.mod(id) === n.id ? { node: ppNode(id) } : pill(id);
+    const mine = id === n.P.p;
+    if (!mine) return G.mod(id) === n.P.m && n.type === 'pp' ? { node: ppNode(id) } : pill(id);
+    if (n.type === 'ps') return { node: n };
+    const pp = n, st = [...steps].map((c) => twKids(pp).find((x) => x.s.c === c || x.s.c.startsWith(c + '.'))).find(Boolean);
+    return { node: st || pp };
+  };
+  L.forEach((l) => {
+    const ea = end(l.e.f, l.e.fSteps), eb = end(l.e.t, l.e.tSteps);
+    if (!ea || !eb || (ea.node === undefined && !ea.pill) || (eb.node === undefined && !eb.pill)) return;
+    const ka = twEndKey(ea), kb = twEndKey(eb);
+    if (ka === kb) return;
+    [ea, eb].forEach((x) => (x.pill ? pills.set(x.pill, x.u) : nodes.add(x.node)));
+    const id = ka + '|' + kb;
+    if (!A.has(id)) A.set(id, { a: ea, b: eb, ka, kb, dirs: new Set([ka + '>' + kb]), nums: new Set(), ks: new Set(), w: [] });
+    const q = A.get(id); q.nums.add(l.n); q.ks.add(l.e.data.length ? 'auto' : 'seq'); q.w.push(`${l.n}. ${G.name(l.e.f)} → ${G.name(l.e.t)}${l.e.data.length ? ': ' + l.e.data.join('; ') : ''}`);
+  });
+  return { arrows: [...A.values()], pills, nodes };
+}
+// Список связей уровня: откуда (процесс, шаг, роль, система) → куда, какие данные / документы
+function twBizListHTML(L, G, title, sub) {
+  if (!L.length) return `<p class="tr-n">${title}: в BPMN связей с другими процессами не записано.</p>`;
+  const side = (id, steps) => { const P = G.procs.get(id); return `<div class="tw-bz-e"><b>${twEsc(G.name(id))}</b>${G.mod(id) ? `<span>${twEsc((LS_MODS.find((x) => x.id === G.mod(id)) || {}).name || '')}</span>` : '<span>смежный процесс</span>'}${[...steps].map((c) => twStepLine(P, c)).join('')}</div>`; };
+  const grp = { in: '⬇ Получает (входы)', out: '⬆ Отдаёт (выходы)', mid: '⇄ Внутри', x: '⇄ Между модулями и смежными процессами' };
+  const groups = [...new Set(L.map((l) => l.dir))];
+  return `<div class="tw-bz"><div class="tw-bz-h"><b>${title}</b><span>${sub}</span></div>
+    ${groups.map((g) => `<div class="tw-bz-g g-${g}"><h4>${grp[g]} <em>${L.filter((l) => l.dir === g).length}</em></h4><ol>${L.filter((l) => l.dir === g).map((l) => `<li data-bl="${l.n}"><b class="ls-nb ${l.e.data.length ? 'k-auto' : 'k-seq'}">${l.n}</b>
+      <div class="tw-bz-r">${side(l.e.f, l.e.fSteps)}<i>→</i>${side(l.e.t, l.e.tSteps)}</div>
+      <p class="tw-bz-d">${l.e.data.length ? twEsc(l.e.data.join('; ')) : '<span class="tr-n">связь процессов по BPMN — данные в схеме не подписаны</span>'}</p></li>`).join('')}</ol></div>`).join('')}</div>`;
+}
+// Документы шагов процесса: Dream TO BE — кто и в какой системе; AS IS — как было (по сопоставлению шагов модели модуля)
+function twDocsHTML(P, w) {
+  const matrix = twEv(w, 'stepMatrix'), pool = twEv(w, 'pool');
+  let rows = []; try { rows = matrix(P.n); } catch (e) { rows = []; }
+  const asisV = pool && pool(P.n, 'asis') ? 'asis' : null;
+  const asOf = (s) => { const r = rows.find((x) => x.code === s.c) || rows.find((x) => x.title === s.t); return r && asisV && r[asisV] ? r[asisV] : null; };
+  const L = P.s.filter((s) => s.d.length || s.s.length);
+  const docsN = P.s.reduce((t, s) => t + s.d.length, 0);
+  return `<details class="tr-more tw-docs" open><summary>Документы и системы по шагам · ${docsN} ${twPlural(docsN, 'документ', 'документа', 'документов')} в Dream TO BE · как было в AS IS</summary>
+    <div class="tw-cmp-t"><table class="ls-ab-t"><thead><tr><th>Шаг</th><th>Роль</th><th>Dream TO BE: системы · документы</th><th>AS IS: системы · документы</th></tr></thead><tbody>
+    ${L.map((s) => { const a = asOf(s); return `<tr><td><b>${twEsc(s.c)}</b> ${twEsc(s.t)}</td><td>${twEsc(lsRole(s))}</td>
+      <td>${s.s.map((x) => `<span class="tw-ch k-${twKind(lsKey(x))}">${twEsc(x)}</span>`).join(' ')}${s.d.length ? `<div class="tw-dl">${s.d.map((d) => `<span>${twEsc(d)}</span>`).join('')}</div>` : ''}</td>
+      <td>${a ? `${(a.sys || []).map((x) => `<span class="tw-ch">${twEsc(x)}</span>`).join(' ') || '<span class="tr-n">без системы</span>'}${(a.docs || []).length ? `<div class="tw-dl as">${a.docs.map((d) => `<span>${twEsc(d)}</span>`).join('')}</div>` : ''}` : '<span class="tr-n">—</span>'}</td></tr>`; }).join('')}
+    </tbody></table></div></details>`;
+}
+// Роли процесса: дорожки Dream TO BE и шаги каждой роли
+function twRolesHTML(Ps) {
+  const m = new Map();
+  Ps.forEach((P) => P.s.forEach((s) => { const r = lsRole(s); if (!m.has(r)) m.set(r, []); m.get(r).push((Ps.length > 1 ? P.p + ' ' : '') + s.c); }));
+  return `<div class="tw-roles">${[...m].sort((a, b) => b[1].length - a[1].length).map(([r, l]) => `<div><b>${twEsc(r)}</b><em>${l.length} ${twPlural(l.length, 'шаг', 'шага', 'шагов')}</em><span>${twEsc(l.slice(0, 14).join(', '))}${l.length > 14 ? ' …' : ''}</span></div>`).join('')}</div>`;
+}
+// Паспорт уровня: отраслевая рамка, триггер и результат, входы и выходы, роли, документы
+function twPassFill(n) {
+  const host = document.querySelector('[data-pass]');
+  if (!host) return;
+  twGraph().then((G) => {
+    if (TW.node !== n || !host.isConnected) return;
+    const L = twBizLinks(n, G);
+    TW.bizN = L.length;
+    let html = '';
+    if (n.type === 'pmr') {
+      html = `<h3>Upstream: этапы, цели и горизонты <span>стратсессия, сл. 3 · в мокапе — процессы этапа</span></h3>
+        <div class="tw-st">${TW_STAGES.map((st) => `<div><b>${st.t}</b><span>цель: ${st.goal}</span>${st.resp ? `<span>ответственность: ${st.resp}</span>` : ''}<em>горизонт: ${st.hor}</em><div>${st.procs.filter((c) => G.procs.has(c)).map((c) => `<button class="tw-sc-go" data-pp="${c}">${c} ${twEsc(G.procs.get(c).t)}</button>`).join('')}</div></div>`).join('')}</div>
+        <h3>Сквозные процессы <span>стратсессия, сл. 3</span></h3>
+        <div class="tw-st x">${TW_CROSS.map(([t, d, ps]) => `<div><b>${t}</b><span>${d}</span><div>${ps.map((c) => `<button class="tw-sc-go" data-pp="${c}">${c} ${twEsc(G.procs.get(c).t)}</button>`).join('')}</div></div>`).join('')}</div>
+        <h3>Карта связей между модулями <span>что процессы одного модуля передают процессам другого и смежным процессам · по BPMN · снизу вверх: геология → разработка → бурение → добыча; связи внутри модуля — на уровне модуля</span></h3><div class="tw-pmap"></div>
+        ${twBizListHTML(L, G, 'Связи между процессами', 'смежные процессы, данные и шаги из BPMN')}`;
+    } else if (n.type === 'pm') {
+      const stg = TW_STAGES.filter((st) => st.procs.some((c) => G.mod(c) === n.id));
+      html = `<h3>Место в цепочке Upstream <span>стратсессия, сл. 3</span></h3><div class="tw-st">${stg.map((st) => `<div><b>${st.t}</b><span>цель: ${st.goal}</span>${st.resp ? `<span>ответственность: ${st.resp}</span>` : ''}<em>горизонт: ${st.hor}</em></div>`).join('')}</div>
+        ${twBizListHTML(L, G, `Что модуль получает и отдаёт`, 'входы из других модулей и смежных процессов, выходы, связи процессов внутри модуля · шаг, роль, система, документы')}
+        <h3>Роли модуля <span>дорожки Dream TO BE · шаги</span></h3>${twRolesHTML(twKids(n).map((k) => k.P))}
+        ${(() => { const Ps = twKids(n).map((k) => k.P), N = Ps.reduce((t, P) => t + P.s.reduce((u, x) => u + x.d.length, 0), 0); return N ? `<details class="tr-more tw-docs"><summary>Документы модуля · ${N} ${twPlural(N, 'документ', 'документа', 'документов')} в шагах Dream TO BE — кто готовит и в какой системе</summary>
+          <div class="tw-cmp-t"><table class="ls-ab-t"><thead><tr><th>Процесс · шаг</th><th>Роль</th><th>Система</th><th>Документы</th></tr></thead><tbody>
+          ${Ps.flatMap((P) => P.s.filter((x) => x.d.length).map((x) => `<tr><td><b>${twEsc(P.p)} ${twEsc(x.c)}</b> ${twEsc(x.t)}</td><td>${twEsc(lsRole(x))}</td><td>${x.s.map((y) => `<span class="tw-ch k-${twKind(lsKey(y))}">${twEsc(y)}</span>`).join(' ')}</td><td><div class="tw-dl">${x.d.map((d) => `<span>${twEsc(d)}</span>`).join('')}</div></td></tr>`)).join('')}
+          </tbody></table></div></details>` : ''; })()}`;
+    } else if (n.type === 'pp') {
+      const ev = G.events.get(n.P.p) || {};
+      html = `${ev.start || (ev.end || []).length ? `<div class="tw-te">${ev.start ? `<div class="in"><i>Триггер — что запускает процесс</i><b>${twEsc(ev.start)}</b></div>` : ''}${(ev.end || []).length ? `<div class="out"><i>Результат процесса</i><b>${twEsc(ev.end.join('; '))}</b></div>` : ''}</div>` : ''}
+        ${twBizListHTML(L, G, 'Что процесс получает и отдаёт', 'смежные процессы · на каком шаге, кто, в какой системе, документы шага')}
+        <h3>Роли процесса <span>дорожки Dream TO BE · шаги</span></h3>${twRolesHTML([n.P])}
+        ${twDocsHTML(n.P, G.env.get(n.P.m))}`;
+    } else if (n.type === 'ps') {
+      html = L.length ? twBizListHTML(L, G, 'Связи шага со смежными процессами', 'что шаг получает из других процессов и что передаёт') : '';
+    }
+    host.innerHTML = html;
+    host.querySelectorAll('[data-pp]').forEach((b) => (b.onclick = () => { const P = G.procs.get(b.dataset.pp); const m = twKids(twPRoot()).find((x) => x.id === P.m); const k = m && twKids(m).find((x) => x.P.p === P.p); if (k) twGo(k); }));
+    host.querySelectorAll('[data-bl]').forEach((li) => { const no = +li.dataset.bl; li.onmouseenter = () => twXHot(no, true); li.onmouseleave = () => twXHot(no, false); });
+    // Дерево: ветви потока между процессами
+    if (TW.net) twCanvas(document.querySelector('.tr-cv-in'), n, { root: twPRoot(), pillLabel: 'Смежные процессы и модули', XA: twBizXA(n, G, L) });
+    if (n.type === 'pmr') twPMap(host.querySelector('.tw-pmap'), G, L);
+  });
+}
+// Карта процессов Upstream: процессы рядами по модулям (снизу вверх), стрелки — передачи между процессами
+function twPMap(host, G, L) {
+  if (!host) return;
+  const units = new Map(), row = { geologiya: 0, razrabotka: 1, burenie: 2, dobycha: 3 };
+  const unit = (id) => {
+    const lab = G.name(id).length > 34 ? G.name(id).slice(0, 33) + '…' : G.name(id);
+    if (!units.has(lab)) { const m = G.mod(id); units.set(lab, { k: lab, kind: m ? 'abai' : 'ext', g: { key: m || 'ext', title: m ? (LS_MODS.find((x) => x.id === m) || {}).name : 'Смежные процессы ОМГ / КМГ', type: m ? 'cd' : 'ext' }, row: m ? row[m] : 4, w: 230 }); }
+    return lab;
+  };
+  const edges = L.filter((l) => l.dir !== 'mid').map((l) => ({ f: unit(l.e.f), t: unit(l.e.t), w: l.e.data.join('; ') || 'связь процессов по BPMN', r: [...l.e.src].join(', '), k: l.e.data.length ? 'auto' : 'seq', n: l.n }));
+  lsNet(host, TW.grid, edges, TW_V, { info: (k) => units.get(k), onPick: (i) => twPick(i) });
+}
 // ---------- Отрисовка ----------
 function twRender() {
   if (TW.mode === 'scen') return twRenderScen();

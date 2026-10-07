@@ -261,3 +261,57 @@ em.alt { font-style: normal; font-weight: 400; color: #7a4fb5; font-size: .82em;
 .tr-cv-in path.sq.br { stroke-dasharray: 4 3; }
 .tr-nd.syn { opacity: 1; border: 2px solid #e0a800; background: #fffbea; box-shadow: 0 0 0 4px rgba(242,183,5,.25); }
 .tr-cv-in path.sq { stroke-width: 2; }
+
+/* Простой / Подробный у потока данных; подробности связи — шаги BPMN */
+.tw-lsm { display: inline-flex; border: 1px solid #c9d2df; border-radius: 8px; overflow: hidden; margin-left: auto; }
+.tw-lsm button { font: inherit; font-size: 12px; border: 0; background: #fff; color: #4d5563; padding: 4px 10px; cursor: pointer; }
+.tw-lsm button.on { background: #1c5cab; color: #fff; }
+.tw-lsm + .tw-net-t { margin-left: 8px; }
+.tw-det { margin-top: 6px; font-size: 12px; }
+.tw-det .ls-d { border-left: 2px solid #dfe6f0; padding-left: 8px; }
+/* Описание модуля / процесса над потоком данных */
+.tw-pm-top { margin: 4px 0 14px; }
+.tw-pm-top:empty { display: none; }
+
+
+/* Анализ процессов по BPMN: этапы Upstream, триггер и результат, входы / выходы, роли, документы */
+.tw-pass { background: #fff; border: 1px solid #e1e5ec; border-radius: 14px; padding: 12px 16px 14px; margin: 0 0 14px; }
+.tw-pass > h3, .tw-pass h3 { margin: 14px 0 8px; font-size: 12.5px; text-transform: uppercase; letter-spacing: .4px; color: #4d5563; }
+.tw-pass > h3:first-child { margin-top: 2px; }
+.tw-pass h3 span { margin-left: 8px; font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0; color: #9aa1ad; }
+.tw-st { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.tw-st > div { border: 1px solid #e1e5ec; border-top: 3px solid #0f7a55; border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; background: #fbfdfc; }
+.tw-st.x > div { border-top-color: #0e7490; }
+.tw-st b { font-size: 13px; } .tw-st span { color: #4d5563; } .tw-st em { font-style: normal; font-size: 11.5px; color: #0f7a55; font-weight: 600; }
+.tw-st > div > div { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.tw-te { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px; }
+.tw-te > div { border-radius: 10px; padding: 8px 12px; } .tw-te i { display: block; font-style: normal; font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; font-weight: 700; }
+.tw-te .in { background: #f3faf6; border: 1px solid #b9e0c9; } .tw-te .in i { color: #0f7a55; }
+.tw-te .out { background: #fdf8f1; border: 1px solid #f0d5ad; } .tw-te .out i { color: #b45309; }
+.tw-te b { font-size: 13px; font-weight: 600; }
+.tw-bz { margin-top: 12px; }
+.tw-bz-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; } .tw-bz-h b { font-size: 14px; color: #16191f; } .tw-bz-h span { font-size: 12px; color: #9aa1ad; }
+.tw-bz-g h4 { margin: 10px 0 6px; font-size: 13px; } .tw-bz-g h4 em { font-style: normal; font-size: 11px; color: #fff; border-radius: 8px; padding: 0 6px; margin-left: 4px; background: #9aa1ad; }
+.tw-bz-g.g-in h4 { color: #0f7a55; } .tw-bz-g.g-in h4 em { background: #0f7a55; } .tw-bz-g.g-out h4 { color: #b45309; } .tw-bz-g.g-out h4 em { background: #b45309; }
+.tw-bz-g ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.tw-bz-g li { display: flex; gap: 8px; align-items: flex-start; border: 1px solid #eef1f5; border-radius: 10px; padding: 7px 10px; }
+.tw-bz-g li:hover { background: #f6faff; }
+.tw-bz-g li.flash { animation: twFlash 1.6s ease; }
+.tw-bz-g li > .ls-nb { position: static; flex: none; margin-top: 2px; }
+.tw-bz-g li > div, .tw-bz-g li > p { min-width: 0; }
+.tw-bz-g li { flex-wrap: wrap; }
+.tw-bz-r { flex: 1; display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: start; }
+.tw-bz-r > i { font-style: normal; color: #9aa1ad; padding-top: 2px; }
+.tw-bz-e b { display: block; font-size: 13px; } .tw-bz-e > span { font-size: 11px; color: #9aa1ad; }
+.tw-ps { display: block; margin-top: 4px; font-size: 12px; border-left: 2px solid #c9b6ea; padding-left: 6px; }
+.tw-ps b { color: #6b3fa0; } .tw-ps em { display: block; font-style: normal; font-size: 11px; color: #7a8291; } .tw-ps i { display: block; font-style: normal; font-size: 11px; color: #8a5a00; }
+.tw-bz-d { flex-basis: 100%; margin: 4px 0 0 32px; font-size: 13px; color: #16191f; font-weight: 600; }
+.tw-roles { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px; }
+.tw-roles > div { border-left: 3px solid #6b3fa0; background: #faf8fd; border-radius: 0 8px 8px 0; padding: 6px 10px; font-size: 12px; }
+.tw-roles b { font-size: 13px; margin-right: 6px; } .tw-roles em { font-style: normal; color: #6b3fa0; font-size: 11.5px; } .tw-roles span { display: block; color: #7a8291; font-size: 11px; }
+.tw-docs { margin-top: 14px; }
+.tw-dl { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.tw-dl span { font-size: 11.5px; color: #8a5a00; } .tw-dl span::before { content: '▪ '; color: #d08a1e; }
+.tw-dl.as span { color: #a63a32; }
+.tw-pmap { overflow: auto; }
+.tw-pmap .ls-fcanvas { margin: 0 auto; }
