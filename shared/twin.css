@@ -110,3 +110,49 @@ em.alt { font-style: normal; font-weight: 400; color: #7a4fb5; font-size: .82em;
 .tw-pf-alt .ls-pf-line { display: inline; }
 .ls-pf.tw-pfc { position: absolute; right: 8px; top: 6px; margin: 0; }
 .tw-pill { position: absolute; }
+
+/* Схема BPMN процесса (Dream TO BE) — доп. блок внизу карточки; рисунок — как вкладка «Схемы BPMN» прототипа */
+.tw-bp { margin: 14px 0 0; background: #fff; border: 1px solid #e1e5ec; border-radius: 14px; overflow: hidden; }
+.tw-bp-h { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding: 10px 16px; background: #fbf7ef; border-bottom: 1px solid #efe4cf; }
+.tw-bp-h b { font-size: 14px; color: #8a4a06; }
+.tw-bp-h span { font-size: 12px; color: #7a8291; }
+.tw-bp-h .ls-slide { margin-left: auto; }
+.tw-bp-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px 0; }
+.tw-bp-tabs button { font: inherit; text-align: left; border: 1px solid #d5dbe5; background: #fff; border-radius: 8px; padding: 5px 10px; cursor: pointer; max-width: 260px; }
+.tw-bp-tabs button span { display: block; font-size: 11px; color: #7a8291; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tw-bp-tabs button { font-size: 12.5px; font-weight: 600; color: #b45309; }
+.tw-bp-tabs button.on { border-color: #b45309; background: #fdf8f1; box-shadow: inset 0 -3px 0 #b45309; }
+.tw-bp-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 8px 16px; font-size: 12px; color: #4d5563; border-bottom: 1px solid #eef1f5; }
+.tw-bp-bar .tw-bp-t { font-weight: 700; color: #16191f; font-size: 13px; }
+.tw-bp-bar .spacer { flex: 1; }
+.tw-bp-bar .lg { display: inline-flex; align-items: center; gap: 5px; }
+.tw-bp-bar .lg i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; background: #b9bfca; }
+.tw-bp-bar .lg i.d-abai { background: #1c5cab; } .tw-bp-bar .lg i.me { border-radius: 3px; background: #fff6d6; border: 2px solid #e0a800; }
+.tw-bp-z { display: inline-flex; align-items: center; gap: 6px; }
+.tw-bp-z button { font: inherit; width: 26px; height: 24px; border: 1px solid #d5dbe5; background: #fff; border-radius: 6px; cursor: pointer; }
+.tw-bp-canvas { position: relative; overflow: auto; max-height: 560px; min-height: 160px; display: flex; align-items: flex-start; }
+.tw-bp-canvas > .tr-n { padding: 14px 16px; }
+.tw-bp-lanes { position: sticky; left: 0; z-index: 3; width: 140px; flex: none; }
+.tw-bp-lanes div { position: absolute; left: 0; width: 140px; background: #f6f8fb; border-bottom: 1px solid #e3e7ee; border-right: 3px solid #b9c3d3; display: flex; align-items: center; padding: 6px 9px; box-sizing: border-box; overflow: hidden; }
+.tw-bp-lanes span { font-size: 11.5px; font-weight: 600; color: #4d5563; line-height: 1.25; }
+.tw-bp-lanes div.grp { width: 26px; padding: 4px 0; justify-content: center; background: #eef1f6; border-right: 1px solid #dfe3ea; border-bottom: 2px solid #cfd6e2; }
+.tw-bp-lanes div.grp span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-size: 11px; }
+.tw-bp-svg { flex: none; display: block; }
+.tw-bp-svg .lane { fill: #fff; stroke: #e3e7ee; stroke-width: 1; } .tw-bp-svg .lane.odd { fill: #fafbfd; }
+.tw-bp-svg .bf { fill: none; stroke: #8a93a6; stroke-width: 1.6; }
+.tw-bp-svg .bf-l { font-size: 11px; line-height: 1.15; text-align: center; color: #6b7383; }
+.tw-bp-svg .bn.task rect { fill: #fff; stroke: #8fa6c8; stroke-width: 1.6; }
+.tw-bp-svg .bn.task[data-bpn] { cursor: pointer; }
+.tw-bp-svg .bn.task[data-bpn]:hover rect { stroke: #1c5cab; stroke-width: 3; }
+.tw-bp-svg .bn.task.me rect { fill: #fff6d6; stroke: #e0a800; stroke-width: 2.4; }
+.tw-bp-svg .bn.task.cur rect { fill: #fff3c4; stroke: #c98a00; stroke-width: 5; }
+.tw-bp-svg .bn.task.link rect { fill: #f4f5f8; stroke: #b9c0cc; stroke-dasharray: 5 4; }
+.tw-bp-svg .bn-t { font-size: 12.5px; line-height: 1.2; color: #16191f; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
+.tw-bp-svg .bn-t b { color: #1c5cab; margin-right: 2px; }
+.tw-bp-svg .bn.ev circle { fill: #fff; stroke: #0a7a3d; stroke-width: 2; }
+.tw-bp-svg .bn.ev.endEvent circle { stroke: #8f1d1d; stroke-width: 4; }
+.tw-bp-svg .bn.ev.intermediateThrowEvent circle, .tw-bp-svg .bn.ev.intermediateCatchEvent circle { stroke: #6b7383; stroke-dasharray: 3 2; }
+.tw-bp-svg .bn-l { font-size: 11.5px; line-height: 1.15; text-align: center; color: #4d5563; }
+.tw-bp-svg .bn.gw path { fill: #fffaf0; stroke: #c08a1a; stroke-width: 2; }
+.tw-bp-svg .gw-s { font-size: 22px; fill: #c08a1a; font-weight: 700; }
+.tw-bp-svg circle.d-abai { fill: #1c5cab; } .tw-bp-svg circle.d-nedra { fill: #7a4fb5; } .tw-bp-svg circle.d-ext { fill: #9aa1ad; } .tw-bp-svg circle.d-manual { fill: #c2413a; }
